@@ -1,11 +1,27 @@
 body {
   margin: 0;
   overflow: hidden;
-  background: black;
 }
 
 canvas {
-  width: 100vw;
-  height: 100vh;
   display: block;
+}
+
+.toggle-btn {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  padding: 0.4rem 0.8rem;
+  font-size: 0.9rem;
+  background: rgba(0, 0, 0, 0.6);
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 6px;
+  cursor: pointer;
+  z-index: 10;
+  transition: background 0.3s;
+}
+
+.toggle-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
 }
