@@ -1,5 +1,7 @@
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
+import { earthVertexShader, earthFragmentShader } from "./earthShaders.js";
+import { loadCountryBorders } from "./countryBorders.js";
 
 const CONFIG = {
   use8k: true, // Toggle between 4K and 8K textures
@@ -14,6 +16,8 @@ const CONFIG = {
 };
 
 const scene = new THREE.Scene();
+const borderGroup = new THREE.Group();
+scene.add(borderGroup);
 const camera = new THREE.PerspectiveCamera(
   75,
   window.innerWidth / window.innerHeight,
@@ -53,54 +57,13 @@ const uniforms = {
   lightDirection: { value: new THREE.Vector3() },
 };
 
-const vertexShader = `
-  varying vec2 vUv;
-  varying vec3 vWorldNormal;
-  varying vec3 vViewDirection;
-
-  void main() {
-    vUv = uv;
-    vec4 worldPos = modelMatrix * vec4(position, 1.0);
-    vWorldNormal = normalize(mat3(modelMatrix) * normal);
-    vec3 cameraToVertex = cameraPosition - worldPos.xyz;
-    vViewDirection = normalize(cameraToVertex);
-    gl_Position = projectionMatrix * viewMatrix * worldPos;
-  }
-`;
-
-const fragmentShader = `
-  uniform sampler2D dayTexture;
-  uniform sampler2D nightTexture;
-  uniform vec3 lightDirection;
-  varying vec2 vUv;
-  varying vec3 vWorldNormal;
-  varying vec3 vViewDirection;
-
-  void main() {
-    float intensity = dot(normalize(vWorldNormal), normalize(lightDirection));
-    float normalized = intensity * 0.5 + 0.5;
-    float transitionWidth = 0.05;
-    float sharpened = smoothstep(0.5 - transitionWidth, 0.5 + transitionWidth, normalized);
-    vec4 dayColor = texture2D(dayTexture, vUv);
-    vec4 nightColor = texture2D(nightTexture, vUv);
-    vec4 baseColor = mix(nightColor, dayColor, sharpened);
-    vec3 finalColor = mix(nightColor.rgb, dayColor.rgb, sharpened);
-    float rim = 1.0 - dot(normalize(vViewDirection), normalize(vWorldNormal));
-    rim = smoothstep(0.3, 0.7, rim);
-    float daySide = smoothstep(0.0, 0.2, intensity);
-    float glowFactor = rim * daySide;
-    vec3 glowColor = vec3(0.4, 0.6, 1.0) * glowFactor * 0.1;
-    gl_FragColor = vec4(finalColor + glowColor, 1.0);
-  }
-`;
-
 const globeMaterial = new THREE.ShaderMaterial({
   uniforms,
-  vertexShader,
-  fragmentShader,
-  transparent: true,
-  blending: THREE.AdditiveBlending,
-  depthWrite: false,
+  vertexShader: earthVertexShader,
+  fragmentShader: earthFragmentShader,
+  depthWrite: true,
+  transparent: false,
+  blending: THREE.NormalBlending,
 });
 
 const globe = new THREE.Mesh(
@@ -110,6 +73,7 @@ const globe = new THREE.Mesh(
 scene.add(globe);
 
 let using8k = CONFIG.use8k;
+
 document.getElementById("toggleResolution").addEventListener("click", () => {
   using8k = !using8k;
   const suffix = using8k ? "_8k.jpg" : "_4k.jpg";
@@ -130,7 +94,13 @@ document.getElementById("toggleResolution").addEventListener("click", () => {
   });
 });
 
-scene.add(new THREE.DirectionalLight(0xffffff, 1).position.set(5, 0, 5));
+document.getElementById("toggleBorders").addEventListener("click", () => {
+  loadCountryBorders(borderGroup);
+});
+
+const light = new THREE.DirectionalLight(0xffffff, 1);
+light.position.set(5, 0, 5);
+scene.add(light);
 
 const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableZoom = true;
@@ -172,6 +142,7 @@ function animate() {
   const mapOffset = 90;
   const subsolarLon = getSubsolarLongitude();
   globe.rotation.y = THREE.MathUtils.degToRad(subsolarLon + mapOffset);
+  borderGroup.rotation.y = globe.rotation.y;
   uniforms.lightDirection.value.set(0, 0, 1);
   controls.update();
   renderer.render(scene, camera);
