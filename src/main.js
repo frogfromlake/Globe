@@ -1,6 +1,32 @@
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
 
+//
+// ===== Configuration =====
+//
+
+const CONFIG = {
+  zoom: {
+    min: 1.1,
+    max: 10,
+  },
+  speed: {
+    zoomSpeedMultiplier: 0.3, // Zoom speed multiplier based on distance
+    rotateSpeedBase: 0.25, // Base rotation speed
+    rotateSpeedScale: 0.8, // Scale factor for rotation speed
+    inertiaSensitivity: 0.0009, // How fast globe spins based on drag
+    inertiaDecay: 0.99, // Friction/decay applied to spin inertia
+  },
+  polarLimits: {
+    min: 0.01,
+    max: Math.PI - 0.01,
+  },
+};
+
+//
+// ===== Setup =====
+//
+
 // Scene
 const scene = new THREE.Scene();
 
@@ -21,18 +47,18 @@ const renderer = new THREE.WebGLRenderer({
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.setPixelRatio(window.devicePixelRatio);
 
-// Resize handling
+// Resize
 window.addEventListener("resize", () => {
   camera.aspect = window.innerWidth / window.innerHeight;
   camera.updateProjectionMatrix();
   renderer.setSize(window.innerWidth, window.innerHeight);
 });
 
-// Load Earth texture
+// Earth Texture
 const textureLoader = new THREE.TextureLoader();
 const earthTexture = textureLoader.load("/earth.png");
 
-// Earth mesh
+// Globe
 const geometry = new THREE.SphereGeometry(1, 64, 64);
 const material = new THREE.MeshPhongMaterial({
   map: earthTexture,
@@ -49,24 +75,29 @@ directionalLight.position.set(5, 0, 5);
 directionalLight.target = globe;
 scene.add(directionalLight);
 
-// Controls
+//
+// ===== Orbit Controls =====
+//
+
 const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableZoom = true;
 controls.enablePan = false;
 controls.autoRotate = false;
 controls.target.set(0, 0, 0);
 camera.up.set(0, 1, 0);
-controls.minPolarAngle = 0.01;
-controls.maxPolarAngle = Math.PI - 0.01;
-controls.minDistance = 1.1;
-controls.maxDistance = 10;
+controls.minPolarAngle = CONFIG.polarLimits.min;
+controls.maxPolarAngle = CONFIG.polarLimits.max;
+controls.minDistance = CONFIG.zoom.min;
+controls.maxDistance = CONFIG.zoom.max;
 controls.update();
 
-// 🌀 Inertia system (omnidirectional spin)
+//
+// ===== Inertia Spin System =====
+//
+
 let isDragging = false;
 let lastPos = new THREE.Vector2();
 let dragVelocity = new THREE.Vector2();
-let decay = 0.95;
 let isInertiaActive = false;
 
 renderer.domElement.addEventListener("pointerdown", (event) => {
@@ -79,7 +110,9 @@ renderer.domElement.addEventListener("pointerdown", (event) => {
 renderer.domElement.addEventListener("pointermove", (event) => {
   if (isDragging) {
     const currentPos = new THREE.Vector2(event.clientX, event.clientY);
-    dragVelocity.subVectors(currentPos, lastPos).multiplyScalar(0.002); // sensitivity
+    dragVelocity
+      .subVectors(currentPos, lastPos)
+      .multiplyScalar(CONFIG.speed.inertiaSensitivity);
     lastPos.copy(currentPos);
   }
 });
@@ -89,21 +122,30 @@ renderer.domElement.addEventListener("pointerup", () => {
   isInertiaActive = true;
 });
 
-// Update camera speed dynamically
+//
+// ===== Dynamic Speed Updates =====
+//
+
 function updateControlSpeed() {
   const distance = camera.position.length();
-  controls.zoomSpeed = 0.3 * distance;
-  const base = 0.25;
+
+  // Dynamic zoom speed
+  controls.zoomSpeed = CONFIG.speed.zoomSpeedMultiplier * distance;
+
+  // Dynamic rotation speed (scales with distance)
   const scale = Math.log(distance + 0.25);
-  controls.rotateSpeed = base * scale * 0.5;
+  controls.rotateSpeed =
+    CONFIG.speed.rotateSpeedBase * scale * CONFIG.speed.rotateSpeedScale;
 }
 
-// Animate
+//
+// ===== Animation Loop =====
+//
+
 function animate() {
   requestAnimationFrame(animate);
   updateControlSpeed();
 
-  // Apply spin after release
   if (isInertiaActive && dragVelocity.lengthSq() > 0.000001) {
     const axis = new THREE.Vector3(
       dragVelocity.y,
@@ -113,7 +155,7 @@ function animate() {
     const angle = dragVelocity.length();
     const quaternion = new THREE.Quaternion().setFromAxisAngle(axis, angle);
     globe.quaternion.premultiply(quaternion);
-    dragVelocity.multiplyScalar(decay); // apply friction
+    dragVelocity.multiplyScalar(CONFIG.speed.inertiaDecay);
   }
 
   controls.update();
