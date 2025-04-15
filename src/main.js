@@ -11,7 +11,7 @@ const camera = new THREE.PerspectiveCamera(
   0.1,
   1000
 );
-camera.position.set(0, 0, 3); // view from z-axis, looking at origin
+camera.position.set(0, 0, 3);
 
 // Renderer
 const renderer = new THREE.WebGLRenderer({
@@ -21,7 +21,7 @@ const renderer = new THREE.WebGLRenderer({
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.setPixelRatio(window.devicePixelRatio);
 
-// Handle resize
+// Resize handling
 window.addEventListener("resize", () => {
   camera.aspect = window.innerWidth / window.innerHeight;
   camera.updateProjectionMatrix();
@@ -32,57 +32,90 @@ window.addEventListener("resize", () => {
 const textureLoader = new THREE.TextureLoader();
 const earthTexture = textureLoader.load("/earth.png");
 
-// Earth material with texture
+// Earth mesh
 const geometry = new THREE.SphereGeometry(1, 64, 64);
 const material = new THREE.MeshPhongMaterial({
   map: earthTexture,
   shininess: 5,
   specular: 0x111111,
 });
-
-// Globe setup (centered at origin)
 const globe = new THREE.Mesh(geometry, material);
-scene.add(globe); // add globe directly at (0, 0, 0)
+scene.add(globe);
 
 // Lighting
-const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
-scene.add(ambientLight);
-
+scene.add(new THREE.AmbientLight(0xffffff, 0.4));
 const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
 directionalLight.position.set(5, 0, 5);
 directionalLight.target = globe;
 scene.add(directionalLight);
 
-// OrbitControls setup
+// Controls
 const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableZoom = true;
 controls.enablePan = false;
 controls.autoRotate = false;
-
-// Always orbit around Earth's center
 controls.target.set(0, 0, 0);
-camera.up.set(0, 1, 0); // lock the "up" direction to prevent flipping
-controls.update(); // important to apply target and up settings
-
-// Full rotation around the globe allowed
+camera.up.set(0, 1, 0);
 controls.minPolarAngle = 0.01;
 controls.maxPolarAngle = Math.PI - 0.01;
-
-// Zoom boundaries
 controls.minDistance = 1.1;
 controls.maxDistance = 10;
+controls.update();
 
-// Dynamic zoom and rotation speed
+// 🌀 Inertia system (omnidirectional spin)
+let isDragging = false;
+let lastPos = new THREE.Vector2();
+let dragVelocity = new THREE.Vector2();
+let decay = 0.95;
+let isInertiaActive = false;
+
+renderer.domElement.addEventListener("pointerdown", (event) => {
+  isDragging = true;
+  isInertiaActive = false;
+  lastPos.set(event.clientX, event.clientY);
+  dragVelocity.set(0, 0);
+});
+
+renderer.domElement.addEventListener("pointermove", (event) => {
+  if (isDragging) {
+    const currentPos = new THREE.Vector2(event.clientX, event.clientY);
+    dragVelocity.subVectors(currentPos, lastPos).multiplyScalar(0.002); // sensitivity
+    lastPos.copy(currentPos);
+  }
+});
+
+renderer.domElement.addEventListener("pointerup", () => {
+  isDragging = false;
+  isInertiaActive = true;
+});
+
+// Update camera speed dynamically
 function updateControlSpeed() {
   const distance = camera.position.length();
   controls.zoomSpeed = 0.3 * distance;
-  controls.rotateSpeed = 0.5 * distance;
+  const base = 0.25;
+  const scale = Math.log(distance + 0.25);
+  controls.rotateSpeed = base * scale * 0.5;
 }
 
 // Animate
 function animate() {
   requestAnimationFrame(animate);
   updateControlSpeed();
+
+  // Apply spin after release
+  if (isInertiaActive && dragVelocity.lengthSq() > 0.000001) {
+    const axis = new THREE.Vector3(
+      dragVelocity.y,
+      dragVelocity.x,
+      0
+    ).normalize();
+    const angle = dragVelocity.length();
+    const quaternion = new THREE.Quaternion().setFromAxisAngle(axis, angle);
+    globe.quaternion.premultiply(quaternion);
+    dragVelocity.multiplyScalar(decay); // apply friction
+  }
+
   controls.update();
   renderer.render(scene, camera);
 }
