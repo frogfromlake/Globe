@@ -60,11 +60,12 @@ const uniforms = {
 
 const vertexShader = `
   varying vec2 vUv;
-  varying vec3 vNormal;
+  varying vec3 vWorldNormal;
   void main() {
     vUv = uv;
-    vNormal = normalize(normalMatrix * normal);
-    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+    vec4 worldPosition = modelMatrix * vec4(position, 1.0);
+    vWorldNormal = normalize(mat3(modelMatrix) * normal);
+    gl_Position = projectionMatrix * viewMatrix * worldPosition;
   }
 `;
 
@@ -73,10 +74,10 @@ const fragmentShader = `
   uniform sampler2D nightTexture;
   uniform vec3 lightDirection;
   varying vec2 vUv;
-  varying vec3 vNormal;
+  varying vec3 vWorldNormal;
 
   void main() {
-    float intensity = dot(normalize(vNormal), normalize(lightDirection));
+    float intensity = dot(normalize(vWorldNormal), normalize(lightDirection));
     vec4 dayColor = texture2D(dayTexture, vUv);
     vec4 nightColor = texture2D(nightTexture, vUv);
     vec4 color = mix(nightColor, dayColor, clamp(intensity, 0.0, 1.0));
@@ -157,22 +158,20 @@ function updateControlSpeed() {
   controls.zoomSpeed = THREE.MathUtils.clamp(0.1 + normalized * 4.0, 0.1, 6.0);
 }
 
-// === Animate ===
 function animate() {
   requestAnimationFrame(animate);
   updateControlSpeed();
 
-  // Earth rotates once every 24 hours = 2 * PI per 86400 seconds
+  const now = new Date();
   const secondsInDay = 86400;
-  const now = Date.now() / 1000; // in seconds
-  const fastTime = now * 50; // simulate 50x real speed
-  const rotation = ((fastTime % secondsInDay) / secondsInDay) * Math.PI * 2;
+  const utcSeconds =
+    now.getUTCHours() * 3600 + now.getUTCMinutes() * 60 + now.getUTCSeconds();
+  const angle = (utcSeconds / secondsInDay) * Math.PI * 2 - Math.PI;
 
-  globe.rotation.y = rotation;
+  globe.rotation.y = angle;
 
-  uniforms.lightDirection.value.copy(
-    directionalLight.position.clone().normalize()
-  );
+  // Keep sunlight fixed in world space
+  uniforms.lightDirection.value.set(0, 0, 1);
 
   controls.update();
   renderer.render(scene, camera);
