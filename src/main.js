@@ -13,7 +13,6 @@ const CONFIG = {
   polarLimits: { min: 0.01, max: Math.PI - 0.01 },
 };
 
-// === Scene Setup ===
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(
   75,
@@ -36,14 +35,11 @@ window.addEventListener("resize", () => {
   renderer.setSize(window.innerWidth, window.innerHeight);
 });
 
-// === Load Textures ===
 const loader = new THREE.TextureLoader();
-
 const resolutionSuffix = CONFIG.use8k ? "_8k.jpg" : "_4k.jpg";
 const dayTexture = loader.load(`/earth_day${resolutionSuffix}`);
 const nightTexture = loader.load(`/earth_night${resolutionSuffix}`);
 
-// 🔍 Sharpen visual output
 const maxAnisotropy = renderer.capabilities.getMaxAnisotropy();
 [dayTexture, nightTexture].forEach((tex) => {
   tex.minFilter = THREE.LinearFilter;
@@ -51,7 +47,6 @@ const maxAnisotropy = renderer.capabilities.getMaxAnisotropy();
   tex.anisotropy = maxAnisotropy;
 });
 
-// === Shader Material ===
 const uniforms = {
   dayTexture: { value: dayTexture },
   nightTexture: { value: nightTexture },
@@ -61,11 +56,15 @@ const uniforms = {
 const vertexShader = `
   varying vec2 vUv;
   varying vec3 vWorldNormal;
+  varying vec3 vViewDirection;
+
   void main() {
     vUv = uv;
-    vec4 worldPosition = modelMatrix * vec4(position, 1.0);
+    vec4 worldPos = modelMatrix * vec4(position, 1.0);
     vWorldNormal = normalize(mat3(modelMatrix) * normal);
-    gl_Position = projectionMatrix * viewMatrix * worldPosition;
+    vec3 cameraToVertex = cameraPosition - worldPos.xyz;
+    vViewDirection = normalize(cameraToVertex);
+    gl_Position = projectionMatrix * viewMatrix * worldPos;
   }
 `;
 
@@ -75,13 +74,23 @@ const fragmentShader = `
   uniform vec3 lightDirection;
   varying vec2 vUv;
   varying vec3 vWorldNormal;
+  varying vec3 vViewDirection;
 
   void main() {
     float intensity = dot(normalize(vWorldNormal), normalize(lightDirection));
+    float normalized = intensity * 0.5 + 0.5;
+    float transitionWidth = 0.05;
+    float sharpened = smoothstep(0.5 - transitionWidth, 0.5 + transitionWidth, normalized);
     vec4 dayColor = texture2D(dayTexture, vUv);
     vec4 nightColor = texture2D(nightTexture, vUv);
-    vec4 color = mix(nightColor, dayColor, clamp(intensity, 0.0, 1.0));
-    gl_FragColor = color;
+    vec4 baseColor = mix(nightColor, dayColor, sharpened);
+    vec3 finalColor = mix(nightColor.rgb, dayColor.rgb, sharpened);
+    float rim = 1.0 - dot(normalize(vViewDirection), normalize(vWorldNormal));
+    rim = smoothstep(0.3, 0.7, rim);
+    float daySide = smoothstep(0.0, 0.2, intensity);
+    float glowFactor = rim * daySide;
+    vec3 glowColor = vec3(0.4, 0.6, 1.0) * glowFactor * 0.1;
+    gl_FragColor = vec4(finalColor + glowColor, 1.0);
   }
 `;
 
@@ -89,9 +98,11 @@ const globeMaterial = new THREE.ShaderMaterial({
   uniforms,
   vertexShader,
   fragmentShader,
+  transparent: true,
+  blending: THREE.AdditiveBlending,
+  depthWrite: false,
 });
 
-// === Globe ===
 const globe = new THREE.Mesh(
   new THREE.SphereGeometry(1, 64, 64),
   globeMaterial
@@ -99,22 +110,18 @@ const globe = new THREE.Mesh(
 scene.add(globe);
 
 let using8k = CONFIG.use8k;
-
 document.getElementById("toggleResolution").addEventListener("click", () => {
   using8k = !using8k;
-
   const suffix = using8k ? "_8k.jpg" : "_4k.jpg";
   document.getElementById("toggleResolution").textContent = using8k
     ? "Switch to 4K"
     : "Switch to 8K";
-
   const newDay = loader.load(`/earth_day${suffix}`, (texture) => {
     texture.minFilter = THREE.LinearFilter;
     texture.magFilter = THREE.LinearFilter;
     texture.anisotropy = maxAnisotropy;
     globeMaterial.uniforms.dayTexture.value = texture;
   });
-
   const newNight = loader.load(`/earth_night${suffix}`, (texture) => {
     texture.minFilter = THREE.LinearFilter;
     texture.magFilter = THREE.LinearFilter;
@@ -123,12 +130,8 @@ document.getElementById("toggleResolution").addEventListener("click", () => {
   });
 });
 
-// === Lighting ===
-const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
-directionalLight.position.set(5, 0, 5);
-scene.add(directionalLight);
+scene.add(new THREE.DirectionalLight(0xffffff, 1).position.set(5, 0, 5));
 
-// === Controls ===
 const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableZoom = true;
 controls.enablePan = false;
@@ -143,36 +146,33 @@ controls.minDistance = CONFIG.zoom.min;
 controls.maxDistance = CONFIG.zoom.max;
 controls.update();
 
-// === Speed update ===
 function updateControlSpeed() {
   const distance = camera.position.distanceTo(controls.target);
   const normalized =
     (distance - CONFIG.zoom.min) / (CONFIG.zoom.max - CONFIG.zoom.min);
-
   controls.rotateSpeed = THREE.MathUtils.clamp(
     0.1 + normalized * 3.0,
     0.1,
     5.0
   );
-
   controls.zoomSpeed = THREE.MathUtils.clamp(0.1 + normalized * 4.0, 0.1, 6.0);
+}
+
+function getSubsolarLongitude() {
+  const now = new Date();
+  const utcHours =
+    now.getUTCHours() + now.getUTCMinutes() / 60 + now.getUTCSeconds() / 3600;
+  const subsolarLongitude = ((utcHours * 15 + 180) % 360) - 180;
+  return subsolarLongitude;
 }
 
 function animate() {
   requestAnimationFrame(animate);
   updateControlSpeed();
-
-  const now = new Date();
-  const secondsInDay = 86400;
-  const utcSeconds =
-    now.getUTCHours() * 3600 + now.getUTCMinutes() * 60 + now.getUTCSeconds();
-  const angle = (utcSeconds / secondsInDay) * Math.PI * 2 - Math.PI;
-
-  globe.rotation.y = angle;
-
-  // Keep sunlight fixed in world space
+  const mapOffset = 90;
+  const subsolarLon = getSubsolarLongitude();
+  globe.rotation.y = THREE.MathUtils.degToRad(subsolarLon + mapOffset);
   uniforms.lightDirection.value.set(0, 0, 1);
-
   controls.update();
   renderer.render(scene, camera);
 }
