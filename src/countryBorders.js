@@ -38,14 +38,14 @@ export async function loadCountryBorders(group, globeRadius = 1.002) {
       const curve = new THREE.CatmullRomCurve3(points, true, "centripetal");
 
       // Visible border
-    //   new THREE.TubeGeometry(
-    //     path, // The curve (your border line)
-    //     tubularSegments, // How many segments along the path
-    //     radius, //  Border thickness
-    //     radialSegments, // Smoothness of the tube
-    //     closed // Whether the tube is closed
-    //   );
-      const tubeGeo = new THREE.TubeGeometry(curve, 128, 0.001, 6, false);
+      //   new THREE.TubeGeometry(
+      //     path, // The curve (your border line)
+      //     tubularSegments, // How many segments along the path
+      //     radius, //  Border thickness
+      //     radialSegments, // Smoothness of the tube
+      //     closed // Whether the tube is closed
+      //   );
+      const tubeGeo = new THREE.TubeGeometry(curve, 128, 0.001, 6, true);
 
       const borderMesh = new THREE.Mesh(tubeGeo, defaultLineMaterial.clone());
       countryGroup.add(borderMesh);

@@ -2,7 +2,7 @@
 import * as THREE from "three";
 
 export const defaultLineMaterial = new THREE.MeshBasicMaterial({
-  color: 0xcccccc, // softer light gray instead of full white
+  color: 0xcccccc, // softer light gray
   transparent: true,
   opacity: 0.5,
   depthWrite: false,

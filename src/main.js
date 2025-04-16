@@ -2,7 +2,6 @@ import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
 import { earthVertexShader, earthFragmentShader } from "./earthShaders.js";
 import { loadCountryBorders } from "./countryBorders.js";
-import { defaultLineMaterial, hoverLineMaterial } from "./materials.js";
 
 const CONFIG = {
   use8k: true,
@@ -16,7 +15,6 @@ const CONFIG = {
   polarLimits: { min: 0.01, max: Math.PI - 0.01 },
 };
 
-let markerSphere = null;
 const scene = new THREE.Scene();
 const raycaster = new THREE.Raycaster();
 raycaster.params.Mesh = { threshold: 0.02 };
@@ -51,9 +49,8 @@ window.addEventListener("resize", () => {
 });
 
 const loader = new THREE.TextureLoader();
-const resolutionSuffix = CONFIG.use8k ? "_8k.jpg" : "_4k.jpg";
-const dayTexture = loader.load(`/earth_day${resolutionSuffix}`);
-const nightTexture = loader.load(`/earth_night${resolutionSuffix}`);
+const dayTexture = loader.load(`/earth_day_8k.jpg`);
+const nightTexture = loader.load(`/earth_night_8k.jpg`);
 
 const maxAnisotropy = renderer.capabilities.getMaxAnisotropy();
 [dayTexture, nightTexture].forEach((tex) => {

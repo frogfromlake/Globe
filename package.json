@@ -12,6 +12,8 @@
     "vite": "^6.2.0"
   },
   "dependencies": {
-    "three": "^0.175.0"
+    "three": "^0.175.0",
+    "topojson-client": "^3.1.0",
+    "topojson-server": "^3.0.1"
   }
 }
