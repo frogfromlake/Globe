@@ -5,6 +5,15 @@ let imageLoaded = false;
 let currentHoveredId = -1;
 let countryNameLookup = {};
 
+export function getCountryIdAtUV(uv) {
+  if (!imageLoaded) return -1;
+
+  const x = Math.floor(uv.x * countryIdMapCanvas.width);
+  const y = Math.floor((1.0 - uv.y) * countryIdMapCanvas.height);
+  const pixel = countryIdCtx.getImageData(x, y, 1, 1).data;
+  return (pixel[0] << 16) | (pixel[1] << 8) | pixel[2];
+}
+
 export async function loadCountryIdMapTexture() {
   await Promise.all([
     new Promise((resolve) => {

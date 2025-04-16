@@ -1,10 +1,10 @@
-// main.js
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
 import { earthVertexShader, earthFragmentShader } from "./earthShaders.js";
 import {
   updateHoveredCountry,
   loadCountryIdMapTexture,
+  getCountryIdAtUV,
 } from "./countryHover.js";
 
 const CONFIG = {
@@ -69,6 +69,7 @@ const uniforms = {
   countryIdMap: { value: countryIdMapTexture },
   previousHoveredId: { value: -1 },
   hoveredCountryId: { value: -1 },
+  selectedCountryId: { value: -1 },
   uTime: { value: 0 },
   lightDirection: { value: new THREE.Vector3() },
   highlightFadeIn: { value: 0 },
@@ -95,6 +96,22 @@ scene.add(globe);
 renderer.domElement.addEventListener("pointermove", (event) => {
   pointer.x = (event.clientX / window.innerWidth) * 2 - 1;
   pointer.y = -(event.clientY / window.innerHeight) * 2 + 1;
+});
+
+renderer.domElement.addEventListener("click", () => {
+  raycaster.setFromCamera(pointer, camera);
+  const hit = raycaster.intersectObject(globe)[0];
+  if (!hit || !hit.uv) return;
+
+  const clickedId = getCountryIdAtUV(hit.uv);
+
+  if (clickedId === uniforms.selectedCountryId.value) {
+    uniforms.selectedCountryId.value = -1;
+    console.log(`Deselected country ID: ${clickedId}`);
+  } else {
+    uniforms.selectedCountryId.value = clickedId;
+    console.log(`Selected country ID: ${clickedId}`);
+  }
 });
 
 const light = new THREE.DirectionalLight(0xffffff, 1);
