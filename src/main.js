@@ -95,7 +95,7 @@ const globe = new THREE.Mesh(
   new THREE.SphereGeometry(1, 128, 128),
   globeMaterial
 );
-globe.rotation.y = 0;
+// globe.rotation.y = 0;
 scene.add(globe);
 
 renderer.domElement.addEventListener("pointermove", (event) => {
@@ -152,9 +152,33 @@ function updateControlSpeed() {
   controls.zoomSpeed = THREE.MathUtils.clamp(0.1 + normalized * 4.0, 0.1, 6.0);
 }
 
+function addMarker(lat, lon) {
+  const radius = 1.01;
+  const phi = (90 - lat) * (Math.PI / 180);
+  const theta = (lon + 90) * (Math.PI / 180);
+
+  const marker = new THREE.Mesh(
+    new THREE.SphereGeometry(0.01, 16, 16),
+    new THREE.MeshBasicMaterial({ color: 0xff0000 })
+  );
+  marker.position.setFromSphericalCoords(radius, phi, theta);
+  globe.add(marker);
+}
+
+addMarker(52.52, 13.405); // Berlin
+
+function getEarthRotationAngle(date = new Date()) {
+  const secondsInDay = 86400;
+  const utcSeconds =
+    date.getUTCHours() * 3600 +
+    date.getUTCMinutes() * 60 +
+    date.getUTCSeconds() +
+    date.getUTCMilliseconds() / 1000;
+  return (utcSeconds / secondsInDay) * Math.PI * 2;
+}
+
 function getSunDirectionUTC(date = new Date()) {
   const rad = Math.PI / 180;
-  const deg = 180 / Math.PI;
 
   const daysSinceJ2000 = (date - new Date(Date.UTC(2000, 0, 1, 12))) / 86400000;
   const meanLongitude = (280.46 + 0.9856474 * daysSinceJ2000) % 360;
@@ -170,7 +194,13 @@ function getSunDirectionUTC(date = new Date()) {
   const y = Math.cos(obliquity) * Math.sin(eclipticLongitude * rad);
   const z = Math.sin(obliquity) * Math.sin(eclipticLongitude * rad);
 
-  return new THREE.Vector3(-x, -z, y).normalize(); // flipped for Three.js coord
+  const sunDir = new THREE.Vector3(-x, -z, y).normalize(); // original direction
+
+  // 🔄 Rotate +90° around Y axis to align with globe texture
+  // const angle = THREE.MathUtils.degToRad(90);
+  // sunDir.applyAxisAngle(new THREE.Vector3(0, 1, 0), angle);
+
+  return sunDir;
 }
 
 function createSelectionTexture(maxCountries = 2048) {
@@ -267,6 +297,8 @@ function animate() {
   uniforms.highlightFadeIn.value = fadeIn;
   uniforms.highlightFadeOut.value = fadeOut;
   uniforms.cameraDirection.value.copy(camera.position).normalize();
+
+  globe.rotation.y = getEarthRotationAngle();
 
   renderer.render(scene, camera);
 }
