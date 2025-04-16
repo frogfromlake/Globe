@@ -69,13 +69,15 @@ export const earthFragmentShader = `
     float rimDot = 1.0 - max(dot(viewDir, normal), 0.0);
 
     // === Day-side rim glow ===
-    float dayRimFade = smoothstep(0.0, 1.0, pow(rimDot, 4.0)) * sharpened;
-    vec3 rimColor = mix(vec3(0.1, 0.4, 1.0), vec3(0.5, 0.85, 1.0), rimDot);
-    finalColor += rimColor * dayRimFade * 0.3;
+    float dayRimFade = smoothstep(0.0, 1.0, pow(rimDot, 5.0)) * sharpened;
+
+    // More realistic atmospheric scattering color (pale blue-white glow)
+    vec3 rimColor = mix(vec3(0.5, 0.7, 1.0), vec3(0.5, 0.8, 0.9), rimDot); // sky blue to light cream
+    finalColor += rimColor * dayRimFade * 0.4;
 
     // === Night-side dark rim fade ===
     float nightRimFade = smoothstep(0.0, 1.0, pow(rimDot, 3.5)) * (1.0 - sharpened);
-    finalColor = mix(finalColor, vec3(0.0), nightRimFade * 0.4); // darkening fade
+    finalColor = mix(finalColor, vec3(0.0), nightRimFade * 0.9); // darkening fade
 
     // Optional edge fill near day/night line
     float edgeFill = smoothstep(0.0, 0.2, sharpened);
