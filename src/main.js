@@ -1,10 +1,13 @@
+// main.js
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
 import { earthVertexShader, earthFragmentShader } from "./earthShaders.js";
-import { loadCountryBorders } from "./countryBorders.js";
+import {
+  updateHoveredCountry,
+  loadCountryIdMapTexture,
+} from "./countryHover.js";
 
 const CONFIG = {
-  use8k: true,
   zoom: { min: 1.1, max: 10 },
   speed: {
     zoomSpeedMultiplier: 0.3,
@@ -17,15 +20,7 @@ const CONFIG = {
 
 const scene = new THREE.Scene();
 const raycaster = new THREE.Raycaster();
-raycaster.params.Mesh = { threshold: 0.02 };
-raycaster.params.Line.threshold = 0.01;
 const pointer = new THREE.Vector2();
-let hoveredCountry = null;
-let countryMeshes = [];
-let countryLineMeshes = [];
-
-const borderGroup = new THREE.Group();
-scene.add(borderGroup);
 
 const camera = new THREE.PerspectiveCamera(
   75,
@@ -51,6 +46,9 @@ window.addEventListener("resize", () => {
 const loader = new THREE.TextureLoader();
 const dayTexture = loader.load(`/earth_day_8k.jpg`);
 const nightTexture = loader.load(`/earth_night_8k.jpg`);
+const countryIdMapTexture = loader.load("/country_id_map_8k.png");
+countryIdMapTexture.minFilter = THREE.NearestFilter;
+countryIdMapTexture.magFilter = THREE.NearestFilter;
 
 const maxAnisotropy = renderer.capabilities.getMaxAnisotropy();
 [dayTexture, nightTexture].forEach((tex) => {
@@ -62,6 +60,8 @@ const maxAnisotropy = renderer.capabilities.getMaxAnisotropy();
 const uniforms = {
   dayTexture: { value: dayTexture },
   nightTexture: { value: nightTexture },
+  countryIdMap: { value: countryIdMapTexture },
+  hoveredCountryId: { value: -1 },
   lightDirection: { value: new THREE.Vector3() },
 };
 
@@ -74,35 +74,13 @@ const globeMaterial = new THREE.ShaderMaterial({
   blending: THREE.NormalBlending,
 });
 
+await loadCountryIdMapTexture();
+
 const globe = new THREE.Mesh(
   new THREE.SphereGeometry(1, 128, 128),
   globeMaterial
 );
 scene.add(globe);
-
-let using8k = CONFIG.use8k;
-
-document.getElementById("toggleResolution").addEventListener("click", () => {
-  using8k = !using8k;
-  const suffix = using8k ? "_8k.jpg" : "_4k.jpg";
-  document.getElementById("toggleResolution").textContent = using8k
-    ? "Switch to 4K"
-    : "Switch to 8K";
-  const newDay = loader.load(`/earth_day${suffix}`, (texture) => {
-    texture.anisotropy = maxAnisotropy;
-    globeMaterial.uniforms.dayTexture.value = texture;
-  });
-  const newNight = loader.load(`/earth_night${suffix}`, (texture) => {
-    texture.anisotropy = maxAnisotropy;
-    globeMaterial.uniforms.nightTexture.value = texture;
-  });
-});
-
-document.getElementById("toggleBorders").addEventListener("click", async () => {
-  const { countryGroups, lineMeshes } = await loadCountryBorders(borderGroup);
-  countryMeshes = countryGroups;
-  countryLineMeshes = lineMeshes;
-});
 
 renderer.domElement.addEventListener("pointermove", (event) => {
   pointer.x = (event.clientX / window.innerWidth) * 2 - 1;
@@ -145,58 +123,18 @@ function getSubsolarLongitude() {
 
 function animate() {
   requestAnimationFrame(animate);
+
   updateControlSpeed();
 
   const mapOffset = 90;
   const subsolarLon = getSubsolarLongitude();
   globe.rotation.y = THREE.MathUtils.degToRad(subsolarLon + mapOffset);
-  borderGroup.rotation.y = globe.rotation.y;
   uniforms.lightDirection.value.set(0, 0, 1);
 
   controls.update();
-  raycaster.setFromCamera(pointer, camera);
-  const globeHit = raycaster.intersectObject(globe, true)[0];
 
-  if (globeHit) {
-    const intersects = raycaster.intersectObjects(countryLineMeshes, true);
-
-    for (let i = 0; i < intersects.length; i++) {
-      const intersect = intersects[i];
-      const hitPoint = intersect.point;
-      const distance = globeHit.point.distanceTo(hitPoint);
-
-      if (distance < 0.02) {
-        const newCountry = intersect.object.parent;
-        if (
-          newCountry &&
-          newCountry.userData.isCountry &&
-          (!hoveredCountry || newCountry !== hoveredCountry)
-        ) {
-          // Reset previous hovered country border color
-          if (hoveredCountry) {
-            hoveredCountry.children.forEach((child) => {
-              if (child.visible && child.material) {
-                child.material.color.set(0xffffff);
-                child.material.opacity = 0.9;
-              }
-            });
-          }
-
-          // Set new hovered country border color
-          hoveredCountry = newCountry;
-          hoveredCountry.children.forEach((child) => {
-            if (child.visible && child.material) {
-              child.material.color.set(0x3399ff); // bright blue
-              child.material.opacity = 1.0;
-            }
-          });
-
-          console.log("Hovering:", hoveredCountry.userData.name);
-        }
-
-        break;
-      }
-    }
+  if (globeMaterial) {
+    updateHoveredCountry(raycaster, pointer, camera, globe, globeMaterial);
   }
 
   renderer.render(scene, camera);
