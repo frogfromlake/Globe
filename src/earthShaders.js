@@ -24,7 +24,7 @@ export const earthFragmentShader = `
   uniform float highlightFadeOut;
   uniform float uTime;
   uniform vec3 lightDirection;
-  uniform int selectedCountryId;
+  uniform sampler2D selectedMask;
 
   varying vec2 vUv;
   varying vec3 vWorldNormal;
@@ -50,8 +50,6 @@ export const earthFragmentShader = `
 
     vec3 highlightColor = vec3(0.2, 0.95, 1.0);
 
-    bool isSelected = (selectedCountryId > 0) && (abs(countryIdValue - float(selectedCountryId)) < tolerance);
-
     if (isHovered) {
       float pulse = 0.5 + 0.5 * sin(uTime * 2.5);
       float fresnel = pow(1.0 - dot(normalize(vViewDirection), normalize(vWorldNormal)), 2.5);
@@ -72,14 +70,20 @@ export const earthFragmentShader = `
       finalColor += halo;
     }
 
-    if (isSelected) {
+    float selectedIndex = clamp(countryIdValue, 0.0, 2047.0);
+    vec2 lookupUV = vec2((selectedIndex + 0.5) / 2048.0, 0.5);
+    float selectedFade = texture2D(selectedMask, lookupUV).r;
+
+    if (selectedFade > 0.0) {
       float fresnel = pow(1.0 - dot(normalize(vViewDirection), normalize(vWorldNormal)), 2.5);
-      vec3 halo = highlightColor * fresnel * 0.6;
-      finalColor = mix(finalColor, highlightColor, 0.35);
+      float pulse = 0.5 + 0.5 * sin(uTime * 2.0);
+      float glowAmount = fresnel * pulse;
+
+      vec3 halo = highlightColor * glowAmount * selectedFade;
+      finalColor = mix(finalColor, highlightColor, 0.35 * selectedFade);
       finalColor += halo;
     }
 
     gl_FragColor = vec4(finalColor, 1.0);
-
   }
 `;

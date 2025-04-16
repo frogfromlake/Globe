@@ -34,6 +34,7 @@ const renderer = new THREE.WebGLRenderer({
   canvas: document.getElementById("globe"),
   antialias: true,
 });
+renderer.debug.checkShaderErrors = true;
 renderer.outputEncoding = THREE.sRGBEncoding;
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.setPixelRatio(window.devicePixelRatio);
@@ -63,17 +64,19 @@ const maxAnisotropy = renderer.capabilities.getMaxAnisotropy();
   tex.anisotropy = maxAnisotropy;
 });
 
+const selectedCountryMask = createSelectionTexture();
+
 const uniforms = {
   dayTexture: { value: dayTexture },
   nightTexture: { value: nightTexture },
   countryIdMap: { value: countryIdMapTexture },
   previousHoveredId: { value: -1 },
   hoveredCountryId: { value: -1 },
-  selectedCountryId: { value: -1 },
   uTime: { value: 0 },
   lightDirection: { value: new THREE.Vector3() },
   highlightFadeIn: { value: 0 },
   highlightFadeOut: { value: 0 },
+  selectedMask: { value: selectedCountryMask },
 };
 
 const globeMaterial = new THREE.ShaderMaterial({
@@ -98,20 +101,26 @@ renderer.domElement.addEventListener("pointermove", (event) => {
   pointer.y = -(event.clientY / window.innerHeight) * 2 + 1;
 });
 
+const selectedData = selectedCountryMask.image.data;
+
+let lastClickTime = 0;
+
 renderer.domElement.addEventListener("click", () => {
+  const now = performance.now();
+  if (now - lastClickTime < 200) return; // 200ms debounce
+  lastClickTime = now;
+
   raycaster.setFromCamera(pointer, camera);
   const hit = raycaster.intersectObject(globe)[0];
   if (!hit || !hit.uv) return;
 
   const clickedId = getCountryIdAtUV(hit.uv);
+  if (clickedId <= 0 || clickedId >= selectedFlags.length) return;
 
-  if (clickedId === uniforms.selectedCountryId.value) {
-    uniforms.selectedCountryId.value = -1;
-    console.log(`Deselected country ID: ${clickedId}`);
-  } else {
-    uniforms.selectedCountryId.value = clickedId;
-    console.log(`Selected country ID: ${clickedId}`);
-  }
+  selectedFlags[clickedId] = selectedFlags[clickedId] === 1 ? 0 : 1;
+
+  const state = selectedFlags[clickedId] === 1 ? "Selected" : "Deselected";
+  console.log(`${state} country ID: ${clickedId}`);
 });
 
 const light = new THREE.DirectionalLight(0xffffff, 1);
@@ -148,12 +157,33 @@ function getSubsolarLongitude() {
   return ((utcHours * 15 + 180) % 360) - 180;
 }
 
+function createSelectionTexture(maxCountries = 2048) {
+  const data = new Uint8Array(maxCountries); // 1 byte per country
+  const texture = new THREE.DataTexture(
+    data,
+    maxCountries,
+    1,
+    THREE.RedFormat,
+    THREE.UnsignedByteType
+  );
+  texture.minFilter = THREE.NearestFilter;
+  texture.magFilter = THREE.NearestFilter;
+  texture.wrapS = THREE.ClampToEdgeWrapping;
+  texture.wrapT = THREE.ClampToEdgeWrapping;
+  texture.needsUpdate = true;
+  return texture;
+}
+
 let fadeIn = 0;
 let fadeOut = 0;
 let currentHoveredId = -1;
 let previousHoveredId = -1;
 const highlightFadeSpeed = 3.0;
+const selectionFadeSpeed = 1.5;
 let lastFrameTime = performance.now();
+
+const selectedFadeIn = new Float32Array(selectedData.length).fill(0);
+const selectedFlags = new Uint8Array(selectedData.length).fill(0);
 
 function animate() {
   requestAnimationFrame(animate);
@@ -199,6 +229,26 @@ function animate() {
     if (fadeOut < 0) fadeOut = 0;
   }
 
+  // Selection animation update
+  for (let i = 0; i < selectedData.length; i++) {
+    const isSelected = selectedFlags[i] === 1;
+    if (isSelected) {
+      selectedFadeIn[i] += delta * selectionFadeSpeed;
+      if (selectedFadeIn[i] > 1) selectedFadeIn[i] = 1;
+    } else {
+      selectedFadeIn[i] -= delta * selectionFadeSpeed;
+      if (selectedFadeIn[i] < 0) selectedFadeIn[i] = 0;
+    }
+  }
+
+  // Update texture with selection fades
+  const texData = selectedCountryMask.image.data;
+  for (let i = 0; i < texData.length; i++) {
+    texData[i] = Math.floor(selectedFadeIn[i] * 255);
+  }
+  selectedCountryMask.needsUpdate = true;
+
+  // Pass hover states to shader
   uniforms.hoveredCountryId.value = currentHoveredId;
   uniforms.previousHoveredId.value = previousHoveredId;
   uniforms.highlightFadeIn.value = fadeIn;
