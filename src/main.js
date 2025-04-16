@@ -8,7 +8,7 @@ import {
 } from "./countryHover.js";
 
 const CONFIG = {
-  zoom: { min: 1.3, max: 10 },
+  zoom: { min: 1.1, max: 10 },
   speed: {
     zoomSpeedMultiplier: 0.3,
     rotateSpeedBase: 0.25,
@@ -77,6 +77,7 @@ const uniforms = {
   highlightFadeIn: { value: 0 },
   highlightFadeOut: { value: 0 },
   selectedMask: { value: selectedCountryMask },
+  cameraDirection: { value: new THREE.Vector3() },
 };
 
 const globeMaterial = new THREE.ShaderMaterial({
@@ -94,6 +95,7 @@ const globe = new THREE.Mesh(
   new THREE.SphereGeometry(1, 128, 128),
   globeMaterial
 );
+globe.rotation.y = 0;
 scene.add(globe);
 
 renderer.domElement.addEventListener("pointermove", (event) => {
@@ -150,11 +152,25 @@ function updateControlSpeed() {
   controls.zoomSpeed = THREE.MathUtils.clamp(0.1 + normalized * 4.0, 0.1, 6.0);
 }
 
-function getSubsolarLongitude() {
-  const now = new Date();
-  const utcHours =
-    now.getUTCHours() + now.getUTCMinutes() / 60 + now.getUTCSeconds() / 3600;
-  return ((utcHours * 15 + 180) % 360) - 180;
+function getSunDirectionUTC(date = new Date()) {
+  const rad = Math.PI / 180;
+  const deg = 180 / Math.PI;
+
+  const daysSinceJ2000 = (date - new Date(Date.UTC(2000, 0, 1, 12))) / 86400000;
+  const meanLongitude = (280.46 + 0.9856474 * daysSinceJ2000) % 360;
+  const meanAnomaly = (357.528 + 0.9856003 * daysSinceJ2000) % 360;
+
+  const eclipticLongitude =
+    meanLongitude +
+    1.915 * Math.sin(meanAnomaly * rad) +
+    0.02 * Math.sin(2 * meanAnomaly * rad);
+  const obliquity = 23.439 * rad;
+
+  const x = Math.cos(eclipticLongitude * rad);
+  const y = Math.cos(obliquity) * Math.sin(eclipticLongitude * rad);
+  const z = Math.sin(obliquity) * Math.sin(eclipticLongitude * rad);
+
+  return new THREE.Vector3(-x, -z, y).normalize(); // flipped for Three.js coord
 }
 
 function createSelectionTexture(maxCountries = 2048) {
@@ -195,10 +211,7 @@ function animate() {
 
   updateControlSpeed();
 
-  const mapOffset = 90;
-  const subsolarLon = getSubsolarLongitude();
-  globe.rotation.y = THREE.MathUtils.degToRad(subsolarLon + mapOffset);
-  uniforms.lightDirection.value.set(0, 0, 1);
+  uniforms.lightDirection.value.copy(getSunDirectionUTC());
 
   controls.update();
 
@@ -253,6 +266,7 @@ function animate() {
   uniforms.previousHoveredId.value = previousHoveredId;
   uniforms.highlightFadeIn.value = fadeIn;
   uniforms.highlightFadeOut.value = fadeOut;
+  uniforms.cameraDirection.value.copy(camera.position).normalize();
 
   renderer.render(scene, camera);
 }
