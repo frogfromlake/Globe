@@ -19,7 +19,12 @@ export const earthFragmentShader = `
   uniform sampler2D nightTexture;
   uniform sampler2D countryIdMap;
   uniform int hoveredCountryId;
+  uniform int previousHoveredId;
+  uniform float highlightFadeIn;
+  uniform float highlightFadeOut;
+  uniform float uTime;
   uniform vec3 lightDirection;
+
   varying vec2 vUv;
   varying vec3 vWorldNormal;
   varying vec3 vViewDirection;
@@ -27,30 +32,41 @@ export const earthFragmentShader = `
   void main() {
     float intensity = dot(normalize(vWorldNormal), normalize(lightDirection));
     float normalized = intensity * 0.5 + 0.5;
-    float transitionWidth = 0.05;
-    float sharpened = smoothstep(0.5 - transitionWidth, 0.5 + transitionWidth, normalized);
+    float sharpened = smoothstep(0.45, 0.55, normalized);
+
     vec4 dayColor = texture2D(dayTexture, vUv);
     vec4 nightColor = texture2D(nightTexture, vUv);
-    vec3 finalColor = mix(nightColor.rgb, dayColor.rgb, sharpened);
-
-    float rim = 1.0 - dot(normalize(vViewDirection), normalize(vWorldNormal));
-    rim = smoothstep(0.3, 0.7, rim);
-    float daySide = smoothstep(0.0, 0.2, intensity);
-    float glowFactor = rim * daySide;
+    vec3 baseColor = mix(nightColor.rgb, dayColor.rgb, sharpened);
+    vec3 finalColor = baseColor;
 
     vec2 flippedUv = vec2(vUv.x, 1.0 - vUv.y);
     vec3 encoded = texture2D(countryIdMap, flippedUv).rgb;
     float countryIdValue = encoded.r * 255.0 * 65536.0 + encoded.g * 255.0 * 256.0 + encoded.b * 255.0;
 
     float tolerance = 0.5;
-    bool isHovered = abs(countryIdValue - float(hoveredCountryId)) < tolerance && hoveredCountryId > 0;
+    bool isHovered = (hoveredCountryId > 0) && (abs(countryIdValue - float(hoveredCountryId)) < tolerance);
+    bool isPrevious = (previousHoveredId > 0) && (abs(countryIdValue - float(previousHoveredId)) < tolerance);
 
-    vec3 glowColor = vec3(0.2, 0.95, 1.0) * glowFactor * 0.4;
     vec3 highlightColor = vec3(0.2, 0.95, 1.0);
 
     if (isHovered) {
-      finalColor = mix(finalColor, highlightColor, 0.6);
-      finalColor += glowColor;
+      float pulse = 0.5 + 0.5 * sin(uTime * 2.5);
+      float fresnel = pow(1.0 - dot(normalize(vViewDirection), normalize(vWorldNormal)), 2.5);
+      float glowAmount = fresnel * pulse;
+
+      vec3 halo = highlightColor * glowAmount * highlightFadeIn;
+      finalColor = mix(finalColor, highlightColor, 0.4 * highlightFadeIn);
+      finalColor += halo;
+    }
+
+    if (isPrevious) {
+      float pulse = 0.5 + 0.5 * sin(uTime * 2.5);
+      float fresnel = pow(1.0 - dot(normalize(vViewDirection), normalize(vWorldNormal)), 2.5);
+      float glowAmount = fresnel * pulse;
+
+      vec3 halo = highlightColor * glowAmount * highlightFadeOut;
+      finalColor = mix(finalColor, highlightColor, 0.4 * highlightFadeOut);
+      finalColor += halo;
     }
 
     gl_FragColor = vec4(finalColor, 1.0);

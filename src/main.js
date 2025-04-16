@@ -67,8 +67,12 @@ const uniforms = {
   dayTexture: { value: dayTexture },
   nightTexture: { value: nightTexture },
   countryIdMap: { value: countryIdMapTexture },
+  previousHoveredId: { value: -1 },
   hoveredCountryId: { value: -1 },
+  uTime: { value: 0 },
   lightDirection: { value: new THREE.Vector3() },
+  highlightFadeIn: { value: 0 },
+  highlightFadeOut: { value: 0 },
 };
 
 const globeMaterial = new THREE.ShaderMaterial({
@@ -127,8 +131,20 @@ function getSubsolarLongitude() {
   return ((utcHours * 15 + 180) % 360) - 180;
 }
 
+let fadeIn = 0;
+let fadeOut = 0;
+let currentHoveredId = -1;
+let previousHoveredId = -1;
+const highlightFadeSpeed = 3.0;
+let lastFrameTime = performance.now();
+
 function animate() {
   requestAnimationFrame(animate);
+
+  const now = performance.now();
+  const delta = (now - lastFrameTime) / 1000;
+  lastFrameTime = now;
+  uniforms.uTime.value = now / 1000;
 
   updateControlSpeed();
 
@@ -139,9 +155,37 @@ function animate() {
 
   controls.update();
 
-  if (globeMaterial) {
-    updateHoveredCountry(raycaster, pointer, camera, globe, globeMaterial);
+  const newId = updateHoveredCountry(
+    raycaster,
+    pointer,
+    camera,
+    globe,
+    globeMaterial
+  );
+
+  if (newId !== currentHoveredId) {
+    previousHoveredId = currentHoveredId;
+    fadeOut = fadeIn;
+    fadeIn = 0;
+    currentHoveredId = newId;
   }
+
+  if (currentHoveredId > 0) {
+    fadeIn += delta * highlightFadeSpeed;
+    if (fadeIn > 1) fadeIn = 1;
+  } else {
+    fadeIn = 0;
+  }
+
+  if (fadeOut > 0) {
+    fadeOut -= delta * highlightFadeSpeed;
+    if (fadeOut < 0) fadeOut = 0;
+  }
+
+  uniforms.hoveredCountryId.value = currentHoveredId;
+  uniforms.previousHoveredId.value = previousHoveredId;
+  uniforms.highlightFadeIn.value = fadeIn;
+  uniforms.highlightFadeOut.value = fadeOut;
 
   renderer.render(scene, camera);
 }

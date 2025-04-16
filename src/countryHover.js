@@ -35,24 +35,24 @@ export function updateHoveredCountry(
   globe,
   globeMaterial
 ) {
-  if (!imageLoaded) return;
+  if (!imageLoaded) return -1;
 
   raycaster.setFromCamera(pointer, camera);
   const hit = raycaster.intersectObject(globe)[0];
-  if (!hit || !hit.uv) return;
+  if (!hit || !hit.uv) return -1;
 
   const uv = hit.uv;
   const x = Math.floor(uv.x * countryIdMapCanvas.width);
   const y = Math.floor((1.0 - uv.y) * countryIdMapCanvas.height);
-
   const pixel = countryIdCtx.getImageData(x, y, 1, 1).data;
   const countryId = (pixel[0] << 16) | (pixel[1] << 8) | pixel[2];
 
-  if (countryId !== currentHoveredId) {
-    currentHoveredId = countryId;
-    globeMaterial.uniforms.hoveredCountryId.value = countryId;
+  globeMaterial.uniforms.hoveredCountryId.value = countryId;
 
+  if (countryId !== currentHoveredId) {
     const name = countryNameLookup[countryId] || "(unknown)";
     console.log(`Hovering country ID: ${countryId} (${name})`);
   }
+
+  return countryId;
 }
