@@ -8,7 +8,7 @@ import {
 } from "./countryHover.js";
 
 const CONFIG = {
-  zoom: { min: 1.1, max: 10 },
+  zoom: { min: 1.3, max: 10 },
   speed: {
     zoomSpeedMultiplier: 0.3,
     rotateSpeedBase: 0.25,
