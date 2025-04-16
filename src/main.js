@@ -34,6 +34,7 @@ const renderer = new THREE.WebGLRenderer({
   canvas: document.getElementById("globe"),
   antialias: true,
 });
+renderer.outputEncoding = THREE.sRGBEncoding;
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.setPixelRatio(window.devicePixelRatio);
 
@@ -46,9 +47,14 @@ window.addEventListener("resize", () => {
 const loader = new THREE.TextureLoader();
 const dayTexture = loader.load(`/earth_day_8k.jpg`);
 const nightTexture = loader.load(`/earth_night_8k.jpg`);
-const countryIdMapTexture = loader.load("/country_id_map_8k.png");
-countryIdMapTexture.minFilter = THREE.NearestFilter;
-countryIdMapTexture.magFilter = THREE.NearestFilter;
+const countryIdMapTexture = loader.load("/country_id_map_8k_rgb.png", (tex) => {
+  tex.encoding = THREE.LinearEncoding;
+  tex.magFilter = THREE.NearestFilter;
+  tex.minFilter = THREE.NearestFilter;
+  tex.generateMipmaps = false;
+  tex.flipY = false;
+  tex.needsUpdate = true;
+});
 
 const maxAnisotropy = renderer.capabilities.getMaxAnisotropy();
 [dayTexture, nightTexture].forEach((tex) => {

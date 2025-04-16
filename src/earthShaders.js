@@ -31,20 +31,28 @@ export const earthFragmentShader = `
     float sharpened = smoothstep(0.5 - transitionWidth, 0.5 + transitionWidth, normalized);
     vec4 dayColor = texture2D(dayTexture, vUv);
     vec4 nightColor = texture2D(nightTexture, vUv);
-    vec4 baseColor = mix(nightColor, dayColor, sharpened);
     vec3 finalColor = mix(nightColor.rgb, dayColor.rgb, sharpened);
 
     float rim = 1.0 - dot(normalize(vViewDirection), normalize(vWorldNormal));
     rim = smoothstep(0.3, 0.7, rim);
     float daySide = smoothstep(0.0, 0.2, intensity);
     float glowFactor = rim * daySide;
-    vec3 glowColor = vec3(0.4, 0.6, 1.0) * glowFactor * 0.1;
 
-    float countryIdValue = texture2D(countryIdMap, vUv).r * 999.0;
-    float idMatch = float(hoveredCountryId > 0) * step(0.5, 1.0 - abs(countryIdValue - float(hoveredCountryId)));
-    vec3 highlightColor = vec3(1.0, 0.7, 0.3);
-    finalColor = mix(finalColor, highlightColor, idMatch * 0.4);
+    vec2 flippedUv = vec2(vUv.x, 1.0 - vUv.y);
+    vec3 encoded = texture2D(countryIdMap, flippedUv).rgb;
+    float countryIdValue = encoded.r * 255.0 * 65536.0 + encoded.g * 255.0 * 256.0 + encoded.b * 255.0;
 
-    gl_FragColor = vec4(finalColor + glowColor, 1.0);
+    float tolerance = 0.5;
+    bool isHovered = abs(countryIdValue - float(hoveredCountryId)) < tolerance && hoveredCountryId > 0;
+
+    vec3 glowColor = vec3(0.2, 0.95, 1.0) * glowFactor * 0.4;
+    vec3 highlightColor = vec3(0.2, 0.95, 1.0);
+
+    if (isHovered) {
+      finalColor = mix(finalColor, highlightColor, 0.6);
+      finalColor += glowColor;
+    }
+
+    gl_FragColor = vec4(finalColor, 1.0);
   }
 `;
