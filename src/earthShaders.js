@@ -24,6 +24,7 @@ export const earthFragmentShader = `
   uniform float highlightFadeOut;
   uniform float uTime;
   uniform vec3 lightDirection;
+  uniform int selectedCountryId;
   uniform sampler2D selectedMask;
 
   varying vec2 vUv;
@@ -71,16 +72,14 @@ export const earthFragmentShader = `
     }
 
     float selectedIndex = clamp(countryIdValue, 0.0, 2047.0);
-    vec2 lookupUV = vec2((selectedIndex + 0.5) / 2048.0, 0.5);
-    float selectedFade = texture2D(selectedMask, lookupUV).r;
+    vec2 lookupUV = vec2((selectedIndex + 0.5) / 2048.0, 0.5); // center of texel
+    float selected = texture2D(selectedMask, lookupUV).r;
+    bool isSelected = selected > 0.5;
 
-    if (selectedFade > 0.0) {
+    if (isSelected) {
       float fresnel = pow(1.0 - dot(normalize(vViewDirection), normalize(vWorldNormal)), 2.5);
-      float pulse = 0.5 + 0.5 * sin(uTime * 2.0);
-      float glowAmount = fresnel * pulse;
-
-      vec3 halo = highlightColor * glowAmount * selectedFade;
-      finalColor = mix(finalColor, highlightColor, 0.35 * selectedFade);
+      vec3 halo = highlightColor * fresnel * 0.6;
+      finalColor = mix(finalColor, highlightColor, 0.35);
       finalColor += halo;
     }
 

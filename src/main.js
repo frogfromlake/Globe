@@ -178,8 +178,8 @@ let fadeIn = 0;
 let fadeOut = 0;
 let currentHoveredId = -1;
 let previousHoveredId = -1;
-const highlightFadeSpeed = 3.0;
-const selectionFadeSpeed = 1.5;
+const highlightFadeSpeed = 2.5;
+const selectionFadeSpeed = 3.5;
 let lastFrameTime = performance.now();
 
 const selectedFadeIn = new Float32Array(selectedData.length).fill(0);
