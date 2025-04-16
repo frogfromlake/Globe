@@ -41,7 +41,7 @@ export const earthFragmentShader = `
     // Daylight calculation
     float intensity = dot(normalize(vWorldNormal), normalize(lightDirection));
     float normalized = intensity * 0.5 + 0.5;
-    float sharpened = smoothstep(0.45, 0.55, normalized);
+    float sharpened = smoothstep(0.475, 0.525, normalized);
 
     // Textures
     vec4 dayColor = texture2D(dayTexture, vUv);
