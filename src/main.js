@@ -21,6 +21,9 @@ const CONFIG = {
 const scene = new THREE.Scene();
 const raycaster = new THREE.Raycaster();
 const pointer = new THREE.Vector2();
+let userMarker = null;
+let userLat = null;
+let userLon = null;
 
 const camera = new THREE.PerspectiveCamera(
   75,
@@ -152,20 +155,55 @@ function updateControlSpeed() {
   controls.zoomSpeed = THREE.MathUtils.clamp(0.1 + normalized * 4.0, 0.1, 6.0);
 }
 
-function addMarker(lat, lon) {
+function addMarker(lat, lon, color = 0xff0000) {
   const radius = 1.01;
   const phi = (90 - lat) * (Math.PI / 180);
   const theta = (lon + 90) * (Math.PI / 180);
 
   const marker = new THREE.Mesh(
     new THREE.SphereGeometry(0.01, 16, 16),
-    new THREE.MeshBasicMaterial({ color: 0xff0000 })
+    new THREE.MeshBasicMaterial({ color })
   );
   marker.position.setFromSphericalCoords(radius, phi, theta);
   globe.add(marker);
 }
 
-addMarker(52.52, 13.405); // Berlin
+function addUserLocationMarker(color = 0x00ff00) {
+  if (!("geolocation" in navigator)) {
+    console.warn("Geolocation is not supported by this browser.");
+    return;
+  }
+
+  navigator.geolocation.getCurrentPosition(
+    (position) => {
+      userLat = position.coords.latitude;
+      userLon = position.coords.longitude;
+
+      // Create marker at fixed lat/lon
+      const radius = 1.01;
+      const phi = (90 - userLat) * (Math.PI / 180);
+      const theta = (userLon + 90) * (Math.PI / 180);
+
+      userMarker = new THREE.Mesh(
+        new THREE.SphereGeometry(0.01, 16, 16),
+        new THREE.MeshBasicMaterial({ color })
+      );
+      userMarker.position.setFromSphericalCoords(radius, phi, theta);
+
+      globe.add(userMarker);
+
+      console.log(`📍 User marker at lat: ${userLat}, lon: ${userLon}`);
+    },
+    (error) => {
+      console.warn("Geolocation error:", error.message);
+    },
+    {
+      enableHighAccuracy: true,
+      timeout: 5000,
+      maximumAge: 0,
+    }
+  );
+}
 
 function getEarthRotationAngle(date = new Date()) {
   const secondsInDay = 86400;
@@ -230,6 +268,68 @@ let lastFrameTime = performance.now();
 
 const selectedFadeIn = new Float32Array(selectedData.length).fill(0);
 const selectedFlags = new Uint8Array(selectedData.length).fill(0);
+
+// Set up location button
+const locationBtn = document.getElementById("show-location");
+
+if (!("geolocation" in navigator)) {
+  locationBtn.style.display = "none";
+} else {
+  let locationVisible = false;
+
+  locationBtn.addEventListener("click", () => {
+    if (locationVisible) {
+      // Hide marker
+      if (userMarker) {
+        globe.remove(userMarker);
+        userMarker.geometry.dispose();
+        userMarker.material.dispose();
+        userMarker = null;
+      }
+      userLat = null;
+      userLon = null;
+      locationBtn.textContent = "Show My Location";
+      locationVisible = false;
+    } else {
+      locationBtn.disabled = true;
+      locationBtn.textContent = "Locating...";
+
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          userLat = position.coords.latitude;
+          userLon = position.coords.longitude;
+
+          const radius = 1.01;
+          const phi = (90 - userLat) * (Math.PI / 180);
+          const theta = (userLon + 90) * (Math.PI / 180);
+
+          userMarker = new THREE.Mesh(
+            new THREE.SphereGeometry(0.01, 16, 16),
+            new THREE.MeshBasicMaterial({ color: 0x00ff00 })
+          );
+          userMarker.position.setFromSphericalCoords(radius, phi, theta);
+          globe.add(userMarker);
+
+          locationBtn.disabled = false;
+          locationBtn.textContent = "Hide My Location";
+          locationVisible = true;
+
+          console.log(`📍 User marker at lat: ${userLat}, lon: ${userLon}`);
+        },
+        (error) => {
+          console.warn("Geolocation error:", error.message);
+          locationBtn.disabled = false;
+          locationBtn.textContent = "Show My Location";
+        },
+        {
+          enableHighAccuracy: true,
+          timeout: 5000,
+          maximumAge: 0,
+        }
+      );
+    }
+  });
+}
 
 function animate() {
   requestAnimationFrame(animate);
