@@ -8,7 +8,7 @@ import {
   getCountryIdAtUV,
   initCountryLabel,
   updateCountryLabel,
-  hideCountryLabel,
+  hideAllLabelsExcept,
 } from "./countryHover.js";
 
 const CONFIG = {
@@ -28,6 +28,7 @@ const pointer = new THREE.Vector2();
 let userMarker = null;
 let userLat = null;
 let userLon = null;
+const selectedCountryIds = new Set();
 
 const camera = new THREE.PerspectiveCamera(
   75,
@@ -119,7 +120,7 @@ let lastClickTime = 0;
 
 renderer.domElement.addEventListener("click", () => {
   const now = performance.now();
-  if (now - lastClickTime < 200) return; // 200ms debounce
+  if (now - lastClickTime < 200) return;
   lastClickTime = now;
 
   raycaster.setFromCamera(pointer, camera);
@@ -129,7 +130,13 @@ renderer.domElement.addEventListener("click", () => {
   const clickedId = getCountryIdAtUV(hit.uv);
   if (clickedId <= 0 || clickedId >= selectedFlags.length) return;
 
-  selectedFlags[clickedId] = selectedFlags[clickedId] === 1 ? 0 : 1;
+  if (selectedCountryIds.has(clickedId)) {
+    selectedCountryIds.delete(clickedId);
+    selectedFlags[clickedId] = 0;
+  } else {
+    selectedCountryIds.add(clickedId);
+    selectedFlags[clickedId] = 1;
+  }
 
   const state = selectedFlags[clickedId] === 1 ? "Selected" : "Deselected";
   console.log(`${state} country ID: ${clickedId}`);
@@ -370,10 +377,23 @@ function animate() {
   if (currentHoveredId > 0) {
     fadeIn += delta * highlightFadeSpeed;
     if (fadeIn > 1) fadeIn = 1;
+  }
+
+  // Always clear all but active labels
+  hideAllLabelsExcept(
+    [...selectedCountryIds, currentHoveredId].filter((id) => id > 0)
+  );
+
+  // Update hovered label
+  if (currentHoveredId > 0) {
     updateCountryLabel(currentHoveredId, getEarthRotationAngle());
-  } else {
-    fadeIn = 0;
-    hideCountryLabel();
+  }
+
+  // Update all selected labels
+  for (const selectedId of selectedCountryIds) {
+    if (selectedId !== currentHoveredId) {
+      updateCountryLabel(selectedId, getEarthRotationAngle());
+    }
   }
 
   if (fadeOut > 0) {
