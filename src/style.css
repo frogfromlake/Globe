@@ -35,7 +35,7 @@ canvas {
 
 .label {
   position: absolute;
-  color: rgba(220, 235, 255, 0.95); /* soft light blue text for contrast */
+  color: rgb(143, 199, 255); /* soft light blue text for contrast */
   font-family: 'Orbitron', sans-serif;
   font-size: 1.1rem;
   padding: 4px 10px;

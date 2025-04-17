@@ -27,6 +27,11 @@ export const earthFragmentShader = `
   uniform int selectedCountryId;
   uniform sampler2D selectedMask;
   uniform vec3 cameraDirection;
+  uniform float cityLightStrength;
+  uniform vec3 cursorWorldPos;
+  uniform float cursorGlowStrength;
+  uniform float cursorGlowRadius;
+  uniform vec2 cursorUV;
 
   varying vec2 vUv;
   varying vec3 vWorldNormal;
@@ -41,7 +46,8 @@ export const earthFragmentShader = `
     // Daylight calculation
     float intensity = dot(normalize(vWorldNormal), normalize(lightDirection));
     float normalized = intensity * 0.5 + 0.5;
-    float sharpened = smoothstep(0.475, 0.525, normalized);
+    // float sharpened = smoothstep(0.475, 0.525, normalized);
+    float sharpened = smoothstep(0.42, 0.58, normalized);
 
     // Textures
     vec4 dayColor = texture2D(dayTexture, vUv);
@@ -57,9 +63,23 @@ export const earthFragmentShader = `
     vec3 desaturatedDay = vec3(dot(boostedDay, vec3(0.299, 0.587, 0.114)));
     boostedDay = mix(desaturatedDay, boostedDay, 1.1);
 
-    // Blend with darkened night texture
-    vec3 darkenedNight = nightColor.rgb * 0.9;
-    vec3 baseColor = mix(darkenedNight, boostedDay, sharpened);
+    // Tone down night base and hue shift toward neutral
+    const float desaturationFactor = 0.5; // 0.0 = original color, 1.0 = full grayscale
+
+    vec3 nightOriginal = nightColor.rgb;
+    float nightGray = dot(nightOriginal, vec3(0.299, 0.587, 0.114));
+    vec3 tonedNight = mix(nightOriginal, vec3(nightGray), desaturationFactor);
+
+    // Add city lights glow on top
+    // Slight warm yellow tint for city lights
+    vec3 lightTint = vec3(1.1, 1.0, 0.85); // Warm tone
+
+    // Reduce brightness by multiplying the strength (try 0.5–0.7)
+    vec3 cityGlow = nightColor.rgb * lightTint * cityLightStrength * 0.035 * (1.0 - sharpened);
+    vec3 nightBlended = tonedNight + cityGlow;
+
+    // Final blended color based on day/night
+    vec3 baseColor = mix(nightBlended, boostedDay, sharpened);
 
     // Gamma correction
     vec3 finalColor = pow(baseColor, vec3(0.9));
@@ -128,6 +148,16 @@ export const earthFragmentShader = `
       finalColor = mix(finalColor, highlightColor, 0.35);
       finalColor += halo;
     }
+
+    // === Cursor glow on night side ===
+    float distToCursor = distance(normalize(vWorldNormal), normalize(cursorWorldPos));
+    float cursorFalloff = smoothstep(cursorGlowRadius, 0.0, distToCursor);
+    vec3 cursorGlowColor = vec3(0.6, 0.7, 1.0); // soft blue
+
+    // Multiply with night factor so glow only appears at night
+    float nightFactor = 1.0 - sharpened;
+    
+    finalColor += cursorGlowColor * cursorFalloff * nightFactor * cursorGlowStrength;
 
     gl_FragColor = vec4(finalColor, 1.0);
   }

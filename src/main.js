@@ -86,6 +86,11 @@ const uniforms = {
   highlightFadeOut: { value: 0 },
   selectedMask: { value: selectedCountryMask },
   cameraDirection: { value: new THREE.Vector3() },
+  cityLightStrength: { value: 0.5 }, // Adjust between 0.0 and ~2.0 for effect
+  cursorWorldPos: { value: new THREE.Vector3(0, 0, 0) },
+  cursorGlowStrength: { value: 0.1 },
+  cursorGlowRadius: { value: 0.4 },
+  cursorUV: { value: new THREE.Vector2(-1, -1) }, // default off-screen
 };
 
 const globeMaterial = new THREE.ShaderMaterial({
@@ -111,6 +116,13 @@ scene.add(globe);
 renderer.domElement.addEventListener("pointermove", (event) => {
   pointer.x = (event.clientX / window.innerWidth) * 2 - 1;
   pointer.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+  // Update cursor UV for fragment shader
+  raycaster.setFromCamera(pointer, camera);
+  const hit = raycaster.intersectObject(globe)[0];
+  if (hit) {
+    uniforms.cursorWorldPos.value.copy(hit.point.clone().normalize());
+  }
 });
 
 const selectedData = selectedCountryMask.image.data;
