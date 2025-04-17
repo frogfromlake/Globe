@@ -28,26 +28,3 @@ canvas {
   background: rgba(0, 140, 255, 0.054);
   box-shadow: 0 0 12px rgba(0, 140, 255, 0.4);
 }
-
-#labels-container {
-  position: absolute;
-}
-
-.label {
-  position: absolute;
-  color: rgb(143, 199, 255); /* soft light blue text for contrast */
-  font-family: 'Orbitron', sans-serif;
-  font-size: 1.1rem;
-  padding: 4px 10px;
-  white-space: nowrap;
-  transition: opacity 0.3s;
-}
-
-.label-line {
-  position: absolute;
-  background: rgba(111, 175, 239, 0.9); /* matching glow blue for the line */
-  pointer-events: none;
-  z-index: 19;
-  height: 1.5px !important;
-}
-

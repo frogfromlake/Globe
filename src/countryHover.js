@@ -1,14 +1,9 @@
 // countryHover.js
 import * as THREE from "three";
-import { countryCenters } from "../data/country_centroids.js";
 
 let countryIdMapCanvas = null;
 let countryIdCtx = null;
 let imageLoaded = false;
-let labelContainer = null;
-let cameraRef = null;
-
-const labelsMap = new Map(); // countryId -> { labelEl, labelLine }
 
 export function getCountryIdAtUV(uv) {
   if (!imageLoaded) return -1;
@@ -56,123 +51,22 @@ export function updateHoveredCountry(
 
   globeMaterial.uniforms.hoveredCountryId.value = countryId;
 
-  return {
-    id: countryId,
-    position: hit.point.clone().normalize().multiplyScalar(1.01),
-  };
+  return countryId;
 }
 
-export function initCountryLabel(container, camera) {
-  cameraRef = camera;
-  labelContainer = container;
-}
-
-export function updateCountryLabel(countryId, rotationY) {
-  if (!cameraRef || !labelContainer) return;
-  const entry = countryCenters[countryId];
-  if (!entry) return;
-
-  // Create label + line if not yet created
-  if (!labelsMap.has(countryId)) {
-    const labelEl = document.createElement("div");
-    labelEl.className = "label";
-    labelEl.dataset.id = countryId;
-
-    const labelLine = document.createElement("div");
-    labelLine.className = "label-line";
-    labelLine.dataset.id = countryId;
-
-    labelContainer.appendChild(labelEl);
-    labelContainer.appendChild(labelLine);
-
-    labelsMap.set(countryId, { labelEl, labelLine });
-  }
-
-  const { labelEl, labelLine } = labelsMap.get(countryId);
-
-  const baseRadius = 1.005;
-  const cameraDist = cameraRef.position.length();
-
-  const phi = (90 - entry.lat) * (Math.PI / 180);
-  const theta = (entry.lon + 90) * (Math.PI / 180);
-
-  let root3D = new THREE.Vector3().setFromSphericalCoords(
-    baseRadius,
-    phi,
-    theta
+export function createSelectionTexture(maxCountries = 2048) {
+  const data = new Uint8Array(maxCountries); // 1 byte per country
+  const texture = new THREE.DataTexture(
+    data,
+    maxCountries,
+    1,
+    THREE.RedFormat,
+    THREE.UnsignedByteType
   );
-  root3D.applyAxisAngle(new THREE.Vector3(0, 1, 0), rotationY);
-  root3D.add(root3D.clone().normalize().multiplyScalar(0.02));
-
-  const minDist = 1.1;
-  const maxDist = 10.0;
-  const zoomFactor = THREE.MathUtils.clamp(
-    (cameraDist - minDist) / (maxDist - minDist),
-    0,
-    1
-  );
-  const easedZoom = Math.pow(zoomFactor, 0.5);
-
-  // Push label further out along radial direction based on zoom level
-  const radialDir = root3D.clone().normalize();
-  const minOffset = 0.15;
-  const maxOffset = 0.6;
-  const offset3D = THREE.MathUtils.lerp(minOffset, maxOffset, easedZoom);
-  const label3D = root3D.clone().add(radialDir.multiplyScalar(offset3D));
-
-  // Convert 3D positions to 2D screen space
-  const rootScreen = root3D.clone().project(cameraRef);
-  const labelScreen = label3D.clone().project(cameraRef);
-
-  const rootX = (rootScreen.x * 0.5 + 0.5) * window.innerWidth;
-  const rootY = (-rootScreen.y * 0.5 + 0.5) * window.innerHeight;
-
-  const labelX = (labelScreen.x * 0.5 + 0.5) * window.innerWidth;
-  const labelY = (-labelScreen.y * 0.5 + 0.5) * window.innerHeight;
-
-  // Compute line vector
-  const dx = labelX - rootX;
-  const dy = labelY - rootY;
-  const lineLength = Math.sqrt(dx * dx + dy * dy);
-  const minLineLength = 10;
-  const adjustedLineLength = Math.max(lineLength, minLineLength);
-  labelLine.style.width = `${adjustedLineLength}px`;
-
-  const angle = Math.atan2(dy, dx);
-
-  // Dynamic label transform
-  const horizontalAlign = dx >= 0 ? "left" : "right";
-  const transform = dx >= 0 ? "translate(0, -50%)" : "translate(-100%, -50%)";
-
-  // Apply label styles
-  labelEl.textContent = entry.name;
-  labelEl.style.left = `${labelX}px`;
-  labelEl.style.top = `${labelY}px`;
-  labelEl.style.display = "block";
-  labelEl.style.textAlign = horizontalAlign;
-  labelEl.style.transform = transform;
-
-  // Apply line styles
-  labelLine.style.width = `${lineLength}px`;
-  labelLine.style.height = `1px`;
-  labelLine.style.left = `${rootX}px`;
-  labelLine.style.top = `${rootY}px`;
-  labelLine.style.transform = `rotate(${angle}rad)`;
-  labelLine.style.transformOrigin = `0 0`;
-  labelLine.style.display = "block";
-
-  console.log(
-    `[Label] ID: ${countryId}, Name: ${entry.name}, Zoom: ${zoomFactor.toFixed(
-      2
-    )}, LineLength: ${lineLength.toFixed(1)}px`
-  );
-}
-
-export function hideAllLabelsExcept(idsToKeep = []) {
-  for (const [id, { labelEl, labelLine }] of labelsMap.entries()) {
-    if (!idsToKeep.includes(id)) {
-      labelEl.style.display = "none";
-      labelLine.style.display = "none";
-    }
-  }
+  texture.minFilter = THREE.NearestFilter;
+  texture.magFilter = THREE.NearestFilter;
+  texture.wrapS = THREE.ClampToEdgeWrapping;
+  texture.wrapT = THREE.ClampToEdgeWrapping;
+  texture.needsUpdate = true;
+  return texture;
 }
