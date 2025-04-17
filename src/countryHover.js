@@ -85,7 +85,7 @@ export function initCountryLabel(container, camera) {
   labelContainer.appendChild(labelLine);
 }
 
-export function updateCountryLabel(countryId) {
+export function updateCountryLabel(countryId, rotationY) {
   if (!labelEl || !labelLine || !cameraRef) return;
 
   const entry = countryCenters[countryId];
@@ -94,11 +94,11 @@ export function updateCountryLabel(countryId) {
   const baseRadius = 1.005;
   const cameraDist = cameraRef.position.length();
 
-  const phiOffset = THREE.MathUtils.degToRad(0.0); // latitude shift
-  const thetaOffset = THREE.MathUtils.degToRad(7.0); // longitude shift
+  // const phiOffset = THREE.MathUtils.degToRad(0.0); // latitude shift
+  // const thetaOffset = THREE.MathUtils.degToRad(5.0); // longitude shift
 
-  const phi = (90 - entry.lat) * (Math.PI / 180) + phiOffset;
-  const theta = (entry.lon + 90) * (Math.PI / 180) + thetaOffset;
+  const phi = (90 - entry.lat) * (Math.PI / 180);
+  const theta = (entry.lon + 90) * (Math.PI / 180);
 
   // Compute 3D position from lat/lon
   let root3D = new THREE.Vector3().setFromSphericalCoords(
@@ -106,6 +106,9 @@ export function updateCountryLabel(countryId) {
     phi,
     theta
   );
+
+  // Apply globe rotation
+  root3D.applyAxisAngle(new THREE.Vector3(0, 1, 0), rotationY);
 
   // Raise it slightly off the globe surface
   const liftAmount = 0.02; // adjust this for spacing
@@ -121,7 +124,7 @@ export function updateCountryLabel(countryId) {
   );
 
   const minLineLength = 30;
-  const maxLineLength = 700;
+  const maxLineLength = 400;
   const lineLength = THREE.MathUtils.lerp(
     minLineLength,
     maxLineLength,
@@ -154,10 +157,32 @@ export function updateCountryLabel(countryId) {
   const endX = rootX + dx;
   const endY = rootY + dy;
 
+  // Add spacing beyond line end
+  const labelOffsetMin = 20;
+  const labelOffsetMax = 50;
+  const labelOffset = THREE.MathUtils.lerp(
+    labelOffsetMin,
+    labelOffsetMax,
+    zoomFactor
+  );
+
+  const screenDirLength = Math.sqrt(dx * dx + dy * dy);
+  const dirX = screenDirLength > 0 ? dx / screenDirLength : 0;
+  const dirY = screenDirLength > 0 ? dy / screenDirLength : 0;
+
+  const labelBoxOffset = 10; // consistent padding in px from line end
+
+  // Assume fixed alignment: label is always drawn to the bottom-right of the line end
+  labelX = endX + dirX * labelBoxOffset;
+  labelY = endY + dirY * labelBoxOffset;
+
+  // Apply manual transform offset to anchor top-left of box at this point
+  labelEl.style.transform = "translate(0, 0)";
+
   // Update label position
   labelEl.textContent = entry.name;
-  labelEl.style.left = `${endX}px`;
-  labelEl.style.top = `${endY}px`;
+  labelEl.style.left = `${labelX}px`;
+  labelEl.style.top = `${labelY}px`;
   labelEl.style.display = "block";
 
   // Update connecting line

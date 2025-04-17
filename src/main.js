@@ -370,7 +370,7 @@ function animate() {
   if (currentHoveredId > 0) {
     fadeIn += delta * highlightFadeSpeed;
     if (fadeIn > 1) fadeIn = 1;
-    updateCountryLabel(currentHoveredId);
+    updateCountryLabel(currentHoveredId, getEarthRotationAngle());
   } else {
     fadeIn = 0;
     hideCountryLabel();
