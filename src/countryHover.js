@@ -59,10 +59,10 @@ export function updateHoveredCountry(
 
   globeMaterial.uniforms.hoveredCountryId.value = countryId;
 
-  if (countryId !== currentHoveredId) {
-    const name = countryCenters[countryId]?.name || "(unknown)";
-    console.log(`Hovering country ID: ${countryId} (${name})`);
-  }
+  // if (countryId !== currentHoveredId) {
+  // const name = countryCenters[countryId]?.name || "(unknown)";
+  // console.log(`Hovering country ID: ${countryId} (${name})`);
+  // }
 
   return {
     id: countryId,
@@ -91,54 +91,90 @@ export function updateCountryLabel(countryId) {
   const entry = countryCenters[countryId];
   if (!entry) return;
 
-  const radius = 1.005;
+  const baseRadius = 1.005;
+  const cameraDist = cameraRef.position.length();
 
-  // Optional tweaks to shift root slightly on the globe surface
-  const phiOffset = THREE.MathUtils.degToRad(1.5);
-  const thetaOffset = THREE.MathUtils.degToRad(-6.0);
+  const phiOffset = THREE.MathUtils.degToRad(0.0); // latitude shift
+  const thetaOffset = THREE.MathUtils.degToRad(7.0); // longitude shift
 
   const phi = (90 - entry.lat) * (Math.PI / 180) + phiOffset;
   const theta = (entry.lon + 90) * (Math.PI / 180) + thetaOffset;
 
-  let root3D = new THREE.Vector3().setFromSphericalCoords(radius, phi, theta);
+  // Compute 3D position from lat/lon
+  let root3D = new THREE.Vector3().setFromSphericalCoords(
+    baseRadius,
+    phi,
+    theta
+  );
 
-  // Lift start of line off surface slightly
-  root3D = root3D.add(root3D.clone().normalize().multiplyScalar(0.02));
+  // Raise it slightly off the globe surface
+  const liftAmount = 0.02; // adjust this for spacing
+  root3D = root3D.add(root3D.clone().normalize().multiplyScalar(liftAmount));
 
-  // Adjust label position outward based on camera distance
-  const cameraDistance = cameraRef.position.distanceTo(root3D);
-  const zoomFactor = THREE.MathUtils.clamp(cameraDistance, 2, 6); // tune if needed
-  const labelOffsetDist = 0.15 + (zoomFactor - 2) * 0.06;
+  // Compute zoom scaling
+  const minDist = 1.1;
+  const maxDist = 10.0;
+  const zoomFactor = THREE.MathUtils.clamp(
+    (cameraDist - minDist) / (maxDist - minDist),
+    0,
+    1
+  );
 
-  const label3D = root3D
-    .clone()
-    .add(root3D.clone().normalize().multiplyScalar(labelOffsetDist));
+  const minLineLength = 30;
+  const maxLineLength = 700;
+  const lineLength = THREE.MathUtils.lerp(
+    minLineLength,
+    maxLineLength,
+    zoomFactor
+  );
 
+  // Project root position to screen
   const rootScreen = root3D.clone().project(cameraRef);
-  const labelScreen = label3D.clone().project(cameraRef);
-
   const rootX = (rootScreen.x * 0.5 + 0.5) * window.innerWidth;
   const rootY = (-rootScreen.y * 0.5 + 0.5) * window.innerHeight;
-  const labelX = (labelScreen.x * 0.5 + 0.5) * window.innerWidth;
-  const labelY = (-labelScreen.y * 0.5 + 0.5) * window.innerHeight;
 
+  // Direction to extend the label outward (toward camera direction)
+  const label3D = root3D
+    .clone()
+    .add(cameraRef.position.clone().normalize().multiplyScalar(0.05));
+
+  const labelScreen = label3D.clone().project(cameraRef);
+  let labelX = (labelScreen.x * 0.5 + 0.5) * window.innerWidth;
+  let labelY = (-labelScreen.y * 0.5 + 0.5) * window.innerHeight;
+
+  // Direction and length of the line in screen space
+  let dx = labelX - rootX;
+  let dy = labelY - rootY;
+  const screenLength = Math.sqrt(dx * dx + dy * dy);
+  if (screenLength > 0) {
+    dx = (dx / screenLength) * lineLength;
+    dy = (dy / screenLength) * lineLength;
+  }
+
+  const endX = rootX + dx;
+  const endY = rootY + dy;
+
+  // Update label position
   labelEl.textContent = entry.name;
-  labelEl.style.left = `${labelX}px`;
-  labelEl.style.top = `${labelY}px`;
+  labelEl.style.left = `${endX}px`;
+  labelEl.style.top = `${endY}px`;
   labelEl.style.display = "block";
 
-  // Line from root to label
-  const dx = labelX - rootX;
-  const dy = labelY - rootY;
-  const length = Math.sqrt(dx * dx + dy * dy);
-
-  labelLine.style.width = `${length}px`;
+  // Update connecting line
+  labelLine.style.width = `${lineLength}px`;
   labelLine.style.height = `1px`;
   labelLine.style.left = `${rootX}px`;
   labelLine.style.top = `${rootY}px`;
   labelLine.style.transform = `rotate(${Math.atan2(dy, dx)}rad)`;
   labelLine.style.transformOrigin = `0 0`;
   labelLine.style.display = "block";
+
+  // Debug info
+  console.log(
+    `[Label] ID: ${countryId}, Name: ${entry.name}, Zoom: ${zoomFactor.toFixed(
+      2
+    )}, LineLength: ${lineLength.toFixed(1)}px`
+  );
 }
 
 export function hideCountryLabel() {
