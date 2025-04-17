@@ -102,7 +102,7 @@ export function updateCountryLabel(countryId, rotationY) {
     theta
   );
   root3D.applyAxisAngle(new THREE.Vector3(0, 1, 0), rotationY);
-  root3D.add(root3D.clone().normalize().multiplyScalar(0.02)); // Small nudge outwards for clarity
+  root3D.add(root3D.clone().normalize().multiplyScalar(0.02));
 
   const minDist = 1.1;
   const maxDist = 10.0;
@@ -113,32 +113,38 @@ export function updateCountryLabel(countryId, rotationY) {
   );
   const easedZoom = Math.pow(zoomFactor, 0.5);
 
-  // Calculate the label's 3D position along the radial direction
+  // Push label further out along radial direction based on zoom level
   const radialDir = root3D.clone().normalize();
-  const label3D = root3D
-    .clone()
-    .add(radialDir.clone().multiplyScalar(easedZoom * 1.5));
+  const minOffset = 0.15;
+  const maxOffset = 0.6;
+  const offset3D = THREE.MathUtils.lerp(minOffset, maxOffset, easedZoom);
+  const label3D = root3D.clone().add(radialDir.multiplyScalar(offset3D));
 
-  // Convert 3D coordinates to 2D screen space
+  // Convert 3D positions to 2D screen space
   const rootScreen = root3D.clone().project(cameraRef);
+  const labelScreen = label3D.clone().project(cameraRef);
+
   const rootX = (rootScreen.x * 0.5 + 0.5) * window.innerWidth;
   const rootY = (-rootScreen.y * 0.5 + 0.5) * window.innerHeight;
 
-  const labelScreen = label3D.clone().project(cameraRef);
   const labelX = (labelScreen.x * 0.5 + 0.5) * window.innerWidth;
   const labelY = (-labelScreen.y * 0.5 + 0.5) * window.innerHeight;
 
-  // Compute line properties
+  // Compute line vector
   const dx = labelX - rootX;
   const dy = labelY - rootY;
   const lineLength = Math.sqrt(dx * dx + dy * dy);
+  const minLineLength = 10;
+  const adjustedLineLength = Math.max(lineLength, minLineLength);
+  labelLine.style.width = `${adjustedLineLength}px`;
+
   const angle = Math.atan2(dy, dx);
 
-  // Dynamic transform for label anchoring
+  // Dynamic label transform
   const horizontalAlign = dx >= 0 ? "left" : "right";
   const transform = dx >= 0 ? "translate(0, -50%)" : "translate(-100%, -50%)";
 
-  // Apply styles to label
+  // Apply label styles
   labelEl.textContent = entry.name;
   labelEl.style.left = `${labelX}px`;
   labelEl.style.top = `${labelY}px`;
@@ -146,7 +152,7 @@ export function updateCountryLabel(countryId, rotationY) {
   labelEl.style.textAlign = horizontalAlign;
   labelEl.style.transform = transform;
 
-  // Apply styles to line
+  // Apply line styles
   labelLine.style.width = `${lineLength}px`;
   labelLine.style.height = `1px`;
   labelLine.style.left = `${rootX}px`;
@@ -161,7 +167,6 @@ export function updateCountryLabel(countryId, rotationY) {
     )}, LineLength: ${lineLength.toFixed(1)}px`
   );
 }
-
 
 export function hideAllLabelsExcept(idsToKeep = []) {
   for (const [id, { labelEl, labelLine }] of labelsMap.entries()) {

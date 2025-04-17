@@ -31,28 +31,23 @@ canvas {
 
 #labels-container {
   position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  pointer-events: none;
-  z-index: 20;
 }
 
 .label {
   position: absolute;
-  color: rgba(157, 255, 255, 0.719); /* #00ffff */
+  color: rgba(220, 235, 255, 0.95); /* soft light blue text for contrast */
   font-family: 'Orbitron', sans-serif;
-  font-size: 1rem;
+  font-size: 1.1rem;
   padding: 4px 10px;
-  border-radius: 6px;
   white-space: nowrap;
   transition: opacity 0.3s;
 }
 
 .label-line {
   position: absolute;
-  background: rgba(0, 255, 255, 0.5); /* #00ffff */
+  background: rgba(111, 175, 239, 0.9); /* matching glow blue for the line */
   pointer-events: none;
   z-index: 19;
+  height: 1.5px !important;
 }
+

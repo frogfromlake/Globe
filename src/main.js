@@ -106,7 +106,6 @@ const globe = new THREE.Mesh(
   new THREE.SphereGeometry(1, 128, 128),
   globeMaterial
 );
-// globe.rotation.y = 0;
 scene.add(globe);
 
 renderer.domElement.addEventListener("pointermove", (event) => {
@@ -169,56 +168,6 @@ function updateControlSpeed() {
   controls.zoomSpeed = THREE.MathUtils.clamp(0.1 + normalized * 4.0, 0.1, 6.0);
 }
 
-// function addMarker(lat, lon, color = 0xff0000) {
-//   const radius = 1.01;
-//   const phi = (90 - lat) * (Math.PI / 180);
-//   const theta = (lon + 90) * (Math.PI / 180);
-
-//   const marker = new THREE.Mesh(
-//     new THREE.SphereGeometry(0.01, 16, 16),
-//     new THREE.MeshBasicMaterial({ color })
-//   );
-//   marker.position.setFromSphericalCoords(radius, phi, theta);
-//   globe.add(marker);
-// }
-
-// function addUserLocationMarker(color = 0x00ff00) {
-//   if (!("geolocation" in navigator)) {
-//     console.warn("Geolocation is not supported by this browser.");
-//     return;
-//   }
-
-//   navigator.geolocation.getCurrentPosition(
-//     (position) => {
-//       userLat = position.coords.latitude;
-//       userLon = position.coords.longitude;
-
-//       // Create marker at fixed lat/lon
-//       const radius = 1.01;
-//       const phi = (90 - userLat) * (Math.PI / 180);
-//       const theta = (userLon + 90) * (Math.PI / 180);
-
-//       userMarker = new THREE.Mesh(
-//         new THREE.SphereGeometry(0.01, 16, 16),
-//         new THREE.MeshBasicMaterial({ color })
-//       );
-//       userMarker.position.setFromSphericalCoords(radius, phi, theta);
-
-//       globe.add(userMarker);
-
-//       console.log(`📍 User marker at lat: ${userLat}, lon: ${userLon}`);
-//     },
-//     (error) => {
-//       console.warn("Geolocation error:", error.message);
-//     },
-//     {
-//       enableHighAccuracy: true,
-//       timeout: 5000,
-//       maximumAge: 0,
-//     }
-//   );
-// }
-
 function getEarthRotationAngle(date = new Date()) {
   const secondsInDay = 86400;
   const utcSeconds =
@@ -247,10 +196,6 @@ function getSunDirectionUTC(date = new Date()) {
   const z = Math.sin(obliquity) * Math.sin(eclipticLongitude * rad);
 
   const sunDir = new THREE.Vector3(-x, -z, y).normalize(); // original direction
-
-  // 🔄 Rotate +90° around Y axis to align with globe texture
-  // const angle = THREE.MathUtils.degToRad(90);
-  // sunDir.applyAxisAngle(new THREE.Vector3(0, 1, 0), angle);
 
   return sunDir;
 }

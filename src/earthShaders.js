@@ -58,7 +58,7 @@ export const earthFragmentShader = `
     boostedDay = mix(desaturatedDay, boostedDay, 1.1);
 
     // Blend with darkened night texture
-    vec3 darkenedNight = nightColor.rgb * 0.45;
+    vec3 darkenedNight = nightColor.rgb * 0.9;
     vec3 baseColor = mix(darkenedNight, boostedDay, sharpened);
 
     // Gamma correction
@@ -92,7 +92,9 @@ export const earthFragmentShader = `
     bool isPrevious = (previousHoveredId > 0) && (abs(countryIdValue - float(previousHoveredId)) < tolerance);
 
     // Country hover color
-    vec3 highlightColor = vec3(0.2, 0.95, 1.0);
+    // vec3 highlightColor = vec3(0.2, 0.95, 1.0);
+    // vec3 highlightColor = vec3(0.565, 0.933, 0.565);
+    vec3 highlightColor = vec3(0.227, 0.471, 0.710);
 
     // Hover
     if (isHovered) {
