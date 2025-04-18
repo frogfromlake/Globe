@@ -15,6 +15,10 @@
     "jsx": "preserve",
   },
   "typeRoots": ["./node_modules/@types", "./src/types"],
+  "types": ["node"],
   "include": ["src", "src/types"],
   "exclude": ["node_modules", "data", "./dist/data"],
+  "ts-node": {
+  "esm": true
+  }
 }

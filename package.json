@@ -6,17 +6,24 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "generate:rgbmap": "tsx src/data/generateRgbMap.ts",
+    "generate:centroids": "tsx src/data/generateCountryCenters.ts"
   },
   "devDependencies": {
+    "@types/d3-geo": "^3.1.0",
+    "@types/geojson": "^7946.0.16",
+    "@types/node": "^22.14.1",
     "@types/three": "^0.175.0",
+    "ts-node": "^10.9.2",
+    "tsx": "^4.19.3",
     "typescript": "^5.8.3",
     "vite": "^6.3.1",
     "vite-plugin-glsl": "^1.4.0"
   },
   "dependencies": {
-    "three": "^0.175.0",
-    "topojson-client": "^3.1.0",
-    "topojson-server": "^3.0.1"
+    "canvas": "^3.1.0",
+    "d3-geo": "^3.1.1",
+    "three": "^0.175.0"
   }
 }

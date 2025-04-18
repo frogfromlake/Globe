@@ -1,7 +1,7 @@
-// countryLabel3D.ts
+// countryLabels3D.ts
 import * as THREE from "three";
-import { countryCenters } from "../data/country_centroids.js";
-import { latLonToSphericalCoordsGeographic } from "../utils/geo.js";
+import { countryCenters } from "../data/countryCenters";
+import { latLonToSphericalCoordsGeographic } from "../utils/geo";
 
 // Types
 type CountryCenter = { lat: number; lon: number; name: string };
