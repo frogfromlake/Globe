@@ -1,6 +1,6 @@
 # 🌍 Globe
 
-**Globe** is a real-time 3D Earth visualization app built with **TypeScript** and **Three.js**, featuring dynamic country highlighting, smooth interactions, real-world lighting, and modular, configurable architecture. Custom **GLSL shaders** drive realistic visuals like day/night cycles and glowing effects.
+**Globe** is a real-time 3D Earth visualization app built with **TypeScript** and **Three.js**, featuring dynamic country highlighting, smooth interactions, real-world lighting, and modular, configurable architecture. Custom **GLSL shaders** drive realistic visuals like day/night cycles and glow effects.  
 Designed for clarity and extensibility—ideal as a foundation for educational, geopolitical, or scientific visualizations.
 
 ## Features
@@ -12,7 +12,6 @@ Designed for clarity and extensibility—ideal as a foundation for educational, 
 - Clean architecture with centralized configuration (`config.ts`)
 - Fully modular TypeScript codebase
 
-
 ## Installation
 
 ```bash
@@ -22,24 +21,25 @@ pnpm install    # or npm install
 pnpm dev        # or npm run dev
 ```
 
-Runs a local development server (typically on `http://localhost:5173/` if using Vite).
+This runs a local development server (typically on `http://localhost:5173/` if using Vite).
 
 ## Configuration
 
-All application behavior is defined in one central file: **src/configs/config.ts**
+All core behavior is defined in one central file:  
+**`src/configs/config.ts`**
 
-There you'll find:
+Inside, you can configure:
 
 - `globe`: Geometry resolution and radius
 - `camera`: FOV, clipping planes, and initial position
 - `interaction`: Speed clamps for rotation/zoom
-- `fade`: Hover/selection transition speeds
+- `fade`: Hover and selection transition speeds
 - `userLocation`: Geolocation marker appearance
 - `materials`: Shader material settings and appearance
-- `geo`: Astronomy and geographic constants (e.g. J2000, obliquity)
+- `geo`: Astronomy and geographic constants (e.g., J2000, obliquity)
 - `textures`: Paths and filtering for globe maps and ID maps
 
-Everything is documented inline for clarity and maintainability.
+Every value is documented inline for clarity and maintainability.
 
 ## Project Structure
 
@@ -57,21 +57,19 @@ src/
 
 ## Development Notes
 
-- Uses NASA maps (Blue marbel next generation and black marble) as texture overlay in 8k.
-- Utilizes **RGB-encoded country ID maps** generated from a geojson *countries.json* containing the worlds countries for precise pixel-based selection.
-- Uses a country ID map and coordinates for every country on the planet as a lookup table which is also generated from the countries.json
-- Provides generators in src/data to regenerate those maps from countries.json (theoretically it is possible to use your own maps as overlays with a couple of tweaks depending on the used map).
-- Built using **Three.js v0.175+** with **TypeScript**, **GLSL**, and **pnpm**.
-
----
+- Uses NASA’s **Blue Marble Next Generation** and **Black Marble** (night) textures at 8K resolution.
+- Utilizes **RGB-encoded country ID maps** generated from a GeoJSON file (`countries.json`) for pixel-perfect country selection.
+- Includes a centroid lookup table (`countryCenters.ts`) generated from `countries.json` for accurate label placement.
+- Custom data generation scripts live in `src/data`:
+  - `generateRgbMap.ts` for the country ID texture
+  - `generateCountryCenters.ts` for geographic centroids
+- You can replace the base maps with custom textures, provided the projection matches or is adjusted accordingly.
+- Built with **Three.js v0.175+**, **TypeScript**, **GLSL**, and **pnpm**.
 
 ## Author
 
-Created by [@frogfromlake](https://github.com/frogfromlake)  
+Created by [@frogfromlake](https://github.com/frogfromlake)
 
----
-
-## 📄 License
+## License
 
 MIT — free to use, modify, and share.
-```
