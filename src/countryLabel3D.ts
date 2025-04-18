@@ -1,6 +1,7 @@
 // countryLabel3D.ts
 import * as THREE from "three";
 import { countryCenters } from "./data/country_centroids.js";
+import { latLonToSphericalCoordsGeographic } from "./utils/geo.js";
 
 // Types
 type CountryCenter = { lat: number; lon: number; name: string };
@@ -81,15 +82,13 @@ export async function update3DLabel(
   }
 
   const { sprite, line, group } = labelObjects.get(countryId)!;
-
-  const baseRadius = 1.01;
-  const phi = (90 - entry.lat) * (Math.PI / 180);
-  const theta = (entry.lon + 90) * (Math.PI / 180);
-  const center = new THREE.Vector3().setFromSphericalCoords(
-    baseRadius,
-    phi,
-    theta
+  const { phi, theta, radius } = latLonToSphericalCoordsGeographic(
+    entry.lat,
+    entry.lon,
+    1.01
   );
+
+  const center = new THREE.Vector3().setFromSphericalCoords(radius, phi, theta);
   center.applyAxisAngle(new THREE.Vector3(0, 1, 0), rotationY);
 
   const zoomFactor = THREE.MathUtils.clamp(

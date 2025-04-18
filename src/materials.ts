@@ -1,6 +1,7 @@
 // materials.ts
 import * as THREE from "three";
 import { earthVertexShader, earthFragmentShader } from "./earthShaders";
+import { GlobeUniforms } from "./types/uniforms";
 
 // Define the material types for external use
 export const defaultLineMaterial: THREE.MeshBasicMaterial =
@@ -23,7 +24,7 @@ export const hoverLineMaterial: THREE.MeshBasicMaterial =
 
 // Factory function for globe material to pass in uniforms dynamically
 export function createGlobeMaterial(
-  uniforms: Record<string, THREE.IUniform<any>>
+  uniforms: GlobeUniforms
 ): THREE.ShaderMaterial {
   return new THREE.ShaderMaterial({
     uniforms,
