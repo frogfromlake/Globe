@@ -1,6 +1,6 @@
 import * as THREE from "three";
 import type { GlobeUniforms } from "../types/uniforms";
-import { createSelectionTexture } from "../countryHover";
+import { createSelectionTexture } from "../systems/countryHover";
 
 export function initializeUniforms(
   dayTexture: THREE.Texture,

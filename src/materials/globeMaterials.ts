@@ -1,7 +1,10 @@
 // materials.ts
 import * as THREE from "three";
-import { earthVertexShader, earthFragmentShader } from "./earthShaders";
-import { GlobeUniforms } from "./types/uniforms";
+import {
+  earthVertexShader,
+  earthFragmentShader,
+} from "../shaders/earthShaders";
+import { GlobeUniforms } from "../types/uniforms";
 
 // Define the material types for external use
 export const defaultLineMaterial: THREE.MeshBasicMaterial =

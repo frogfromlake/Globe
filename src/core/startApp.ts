@@ -1,4 +1,4 @@
-// src/core/startApp.ts
+// startApp.ts
 import * as THREE from "three";
 import { setupGlobeInteractions } from "../interactions/setupGlobeInteractions";
 import { setupUserLocation } from "../interactions/showUserLocation";
@@ -7,19 +7,22 @@ import {
   loadCountryIdMapTexture,
   updateHoveredCountry,
   getCountryIdAtUV,
-} from "../countryHover";
+} from "../systems/countryHover";
 import {
   init3DLabels,
   update3DLabel,
   hideAll3DLabelsExcept,
-} from "../countryLabel3D";
+} from "../systems/countryLabels3D";
 import { CONFIG } from "../configs/config";
 import { initializeCamera } from "../init/initializeCamera";
 import { initializeRenderer } from "../init/initializeRenderer";
 import { initializeTextures } from "../init/initializeTextures";
 import { initializeUniforms } from "../init/initializeUniforms";
 import { initializeScene } from "../init/initializeScene";
-import { earthFragmentShader, earthVertexShader } from "../earthShaders";
+import {
+  earthFragmentShader,
+  earthVertexShader,
+} from "../shaders/earthShaders";
 
 export async function startApp() {
   const selectedCountryIds = new Set<number>();
