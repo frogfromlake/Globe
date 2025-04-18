@@ -1,5 +1,5 @@
-// countryHover.ts
 import * as THREE from "three";
+import { CONFIG } from "../configs/config";
 
 let countryIdMapCanvas: HTMLCanvasElement | null = null;
 let countryIdCtx: CanvasRenderingContext2D | null = null;
@@ -17,7 +17,7 @@ export function getCountryIdAtUV(uv: THREE.Vector2): number {
 export async function loadCountryIdMapTexture(): Promise<void> {
   await new Promise<void>((resolve) => {
     const image = new Image();
-    image.src = "textures/country_id_map_8k_rgb.png";
+    image.src = CONFIG.countryHover.idMapPath;
     image.onload = () => {
       countryIdMapCanvas = document.createElement("canvas");
       countryIdMapCanvas.width = image.width;
@@ -56,19 +56,19 @@ export function updateHoveredCountry(
   return countryId;
 }
 
-export function createSelectionTexture(maxCountries = 2048): THREE.DataTexture {
-  const data = new Uint8Array(maxCountries);
+export function createSelectionTexture(): THREE.DataTexture {
+  const data = new Uint8Array(CONFIG.countryHover.maxCountryCount);
   const texture = new THREE.DataTexture(
     data,
-    maxCountries,
+    CONFIG.countryHover.maxCountryCount,
     1,
     THREE.RedFormat,
     THREE.UnsignedByteType
   );
-  texture.minFilter = THREE.NearestFilter;
-  texture.magFilter = THREE.NearestFilter;
-  texture.wrapS = THREE.ClampToEdgeWrapping;
-  texture.wrapT = THREE.ClampToEdgeWrapping;
+  texture.minFilter = CONFIG.countryHover.selectionTexture.minFilter;
+  texture.magFilter = CONFIG.countryHover.selectionTexture.magFilter;
+  texture.wrapS = CONFIG.countryHover.selectionTexture.wrapS;
+  texture.wrapT = CONFIG.countryHover.selectionTexture.wrapT;
   texture.needsUpdate = true;
   return texture;
 }

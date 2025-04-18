@@ -9,7 +9,7 @@ canvas {
 
 .location-btn {
   position: absolute;
-  top: 1rem;
+  top: 1.5rem;
   left: 1rem;
   z-index: 10;
   padding: 0.6rem 1.2rem;

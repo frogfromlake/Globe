@@ -41,7 +41,11 @@ export async function startApp() {
   init3DLabels(scene);
 
   const globe = new THREE.Mesh(
-    new THREE.SphereGeometry(1, 128, 128),
+    new THREE.SphereGeometry(
+      CONFIG.globe.radius,
+      CONFIG.globe.widthSegments,
+      CONFIG.globe.heightSegments
+    ),
     new THREE.ShaderMaterial({
       uniforms,
       vertexShader: earthVertexShader,
@@ -75,8 +79,7 @@ export async function startApp() {
     fadeOut = 0;
   let currentHoveredId = -1,
     previousHoveredId = -1;
-  const highlightFadeSpeed = 2.5;
-  const selectionFadeSpeed = 3.5;
+
   let lastFrameTime = performance.now();
 
   function animate(): void {
@@ -91,14 +94,17 @@ export async function startApp() {
     const normalized =
       (distance - CONFIG.zoom.min) / (CONFIG.zoom.max - CONFIG.zoom.min);
     controls.rotateSpeed = THREE.MathUtils.clamp(
-      0.1 + normalized * 3.0,
-      0.1,
-      5.0
+      CONFIG.interaction.rotateSpeed.base +
+        normalized * CONFIG.interaction.rotateSpeed.scale,
+      CONFIG.interaction.rotateSpeed.min,
+      CONFIG.interaction.rotateSpeed.max
     );
+
     controls.zoomSpeed = THREE.MathUtils.clamp(
-      0.1 + normalized * 4.0,
-      0.1,
-      6.0
+      CONFIG.interaction.zoomSpeed.base +
+        normalized * CONFIG.interaction.zoomSpeed.scale,
+      CONFIG.interaction.zoomSpeed.min,
+      CONFIG.interaction.zoomSpeed.max
     );
 
     uniforms.lightDirection.value.copy(getSunDirectionUTC());
@@ -120,10 +126,9 @@ export async function startApp() {
     }
 
     if (currentHoveredId > 0)
-      fadeIn = Math.min(fadeIn + delta * highlightFadeSpeed, 1);
+      fadeIn = Math.min(fadeIn + delta * CONFIG.fade.highlight, 1);
     if (fadeOut > 0)
-      fadeOut = Math.max(fadeOut - delta * highlightFadeSpeed, 0);
-
+      fadeOut = Math.max(fadeOut - delta * CONFIG.fade.highlight, 0);
     hideAll3DLabelsExcept(
       [...selectedCountryIds, currentHoveredId].filter((id) => id > 0)
     );
@@ -140,14 +145,17 @@ export async function startApp() {
 
     for (let i = 0; i < selectedData.length; i++) {
       const isSelected = selectedFlags[i] === 1;
-      selectedFadeIn[i] += delta * selectionFadeSpeed * (isSelected ? 1 : -1);
+      selectedFadeIn[i] +=
+        delta * CONFIG.fade.selection * (isSelected ? 1 : -1);
       selectedFadeIn[i] = THREE.MathUtils.clamp(selectedFadeIn[i], 0, 1);
     }
 
     const texData = (uniforms.selectedMask.value as THREE.DataTexture).image
       .data as Uint8Array;
     for (let i = 0; i < texData.length; i++) {
-      texData[i] = Math.floor(selectedFadeIn[i] * 255);
+      texData[i] = Math.floor(
+        selectedFadeIn[i] * CONFIG.selectionTexture.fadeMaxValue
+      );
     }
     (uniforms.selectedMask.value as THREE.DataTexture).needsUpdate = true;
 

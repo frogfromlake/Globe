@@ -1,6 +1,7 @@
 import * as THREE from "three";
 import type { GlobeUniforms } from "../types/uniforms";
 import { createSelectionTexture } from "../systems/countryHover";
+import { CONFIG } from "../configs/config";
 
 export function initializeUniforms(
   dayTexture: THREE.Texture,
@@ -21,19 +22,19 @@ export function initializeUniforms(
     dayTexture: { value: dayTexture },
     nightTexture: { value: nightTexture },
     countryIdMap: { value: countryIdMapTexture },
-    previousHoveredId: { value: -1 },
-    hoveredCountryId: { value: -1 },
+    previousHoveredId: { value: CONFIG.uniforms.defaultHoveredId },
+    hoveredCountryId: { value: CONFIG.uniforms.defaultHoveredId },
     uTime: { value: 0 },
     lightDirection: { value: new THREE.Vector3() },
     highlightFadeIn: { value: 0 },
     highlightFadeOut: { value: 0 },
     selectedMask: { value: selectedCountryMask },
     cameraDirection: { value: new THREE.Vector3() },
-    cityLightStrength: { value: 0.5 },
+    cityLightStrength: { value: CONFIG.uniforms.cityLightStrength },
     cursorWorldPos: { value: new THREE.Vector3(0, 0, 0) },
-    cursorGlowStrength: { value: 0.1 },
-    cursorGlowRadius: { value: 0.4 },
-    cursorUV: { value: new THREE.Vector2(-1, -1) },
+    cursorGlowStrength: { value: CONFIG.uniforms.cursorGlowStrength },
+    cursorGlowRadius: { value: CONFIG.uniforms.cursorGlowRadius },
+    cursorUV: { value: new THREE.Vector2(...CONFIG.uniforms.initialCursorUV) },
   };
 
   return { uniforms, selectedData, selectedFadeIn, selectedFlags };

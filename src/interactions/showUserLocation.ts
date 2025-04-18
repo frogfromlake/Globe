@@ -1,11 +1,12 @@
-// src/interactions/showUserLocation.ts
 import * as THREE from "three";
 import { latLonToSphericalCoordsGeographic } from "../utils/geo";
+import { CONFIG } from "../configs/config";
 
 export function setupUserLocation(scene: THREE.Scene, globe: THREE.Mesh) {
   const locationBtn = document.getElementById(
     "show-location"
   ) as HTMLButtonElement;
+
   let userMarker: THREE.Mesh | null = null;
   let locationVisible = false;
 
@@ -32,6 +33,7 @@ export function setupUserLocation(scene: THREE.Scene, globe: THREE.Mesh) {
 
     locationBtn.disabled = true;
     locationBtn.textContent = "Locating...";
+
     navigator.geolocation.getCurrentPosition(
       (pos) => {
         const lat = pos.coords.latitude;
@@ -40,13 +42,20 @@ export function setupUserLocation(scene: THREE.Scene, globe: THREE.Mesh) {
         const { phi, theta, radius } = latLonToSphericalCoordsGeographic(
           lat,
           lon,
-          1.01
+          CONFIG.userLocation.markerAltitudeMultiplier
         );
 
         userMarker = new THREE.Mesh(
-          new THREE.SphereGeometry(0.01, 16, 16),
-          new THREE.MeshBasicMaterial({ color: 0x00ff00 })
+          new THREE.SphereGeometry(
+            CONFIG.userLocation.markerSize,
+            CONFIG.userLocation.markerSegments,
+            CONFIG.userLocation.markerSegments
+          ),
+          new THREE.MeshBasicMaterial({
+            color: CONFIG.userLocation.markerColor,
+          })
         );
+
         userMarker.position.setFromSphericalCoords(radius, phi, theta);
         scene.add(userMarker);
         globe.add(userMarker);
@@ -60,7 +69,7 @@ export function setupUserLocation(scene: THREE.Scene, globe: THREE.Mesh) {
         locationBtn.disabled = false;
         locationBtn.textContent = "Show My Location";
       },
-      { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
+      CONFIG.userLocation.geolocationOptions
     );
   });
 }

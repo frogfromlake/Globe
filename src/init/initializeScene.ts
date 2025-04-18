@@ -7,8 +7,13 @@ export function initializeScene(
   renderer: THREE.WebGLRenderer
 ) {
   const scene = new THREE.Scene();
-  const light = new THREE.DirectionalLight(0xffffff, 1);
-  light.position.set(5, 0, 5);
+
+  const light = new THREE.DirectionalLight(
+    CONFIG.lighting.directionalLight.color,
+    CONFIG.lighting.directionalLight.intensity
+  );
+  const { x, y, z } = CONFIG.lighting.directionalLight.position;
+  light.position.set(x, y, z);
   scene.add(light);
 
   const controls = new OrbitControls(camera, renderer.domElement);

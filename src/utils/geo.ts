@@ -1,47 +1,50 @@
-// src/utils/geo.ts
 import * as THREE from "three";
+import { CONFIG } from "../configs/config";
 
-// Used for labels and overlays that must match geographic locations
 export function latLonToSphericalCoordsGeographic(
   lat: number,
   lon: number,
-  radius = 1
+  radius = CONFIG.geo.defaultRadius
 ): { phi: number; theta: number; radius: number } {
-  const phi = (90 - lat) * (Math.PI / 180);
-  const theta = (lon + 90) * (Math.PI / 180); // ← Works for labels
+  const phi = (CONFIG.geo.latOffset - lat) * CONFIG.geo.degToRad;
+  const theta = (lon + CONFIG.geo.lonOffset) * CONFIG.geo.degToRad;
   return { phi, theta, radius };
 }
 
-/**
- * Returns the Earth rotation angle based on the current UTC time.
- */
 export function getEarthRotationAngle(date: Date = new Date()): number {
-  const secondsInDay = 86400;
   const utcSeconds =
     date.getUTCHours() * 3600 +
     date.getUTCMinutes() * 60 +
     date.getUTCSeconds() +
     date.getUTCMilliseconds() / 1000;
-  return (utcSeconds / secondsInDay) * Math.PI * 2;
+
+  return (utcSeconds / CONFIG.geo.secondsInDay) * Math.PI * 2;
 }
 
-/**
- * Calculates the sun direction vector based on UTC date.
- */
 export function getSunDirectionUTC(date: Date = new Date()): THREE.Vector3 {
-  const rad = Math.PI / 180;
-  const daysSinceJ2000 = (date.getTime() - Date.UTC(2000, 0, 1, 12)) / 86400000;
-  const meanLongitude = (280.46 + 0.9856474 * daysSinceJ2000) % 360;
-  const meanAnomaly = (357.528 + 0.9856003 * daysSinceJ2000) % 360;
-  const eclipticLongitude =
-    meanLongitude +
-    1.915 * Math.sin(meanAnomaly * rad) +
-    0.02 * Math.sin(2 * meanAnomaly * rad);
-  const obliquity = 23.439 * rad;
+  const daysSinceJ2000 =
+    (date.getTime() - CONFIG.geo.j2000UTC) / CONFIG.geo.msPerDay;
 
-  const x = Math.cos(eclipticLongitude * rad);
-  const y = Math.cos(obliquity) * Math.sin(eclipticLongitude * rad);
-  const z = Math.sin(obliquity) * Math.sin(eclipticLongitude * rad);
+  const L =
+    (CONFIG.geo.solar.meanLongitudeBase +
+      CONFIG.geo.solar.meanLongitudePerDay * daysSinceJ2000) %
+    360;
+  const g =
+    (CONFIG.geo.solar.meanAnomalyBase +
+      CONFIG.geo.solar.meanAnomalyPerDay * daysSinceJ2000) %
+    360;
+
+  const λ =
+    L +
+    CONFIG.geo.solar.eclipticCorrection1 * Math.sin(g * CONFIG.geo.degToRad) +
+    CONFIG.geo.solar.eclipticCorrection2 *
+      Math.sin(2 * g * CONFIG.geo.degToRad);
+
+  const obliquity = CONFIG.geo.obliquityDegrees * CONFIG.geo.degToRad;
+
+  const x = Math.cos(λ * CONFIG.geo.degToRad);
+  const y = Math.cos(obliquity) * Math.sin(λ * CONFIG.geo.degToRad);
+  const z = Math.sin(obliquity) * Math.sin(λ * CONFIG.geo.degToRad);
 
   return new THREE.Vector3(-x, -z, y).normalize();
 }

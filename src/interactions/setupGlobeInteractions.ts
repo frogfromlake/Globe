@@ -1,4 +1,3 @@
-// src/interactions/globeInteractions.ts
 import {
   WebGLRenderer,
   Mesh,
@@ -7,6 +6,7 @@ import {
   PerspectiveCamera,
   Intersection,
 } from "three";
+import { CONFIG } from "../configs/config";
 
 type InteractionOptions = {
   onHover?: (hit: Intersection) => void;
@@ -33,7 +33,7 @@ export function setupGlobeInteractions(
   let lastClickTime = 0;
   renderer.domElement.addEventListener("click", () => {
     const now = performance.now();
-    if (now - lastClickTime < 200) return;
+    if (now - lastClickTime < CONFIG.interactionEvents.clickDebounceMs) return;
     lastClickTime = now;
 
     raycaster.setFromCamera(pointer, camera);

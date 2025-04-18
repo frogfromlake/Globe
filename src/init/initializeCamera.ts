@@ -1,12 +1,16 @@
 import * as THREE from "three";
+import { CONFIG } from "../configs/config";
 
 export function initializeCamera(): THREE.PerspectiveCamera {
   const camera = new THREE.PerspectiveCamera(
-    75,
+    CONFIG.camera.fov,
     window.innerWidth / window.innerHeight,
-    0.1,
-    1000
+    CONFIG.camera.near,
+    CONFIG.camera.far
   );
-  camera.position.set(0, 0, 3);
+
+  const { x, y, z } = CONFIG.camera.initialPosition;
+  camera.position.set(x, y, z);
+
   return camera;
 }

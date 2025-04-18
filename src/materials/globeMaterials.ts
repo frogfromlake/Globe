@@ -1,31 +1,29 @@
-// materials.ts
 import * as THREE from "three";
 import {
   earthVertexShader,
   earthFragmentShader,
 } from "../shaders/earthShaders";
 import { GlobeUniforms } from "../types/uniforms";
+import { CONFIG } from "../configs/config";
 
-// Define the material types for external use
 export const defaultLineMaterial: THREE.MeshBasicMaterial =
   new THREE.MeshBasicMaterial({
-    color: 0xcccccc,
+    color: CONFIG.materials.borderLineDefault.color,
     transparent: true,
-    opacity: 0.5,
+    opacity: CONFIG.materials.borderLineDefault.opacity,
     depthWrite: false,
     side: THREE.DoubleSide,
   });
 
 export const hoverLineMaterial: THREE.MeshBasicMaterial =
   new THREE.MeshBasicMaterial({
-    color: 0x3399ff,
+    color: CONFIG.materials.borderLineHover.color,
     transparent: true,
-    opacity: 0.8,
+    opacity: CONFIG.materials.borderLineHover.opacity,
     depthWrite: false,
     side: THREE.DoubleSide,
   });
 
-// Factory function for globe material to pass in uniforms dynamically
 export function createGlobeMaterial(
   uniforms: GlobeUniforms
 ): THREE.ShaderMaterial {
@@ -33,8 +31,8 @@ export function createGlobeMaterial(
     uniforms,
     vertexShader: earthVertexShader,
     fragmentShader: earthFragmentShader,
-    depthWrite: true,
-    transparent: false,
-    blending: THREE.NormalBlending,
+    depthWrite: CONFIG.materials.globeMaterial.depthWrite,
+    transparent: CONFIG.materials.globeMaterial.transparent,
+    blending: CONFIG.materials.globeMaterial.blending,
   });
 }
