@@ -1,5 +1,10 @@
 # 🌍 Globe
 
+<p align="center">
+  <img src="./assets/preview1.png" alt="Preview 1" width="49%"/>
+  <img src="./assets/preview2.png" alt="Preview 2" width="49%"/>
+</p>
+
 **Globe** is a real-time 3D Earth visualization app built with **TypeScript** and **Three.js**, featuring dynamic country highlighting, smooth interactions, real-world lighting, and modular, configurable architecture. Custom **GLSL shaders** drive realistic visuals like day/night cycles and glow effects.  
 Designed for clarity and extensibility—ideal as a foundation for educational, geopolitical, or scientific visualizations.
 
