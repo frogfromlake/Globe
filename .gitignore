@@ -23,4 +23,4 @@ dist-ssr
 *.sln
 *.sw?
 
-src/textures/backups
+public/textures/backups/
