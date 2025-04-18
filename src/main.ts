@@ -1,7 +1,7 @@
-// Refactored main.js
+// main.ts
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
-import { earthVertexShader, earthFragmentShader } from "./earthShaders.js";
+import { createGlobeMaterial } from "./materials";
 import {
   updateHoveredCountry,
   loadCountryIdMapTexture,
@@ -30,12 +30,13 @@ const CONFIG = {
 const scene = new THREE.Scene();
 const raycaster = new THREE.Raycaster();
 const pointer = new THREE.Vector2();
-const selectedCountryIds = new Set();
+const selectedCountryIds = new Set<number>();
 
-let userMarker = null;
-let userLat = null;
-let userLon = null;
+let userMarker: THREE.Mesh | null = null;
+let userLat: number | null = null;
+let userLon: number | null = null;
 
+const canvas = document.getElementById("globe") as HTMLCanvasElement;
 const camera = new THREE.PerspectiveCamera(
   75,
   window.innerWidth / window.innerHeight,
@@ -44,12 +45,10 @@ const camera = new THREE.PerspectiveCamera(
 );
 camera.position.set(0, 0, 3);
 
-const renderer = new THREE.WebGLRenderer({
-  canvas: document.getElementById("globe"),
-  antialias: true,
-});
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
 renderer.debug.checkShaderErrors = true;
-renderer.outputEncoding = THREE.sRGBEncoding;
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.setPixelRatio(window.devicePixelRatio);
 
@@ -61,18 +60,21 @@ window.addEventListener("resize", () => {
 
 // --- Textures ---
 const loader = new THREE.TextureLoader();
-const dayTexture = loader.load(`/earth_day_8k.jpg`);
-const nightTexture = loader.load(`/earth_night_8k.jpg`);
-const countryIdMapTexture = loader.load("/country_id_map_8k_rgb.png", (tex) => {
-  tex.encoding = THREE.LinearEncoding;
-  tex.magFilter = THREE.NearestFilter;
-  tex.minFilter = THREE.NearestFilter;
-  tex.generateMipmaps = false;
-  tex.flipY = false;
-  tex.needsUpdate = true;
-});
+const dayTexture = loader.load(`/textures/earth_day_8k.jpg`);
+const nightTexture = loader.load(`/textures/earth_night_8k.jpg`);
+const countryIdMapTexture = loader.load(
+  "/textures/country_id_map_8k_rgb.png",
+  (tex) => {
+    tex.colorSpace = THREE.LinearSRGBColorSpace;
+    tex.magFilter = THREE.NearestFilter;
+    tex.minFilter = THREE.NearestFilter;
+    tex.generateMipmaps = false;
+    tex.flipY = false;
+    tex.needsUpdate = true;
+  }
+);
 
-const maxAnisotropy = renderer.capabilities.getMaxAnisotropy();
+const maxAnisotropy = Math.min(4, renderer.capabilities.getMaxAnisotropy());
 [dayTexture, nightTexture].forEach((tex) => {
   tex.minFilter = THREE.LinearFilter;
   tex.magFilter = THREE.LinearFilter;
@@ -80,8 +82,11 @@ const maxAnisotropy = renderer.capabilities.getMaxAnisotropy();
 });
 
 const selectedCountryMask = createSelectionTexture();
+const selectedData = selectedCountryMask.image.data as Uint8Array;
+const selectedFadeIn = new Float32Array(selectedData.length).fill(0);
+const selectedFlags = new Uint8Array(selectedData.length).fill(0);
 
-const uniforms = {
+const uniforms: Record<string, THREE.IUniform<any>> = {
   dayTexture: { value: dayTexture },
   nightTexture: { value: nightTexture },
   countryIdMap: { value: countryIdMapTexture },
@@ -100,18 +105,11 @@ const uniforms = {
   cursorUV: { value: new THREE.Vector2(-1, -1) },
 };
 
-const globeMaterial = new THREE.ShaderMaterial({
-  uniforms,
-  vertexShader: earthVertexShader,
-  fragmentShader: earthFragmentShader,
-  depthWrite: true,
-  transparent: false,
-  blending: THREE.NormalBlending,
-});
+const globeMaterial = createGlobeMaterial(uniforms);
 
 await loadCountryIdMapTexture();
-init3DLabels(scene);
 
+init3DLabels(scene);
 const globe = new THREE.Mesh(
   new THREE.SphereGeometry(1, 128, 128),
   globeMaterial
@@ -119,7 +117,7 @@ const globe = new THREE.Mesh(
 scene.add(globe);
 
 // --- Pointer Events ---
-renderer.domElement.addEventListener("pointermove", (event) => {
+renderer.domElement.addEventListener("pointermove", (event: PointerEvent) => {
   pointer.x = (event.clientX / window.innerWidth) * 2 - 1;
   pointer.y = -(event.clientY / window.innerHeight) * 2 + 1;
 
@@ -129,9 +127,6 @@ renderer.domElement.addEventListener("pointermove", (event) => {
 });
 
 let lastClickTime = 0;
-const selectedData = selectedCountryMask.image.data;
-const selectedFadeIn = new Float32Array(selectedData.length).fill(0);
-const selectedFlags = new Uint8Array(selectedData.length).fill(0);
 
 renderer.domElement.addEventListener("click", () => {
   const now = performance.now();
@@ -174,7 +169,7 @@ controls.minDistance = CONFIG.zoom.min;
 controls.maxDistance = CONFIG.zoom.max;
 controls.update();
 
-function updateControlSpeed() {
+function updateControlSpeed(): void {
   const distance = camera.position.distanceTo(controls.target);
   const normalized =
     (distance - CONFIG.zoom.min) / (CONFIG.zoom.max - CONFIG.zoom.min);
@@ -186,8 +181,7 @@ function updateControlSpeed() {
   controls.zoomSpeed = THREE.MathUtils.clamp(0.1 + normalized * 4.0, 0.1, 6.0);
 }
 
-// --- Earth Rotation / Sun Direction ---
-function getEarthRotationAngle(date = new Date()) {
+function getEarthRotationAngle(date: Date = new Date()): number {
   const secondsInDay = 86400;
   const utcSeconds =
     date.getUTCHours() * 3600 +
@@ -197,9 +191,9 @@ function getEarthRotationAngle(date = new Date()) {
   return (utcSeconds / secondsInDay) * Math.PI * 2;
 }
 
-function getSunDirectionUTC(date = new Date()) {
+function getSunDirectionUTC(date: Date = new Date()): THREE.Vector3 {
   const rad = Math.PI / 180;
-  const daysSinceJ2000 = (date - new Date(Date.UTC(2000, 0, 1, 12))) / 86400000;
+  const daysSinceJ2000 = (date.getTime() - Date.UTC(2000, 0, 1, 12)) / 86400000;
   const meanLongitude = (280.46 + 0.9856474 * daysSinceJ2000) % 360;
   const meanAnomaly = (357.528 + 0.9856003 * daysSinceJ2000) % 360;
   const eclipticLongitude =
@@ -216,7 +210,9 @@ function getSunDirectionUTC(date = new Date()) {
 }
 
 // --- Geolocation Marker ---
-const locationBtn = document.getElementById("show-location");
+const locationBtn = document.getElementById(
+  "show-location"
+) as HTMLButtonElement;
 
 if (!("geolocation" in navigator)) {
   locationBtn.style.display = "none";
@@ -228,9 +224,16 @@ if (!("geolocation" in navigator)) {
       if (userMarker) {
         globe.remove(userMarker);
         userMarker.geometry.dispose();
-        userMarker.material.dispose();
+
+        if (Array.isArray(userMarker.material)) {
+          userMarker.material.forEach((m) => m.dispose());
+        } else {
+          userMarker.material.dispose();
+        }
+
         userMarker = null;
       }
+
       userLat = userLon = null;
       locationBtn.textContent = "Show My Location";
       locationVisible = false;
@@ -280,7 +283,7 @@ const highlightFadeSpeed = 2.5;
 const selectionFadeSpeed = 3.5;
 let lastFrameTime = performance.now();
 
-function animate() {
+function animate(): void {
   requestAnimationFrame(animate);
 
   const now = performance.now();
@@ -304,7 +307,7 @@ function animate() {
     previousHoveredId = currentHoveredId;
     fadeOut = fadeIn;
     fadeIn = 0;
-    currentHoveredId = newId;
+    currentHoveredId = typeof newId === "number" ? newId : newId.id;
   }
 
   if (currentHoveredId > 0)
@@ -331,10 +334,12 @@ function animate() {
     selectedFadeIn[i] = THREE.MathUtils.clamp(selectedFadeIn[i], 0, 1);
   }
 
-  const texData = selectedCountryMask.image.data;
+  const texData = selectedCountryMask.image.data as Uint8Array;
+
   for (let i = 0; i < texData.length; i++) {
     texData[i] = Math.floor(selectedFadeIn[i] * 255);
   }
+
   selectedCountryMask.needsUpdate = true;
 
   uniforms.hoveredCountryId.value = currentHoveredId;

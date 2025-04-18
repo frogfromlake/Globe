@@ -1,14 +1,25 @@
+// countryLabel3D.ts
 import * as THREE from "three";
-import { countryCenters } from "../data/country_centroids.js";
+import { countryCenters } from "./data/country_centroids.js";
 
+// Types
+type CountryCenter = { lat: number; lon: number; name: string };
+type LabelObject = {
+  sprite: THREE.Sprite;
+  line: THREE.Line;
+  group: THREE.Group;
+};
+
+// Label group and storage
 const labelGroup = new THREE.Group();
-const labelObjects = new Map(); // countryId -> { sprite, line }
+const labelObjects = new Map<number, LabelObject>();
 
-const createTextSprite = async (message) => {
-  await document.fonts.ready; // wait for fonts to be available
+// Create text label as sprite
+const createTextSprite = async (message: string): Promise<THREE.Sprite> => {
+  await document.fonts.ready;
 
   const canvas = document.createElement("canvas");
-  const ctx = canvas.getContext("2d");
+  const ctx = canvas.getContext("2d")!;
   const fontSize = 64;
   ctx.font = `${fontSize}px 'Orbitron', sans-serif`;
   const textWidth = ctx.measureText(message).width;
@@ -19,11 +30,10 @@ const createTextSprite = async (message) => {
   ctx.font = `${fontSize}px 'Orbitron', sans-serif`;
   ctx.textBaseline = "top";
 
-  // Optional glow
+  // Glow
   ctx.shadowColor = "rgba(0, 140, 255, 0.2)";
   ctx.shadowBlur = 20;
-
-  ctx.fillStyle = "#BFE1FF"; // soft glow blue
+  ctx.fillStyle = "#BFE1FF";
   ctx.fillText(message, 0, 0);
 
   const texture = new THREE.CanvasTexture(canvas);
@@ -38,12 +48,18 @@ const createTextSprite = async (message) => {
   return sprite;
 };
 
-export function init3DLabels(scene) {
+// Initialize label group in scene
+export function init3DLabels(scene: THREE.Scene): void {
   scene.add(labelGroup);
 }
 
-export async function update3DLabel(countryId, rotationY, cameraDistance) {
-  const entry = countryCenters[countryId];
+// Create/update a label for given country
+export async function update3DLabel(
+  countryId: number,
+  rotationY: number,
+  cameraDistance: number
+): Promise<void> {
+  const entry: CountryCenter | undefined = countryCenters[countryId];
   if (!entry) return;
 
   if (!labelObjects.has(countryId)) {
@@ -64,7 +80,7 @@ export async function update3DLabel(countryId, rotationY, cameraDistance) {
     labelObjects.set(countryId, { sprite, line, group });
   }
 
-  const { sprite, line, group } = labelObjects.get(countryId);
+  const { sprite, line, group } = labelObjects.get(countryId)!;
 
   const baseRadius = 1.01;
   const phi = (90 - entry.lat) * (Math.PI / 180);
@@ -94,13 +110,14 @@ export async function update3DLabel(countryId, rotationY, cameraDistance) {
   group.visible = true;
 }
 
-export function hide3DLabel(countryId) {
-  if (labelObjects.has(countryId)) {
-    labelObjects.get(countryId).group.visible = false;
-  }
+// Hide label for specific country
+export function hide3DLabel(countryId: number): void {
+  const label = labelObjects.get(countryId);
+  if (label) label.group.visible = false;
 }
 
-export function hideAll3DLabelsExcept(idsToKeep = []) {
+// Hide all labels except those in the provided list
+export function hideAll3DLabelsExcept(idsToKeep: number[] = []): void {
   for (const [id, { group }] of labelObjects.entries()) {
     group.visible = idsToKeep.includes(id);
   }

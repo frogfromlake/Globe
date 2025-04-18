@@ -1,12 +1,12 @@
-// countryHover.js
+// countryHover.ts
 import * as THREE from "three";
 
-let countryIdMapCanvas = null;
-let countryIdCtx = null;
+let countryIdMapCanvas: HTMLCanvasElement | null = null;
+let countryIdCtx: CanvasRenderingContext2D | null = null;
 let imageLoaded = false;
 
-export function getCountryIdAtUV(uv) {
-  if (!imageLoaded) return -1;
+export function getCountryIdAtUV(uv: THREE.Vector2): number {
+  if (!imageLoaded || !countryIdMapCanvas || !countryIdCtx) return -1;
 
   const x = Math.floor(uv.x * countryIdMapCanvas.width);
   const y = Math.floor((1.0 - uv.y) * countryIdMapCanvas.height);
@@ -14,16 +14,16 @@ export function getCountryIdAtUV(uv) {
   return (pixel[0] << 16) | (pixel[1] << 8) | pixel[2];
 }
 
-export async function loadCountryIdMapTexture() {
-  await new Promise((resolve) => {
+export async function loadCountryIdMapTexture(): Promise<void> {
+  await new Promise<void>((resolve) => {
     const image = new Image();
-    image.src = "/country_id_map_8k_rgb.png";
+    image.src = "textures/country_id_map_8k_rgb.png";
     image.onload = () => {
       countryIdMapCanvas = document.createElement("canvas");
       countryIdMapCanvas.width = image.width;
       countryIdMapCanvas.height = image.height;
       countryIdCtx = countryIdMapCanvas.getContext("2d");
-      countryIdCtx.drawImage(image, 0, 0);
+      countryIdCtx?.drawImage(image, 0, 0);
       imageLoaded = true;
       resolve();
     };
@@ -31,13 +31,15 @@ export async function loadCountryIdMapTexture() {
 }
 
 export function updateHoveredCountry(
-  raycaster,
-  pointer,
-  camera,
-  globe,
-  globeMaterial
-) {
-  if (!imageLoaded) return { id: -1, position: null };
+  raycaster: THREE.Raycaster,
+  pointer: THREE.Vector2,
+  camera: THREE.Camera,
+  globe: THREE.Mesh,
+  globeMaterial: THREE.ShaderMaterial
+): number | { id: number; position: THREE.Vector3 | null } {
+  if (!imageLoaded || !countryIdMapCanvas || !countryIdCtx) {
+    return { id: -1, position: null };
+  }
 
   raycaster.setFromCamera(pointer, camera);
   const hit = raycaster.intersectObject(globe)[0];
@@ -54,8 +56,8 @@ export function updateHoveredCountry(
   return countryId;
 }
 
-export function createSelectionTexture(maxCountries = 2048) {
-  const data = new Uint8Array(maxCountries); // 1 byte per country
+export function createSelectionTexture(maxCountries = 2048): THREE.DataTexture {
+  const data = new Uint8Array(maxCountries);
   const texture = new THREE.DataTexture(
     data,
     maxCountries,

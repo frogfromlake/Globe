@@ -1,4 +1,7 @@
-export const countryCenters = {
+export const countryCenters: Record<
+  number,
+  { name: string; lat: number; lon: number }
+> = {
   4: { name: "Afghanistan", lat: 33.0, lon: 66.0 },
   8: { name: "Albania", lat: 41.0, lon: 20.0 },
   10: { name: "Antarctica", lat: -82.0, lon: 60.0 },

@@ -1,48 +1,31 @@
-// earthShaders.js
-export const earthVertexShader = `
-  varying vec2 vUv;
-  varying vec3 vWorldNormal;
-  varying vec3 vViewDirection;
+uniform sampler2D dayTexture;
+uniform sampler2D nightTexture;
+uniform sampler2D countryIdMap;
+uniform int hoveredCountryId;
+uniform int previousHoveredId;
+uniform float highlightFadeIn;
+uniform float highlightFadeOut;
+uniform float uTime;
+uniform vec3 lightDirection;
+uniform int selectedCountryId;
+uniform sampler2D selectedMask;
+uniform vec3 cameraDirection;
+uniform float cityLightStrength;
+uniform vec3 cursorWorldPos;
+uniform float cursorGlowStrength;
+uniform float cursorGlowRadius;
+uniform vec2 cursorUV;
 
-  void main() {
-    vUv = uv;
-    vec4 worldPos = modelMatrix * vec4(position, 1.0);
-    vWorldNormal = normalize(mat3(modelMatrix) * normal);
-    vec3 cameraToVertex = cameraPosition - worldPos.xyz;
-    vViewDirection = normalize(cameraToVertex);
-    gl_Position = projectionMatrix * viewMatrix * worldPos;
-  }
-`;
+varying vec2 vUv;
+varying vec3 vWorldNormal;
+varying vec3 vViewDirection;
 
-export const earthFragmentShader = `
-  uniform sampler2D dayTexture;
-  uniform sampler2D nightTexture;
-  uniform sampler2D countryIdMap;
-  uniform int hoveredCountryId;
-  uniform int previousHoveredId;
-  uniform float highlightFadeIn;
-  uniform float highlightFadeOut;
-  uniform float uTime;
-  uniform vec3 lightDirection;
-  uniform int selectedCountryId;
-  uniform sampler2D selectedMask;
-  uniform vec3 cameraDirection;
-  uniform float cityLightStrength;
-  uniform vec3 cursorWorldPos;
-  uniform float cursorGlowStrength;
-  uniform float cursorGlowRadius;
-  uniform vec2 cursorUV;
-
-  varying vec2 vUv;
-  varying vec3 vWorldNormal;
-  varying vec3 vViewDirection;
-
-  vec3 desaturate(vec3 color, float factor) {
+vec3 desaturate(vec3 color, float factor) {
     float gray = dot(color, vec3(0.299, 0.587, 0.114));
     return mix(color, vec3(gray), factor);
-  }
+}
 
-  void main() {
+void main() {
     // Daylight calculation
     float intensity = dot(normalize(vWorldNormal), normalize(lightDirection));
     float normalized = intensity * 0.5 + 0.5;
@@ -117,23 +100,23 @@ export const earthFragmentShader = `
     vec3 highlightColor = vec3(0.227, 0.471, 0.710);
 
     // Hover
-    if (isHovered) {
-      float pulse = 0.5 + 0.5 * sin(uTime * 2.5);
-      float fresnel = pow(1.0 - dot(viewDir, normal), 2.5);
-      float glowAmount = fresnel * pulse;
-      vec3 halo = highlightColor * glowAmount * highlightFadeIn;
-      finalColor = mix(finalColor, highlightColor, 0.4 * highlightFadeIn);
-      finalColor += halo;
+    if(isHovered) {
+        float pulse = 0.5 + 0.5 * sin(uTime * 2.5);
+        float fresnel = pow(1.0 - dot(viewDir, normal), 2.5);
+        float glowAmount = fresnel * pulse;
+        vec3 halo = highlightColor * glowAmount * highlightFadeIn;
+        finalColor = mix(finalColor, highlightColor, 0.4 * highlightFadeIn);
+        finalColor += halo;
     }
 
     // Previous hover
-    if (isPrevious) {
-      float pulse = 0.5 + 0.5 * sin(uTime * 2.5);
-      float fresnel = pow(1.0 - dot(viewDir, normal), 2.5);
-      float glowAmount = fresnel * pulse;
-      vec3 halo = highlightColor * glowAmount * highlightFadeOut;
-      finalColor = mix(finalColor, highlightColor, 0.4 * highlightFadeOut);
-      finalColor += halo;
+    if(isPrevious) {
+        float pulse = 0.5 + 0.5 * sin(uTime * 2.5);
+        float fresnel = pow(1.0 - dot(viewDir, normal), 2.5);
+        float glowAmount = fresnel * pulse;
+        vec3 halo = highlightColor * glowAmount * highlightFadeOut;
+        finalColor = mix(finalColor, highlightColor, 0.4 * highlightFadeOut);
+        finalColor += halo;
     }
 
     // Selection logic
@@ -142,11 +125,11 @@ export const earthFragmentShader = `
     float selected = texture2D(selectedMask, lookupUV).r;
     bool isSelected = selected > 0.5;
 
-    if (isSelected) {
-      float fresnel = pow(1.0 - dot(viewDir, normal), 2.5);
-      vec3 halo = highlightColor * fresnel * 0.6;
-      finalColor = mix(finalColor, highlightColor, 0.35);
-      finalColor += halo;
+    if(isSelected) {
+        float fresnel = pow(1.0 - dot(viewDir, normal), 2.5);
+        vec3 halo = highlightColor * fresnel * 0.6;
+        finalColor = mix(finalColor, highlightColor, 0.35);
+        finalColor += halo;
     }
 
     // === Cursor glow on night side ===
@@ -156,9 +139,8 @@ export const earthFragmentShader = `
 
     // Multiply with night factor so glow only appears at night
     float nightFactor = 1.0 - sharpened;
-    
+
     finalColor += cursorGlowColor * cursorFalloff * nightFactor * cursorGlowStrength;
 
     gl_FragColor = vec4(finalColor, 1.0);
-  }
-`;
+}
