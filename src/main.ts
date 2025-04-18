@@ -1,4 +1,3 @@
-// main.ts
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
 import { createGlobeMaterial } from "./materials";
@@ -26,7 +25,6 @@ const CONFIG = {
   polarLimits: { min: 0.01, max: Math.PI - 0.01 },
 };
 
-// --- Scene Setup ---
 const scene = new THREE.Scene();
 const raycaster = new THREE.Raycaster();
 const pointer = new THREE.Vector2();
@@ -48,7 +46,6 @@ camera.position.set(0, 0, 3);
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
 renderer.debug.checkShaderErrors = true;
 renderer.outputColorSpace = THREE.SRGBColorSpace;
-
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.setPixelRatio(window.devicePixelRatio);
 
@@ -107,67 +104,13 @@ const uniforms: Record<string, THREE.IUniform<any>> = {
 
 const globeMaterial = createGlobeMaterial(uniforms);
 
-await loadCountryIdMapTexture();
-
-init3DLabels(scene);
-const globe = new THREE.Mesh(
-  new THREE.SphereGeometry(1, 128, 128),
-  globeMaterial
-);
-scene.add(globe);
-
-// --- Pointer Events ---
-renderer.domElement.addEventListener("pointermove", (event: PointerEvent) => {
-  pointer.x = (event.clientX / window.innerWidth) * 2 - 1;
-  pointer.y = -(event.clientY / window.innerHeight) * 2 + 1;
-
-  raycaster.setFromCamera(pointer, camera);
-  const hit = raycaster.intersectObject(globe)[0];
-  if (hit) uniforms.cursorWorldPos.value.copy(hit.point.clone().normalize());
-});
-
-let lastClickTime = 0;
-
-renderer.domElement.addEventListener("click", () => {
-  const now = performance.now();
-  if (now - lastClickTime < 200) return;
-  lastClickTime = now;
-
-  raycaster.setFromCamera(pointer, camera);
-  const hit = raycaster.intersectObject(globe)[0];
-  if (!hit || !hit.uv) return;
-
-  const clickedId = getCountryIdAtUV(hit.uv);
-  if (clickedId <= 0 || clickedId >= selectedFlags.length) return;
-
-  if (selectedCountryIds.has(clickedId)) {
-    selectedCountryIds.delete(clickedId);
-    selectedFlags[clickedId] = 0;
-  } else {
-    selectedCountryIds.add(clickedId);
-    selectedFlags[clickedId] = 1;
-  }
-
-  const state = selectedFlags[clickedId] === 1 ? "Selected" : "Deselected";
-  console.log(`${state} country ID: ${clickedId}`);
-});
-
-// --- Lighting ---
-const light = new THREE.DirectionalLight(0xffffff, 1);
-light.position.set(5, 0, 5);
-scene.add(light);
-
-// --- Controls ---
-const controls = new OrbitControls(camera, renderer.domElement);
-controls.enableZoom = true;
-controls.enablePan = false;
-controls.enableDamping = true;
-controls.dampingFactor = CONFIG.speed.dampingFactor;
-controls.minPolarAngle = CONFIG.polarLimits.min;
-controls.maxPolarAngle = CONFIG.polarLimits.max;
-controls.minDistance = CONFIG.zoom.min;
-controls.maxDistance = CONFIG.zoom.max;
-controls.update();
+// --- Geolocation Button Setup ---
+const locationBtn = document.getElementById(
+  "show-location"
+) as HTMLButtonElement;
+if (!("geolocation" in navigator)) {
+  locationBtn.style.display = "none";
+}
 
 function updateControlSpeed(): void {
   const distance = camera.position.distanceTo(controls.target);
@@ -209,38 +152,97 @@ function getSunDirectionUTC(date: Date = new Date()): THREE.Vector3 {
   return new THREE.Vector3(-x, -z, y).normalize();
 }
 
-// --- Geolocation Marker ---
-const locationBtn = document.getElementById(
-  "show-location"
-) as HTMLButtonElement;
+const light = new THREE.DirectionalLight(0xffffff, 1);
+light.position.set(5, 0, 5);
+scene.add(light);
 
-if (!("geolocation" in navigator)) {
-  locationBtn.style.display = "none";
-} else {
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableZoom = true;
+controls.enablePan = false;
+controls.enableDamping = true;
+controls.dampingFactor = CONFIG.speed.dampingFactor;
+controls.minPolarAngle = CONFIG.polarLimits.min;
+controls.maxPolarAngle = CONFIG.polarLimits.max;
+controls.minDistance = CONFIG.zoom.min;
+controls.maxDistance = CONFIG.zoom.max;
+controls.update();
+
+let fadeIn = 0,
+  fadeOut = 0;
+let currentHoveredId = -1,
+  previousHoveredId = -1;
+const highlightFadeSpeed = 2.5;
+const selectionFadeSpeed = 3.5;
+let lastFrameTime = performance.now();
+
+// --- Start App ---
+async function startApp() {
+  await loadCountryIdMapTexture();
+  init3DLabels(scene);
+
+  const globe = new THREE.Mesh(
+    new THREE.SphereGeometry(1, 128, 128),
+    globeMaterial
+  );
+  scene.add(globe);
+
+  renderer.domElement.addEventListener("pointermove", (event: PointerEvent) => {
+    pointer.x = (event.clientX / window.innerWidth) * 2 - 1;
+    pointer.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+    raycaster.setFromCamera(pointer, camera);
+    const hit = raycaster.intersectObject(globe)[0];
+    if (hit) uniforms.cursorWorldPos.value.copy(hit.point.clone().normalize());
+  });
+
+  let lastClickTime = 0;
+  renderer.domElement.addEventListener("click", () => {
+    const now = performance.now();
+    if (now - lastClickTime < 200) return;
+    lastClickTime = now;
+
+    raycaster.setFromCamera(pointer, camera);
+    const hit = raycaster.intersectObject(globe)[0];
+    if (!hit || !hit.uv) return;
+
+    const clickedId = getCountryIdAtUV(hit.uv);
+    if (clickedId <= 0 || clickedId >= selectedFlags.length) return;
+
+    if (selectedCountryIds.has(clickedId)) {
+      selectedCountryIds.delete(clickedId);
+      selectedFlags[clickedId] = 0;
+    } else {
+      selectedCountryIds.add(clickedId);
+      selectedFlags[clickedId] = 1;
+    }
+
+    console.log(
+      `${
+        selectedFlags[clickedId] === 1 ? "Selected" : "Deselected"
+      } country ID: ${clickedId}`
+    );
+  });
+
+  // Location Button
   let locationVisible = false;
-
   locationBtn.addEventListener("click", () => {
     if (locationVisible) {
       if (userMarker) {
-        globe.remove(userMarker);
+        scene.remove(userMarker);
         userMarker.geometry.dispose();
-
         if (Array.isArray(userMarker.material)) {
           userMarker.material.forEach((m) => m.dispose());
         } else {
           userMarker.material.dispose();
         }
-
         userMarker = null;
       }
-
       userLat = userLon = null;
       locationBtn.textContent = "Show My Location";
       locationVisible = false;
     } else {
       locationBtn.disabled = true;
       locationBtn.textContent = "Locating...";
-
       navigator.geolocation.getCurrentPosition(
         (pos) => {
           userLat = pos.coords.latitude;
@@ -255,13 +257,11 @@ if (!("geolocation" in navigator)) {
             new THREE.MeshBasicMaterial({ color: 0x00ff00 })
           );
           userMarker.position.setFromSphericalCoords(radius, phi, theta);
-          globe.add(userMarker);
+          scene.add(userMarker);
 
           locationBtn.disabled = false;
           locationBtn.textContent = "Hide My Location";
           locationVisible = true;
-
-          console.log(`📍 User marker at lat: ${userLat}, lon: ${userLon}`);
         },
         (err) => {
           console.warn("Geolocation error:", err.message);
@@ -272,84 +272,76 @@ if (!("geolocation" in navigator)) {
       );
     }
   });
+
+  animate();
+
+  function animate(): void {
+    requestAnimationFrame(animate);
+
+    const now = performance.now();
+    const delta = (now - lastFrameTime) / 1000;
+    lastFrameTime = now;
+    uniforms.uTime.value = now / 1000;
+
+    updateControlSpeed();
+    uniforms.lightDirection.value.copy(getSunDirectionUTC());
+    controls.update();
+
+    const newId = updateHoveredCountry(
+      raycaster,
+      pointer,
+      camera,
+      globe,
+      globeMaterial
+    );
+
+    if (newId !== currentHoveredId) {
+      previousHoveredId = currentHoveredId;
+      fadeOut = fadeIn;
+      fadeIn = 0;
+      currentHoveredId = typeof newId === "number" ? newId : newId.id;
+    }
+
+    if (currentHoveredId > 0)
+      fadeIn = Math.min(fadeIn + delta * highlightFadeSpeed, 1);
+    if (fadeOut > 0)
+      fadeOut = Math.max(fadeOut - delta * highlightFadeSpeed, 0);
+
+    hideAll3DLabelsExcept(
+      [...selectedCountryIds, currentHoveredId].filter((id) => id > 0)
+    );
+
+    const rotationY = getEarthRotationAngle();
+    const cameraDist = camera.position.length();
+
+    if (currentHoveredId > 0)
+      update3DLabel(currentHoveredId, rotationY, cameraDist);
+    for (const selectedId of selectedCountryIds) {
+      if (selectedId !== currentHoveredId)
+        update3DLabel(selectedId, rotationY, cameraDist);
+    }
+
+    for (let i = 0; i < selectedData.length; i++) {
+      const isSelected = selectedFlags[i] === 1;
+      selectedFadeIn[i] += delta * selectionFadeSpeed * (isSelected ? 1 : -1);
+      selectedFadeIn[i] = THREE.MathUtils.clamp(selectedFadeIn[i], 0, 1);
+    }
+
+    const texData = selectedCountryMask.image.data as Uint8Array;
+    for (let i = 0; i < texData.length; i++) {
+      texData[i] = Math.floor(selectedFadeIn[i] * 255);
+    }
+    selectedCountryMask.needsUpdate = true;
+
+    uniforms.hoveredCountryId.value = currentHoveredId;
+    uniforms.previousHoveredId.value = previousHoveredId;
+    uniforms.highlightFadeIn.value = fadeIn;
+    uniforms.highlightFadeOut.value = fadeOut;
+    uniforms.cameraDirection.value.copy(camera.position).normalize();
+
+    globe.rotation.y = getEarthRotationAngle();
+    renderer.render(scene, camera);
+  }
 }
 
-// --- Animation ---
-let fadeIn = 0,
-  fadeOut = 0;
-let currentHoveredId = -1,
-  previousHoveredId = -1;
-const highlightFadeSpeed = 2.5;
-const selectionFadeSpeed = 3.5;
-let lastFrameTime = performance.now();
-
-function animate(): void {
-  requestAnimationFrame(animate);
-
-  const now = performance.now();
-  const delta = (now - lastFrameTime) / 1000;
-  lastFrameTime = now;
-  uniforms.uTime.value = now / 1000;
-
-  updateControlSpeed();
-  uniforms.lightDirection.value.copy(getSunDirectionUTC());
-  controls.update();
-
-  const newId = updateHoveredCountry(
-    raycaster,
-    pointer,
-    camera,
-    globe,
-    globeMaterial
-  );
-
-  if (newId !== currentHoveredId) {
-    previousHoveredId = currentHoveredId;
-    fadeOut = fadeIn;
-    fadeIn = 0;
-    currentHoveredId = typeof newId === "number" ? newId : newId.id;
-  }
-
-  if (currentHoveredId > 0)
-    fadeIn = Math.min(fadeIn + delta * highlightFadeSpeed, 1);
-  if (fadeOut > 0) fadeOut = Math.max(fadeOut - delta * highlightFadeSpeed, 0);
-
-  hideAll3DLabelsExcept(
-    [...selectedCountryIds, currentHoveredId].filter((id) => id > 0)
-  );
-
-  const rotationY = getEarthRotationAngle();
-  const cameraDist = camera.position.length();
-
-  if (currentHoveredId > 0)
-    update3DLabel(currentHoveredId, rotationY, cameraDist);
-  for (const selectedId of selectedCountryIds) {
-    if (selectedId !== currentHoveredId)
-      update3DLabel(selectedId, rotationY, cameraDist);
-  }
-
-  for (let i = 0; i < selectedData.length; i++) {
-    const isSelected = selectedFlags[i] === 1;
-    selectedFadeIn[i] += delta * selectionFadeSpeed * (isSelected ? 1 : -1);
-    selectedFadeIn[i] = THREE.MathUtils.clamp(selectedFadeIn[i], 0, 1);
-  }
-
-  const texData = selectedCountryMask.image.data as Uint8Array;
-
-  for (let i = 0; i < texData.length; i++) {
-    texData[i] = Math.floor(selectedFadeIn[i] * 255);
-  }
-
-  selectedCountryMask.needsUpdate = true;
-
-  uniforms.hoveredCountryId.value = currentHoveredId;
-  uniforms.previousHoveredId.value = previousHoveredId;
-  uniforms.highlightFadeIn.value = fadeIn;
-  uniforms.highlightFadeOut.value = fadeOut;
-  uniforms.cameraDirection.value.copy(camera.position).normalize();
-
-  globe.rotation.y = getEarthRotationAngle();
-  renderer.render(scene, camera);
-}
-
-animate();
+startApp();
