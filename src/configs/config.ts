@@ -221,7 +221,7 @@ export const CONFIG = {
   /** Configuration for 3D country labels */
   labels3D: {
     /** Font size used for country label sprites (px) */
-    fontSize: 64,
+    fontSize: 128,
     /** Glow effect for text labels */
     glow: {
       /** Shadow color for glow effect */
@@ -232,7 +232,7 @@ export const CONFIG = {
       fillStyle: "#BFE1FF",
     },
     /** Base scale for the text sprite relative to canvas size */
-    spriteScale: 0.2,
+    spriteScale: 0.1,
     /** Line color connecting label to country */
     lineColor: 0x3399ff,
     /** Distance from globe center for label anchor point */
