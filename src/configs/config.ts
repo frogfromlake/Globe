@@ -15,7 +15,7 @@ export const CONFIG = {
     initialPosition: {
       x: 0,
       y: 0,
-      z: 2, // Change this value to zoom in or out by default
+      z: 1.9, // Change this value to zoom in or out by default
     },
   },
 
@@ -161,7 +161,7 @@ export const CONFIG = {
     cursorGlowRadius: 0.4,
     /** Initial value for cursor UV (offscreen by default) */
     initialCursorUV: [-1, -1] as [number, number],
-    /** Initial hovered/previous hovered country IDs */
+    /** Initial hovered/previous hovered country and ocean IDs */
     defaultHoveredId: -1,
   },
 

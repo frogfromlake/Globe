@@ -119,10 +119,33 @@ export async function startApp() {
 
   let fadeIn = 0,
     fadeOut = 0;
+  let fadeInOcean = 0,
+    fadeOutOcean = 0;
+
   let currentHoveredId = -1,
     previousHoveredId = -1;
+  let currentHoveredOceanId = -1,
+    previousHoveredOceanId = -1;
 
   let lastFrameTime = performance.now();
+
+  function updateSelectionTexture(
+    fadeInArray: Float32Array,
+    flagsArray: Uint8Array,
+    dataArray: Uint8Array,
+    texture: THREE.DataTexture,
+    delta: number
+  ) {
+    for (let i = 0; i < dataArray.length; i++) {
+      const isSelected = flagsArray[i] === 1;
+      fadeInArray[i] += delta * CONFIG.fade.selection * (isSelected ? 1 : -1);
+      fadeInArray[i] = THREE.MathUtils.clamp(fadeInArray[i], 0, 1);
+      dataArray[i] = Math.floor(
+        fadeInArray[i] * CONFIG.selectionTexture.fadeMaxValue
+      );
+    }
+    texture.needsUpdate = true;
+  }
 
   function animate(): void {
     requestAnimationFrame(animate);
@@ -175,16 +198,36 @@ export async function startApp() {
     }
 
     if (newHoveredId !== currentHoveredId) {
-      previousHoveredId = currentHoveredId;
-      fadeOut = fadeIn;
-      fadeIn = 0;
+      if (newHoveredId < 10000) {
+        // Country hover changed
+        previousHoveredId = currentHoveredId;
+        fadeOut = fadeIn;
+        fadeIn = 0;
+      } else {
+        // Ocean hover changed
+        previousHoveredOceanId = currentHoveredOceanId;
+        fadeOutOcean = fadeInOcean;
+        fadeInOcean = 0;
+      }
+
       currentHoveredId = newHoveredId;
+
+      if (newHoveredId >= 10000) {
+        currentHoveredOceanId = newHoveredId;
+      }
     }
 
-    if (currentHoveredId > 0)
+    // Country fade
+    if (currentHoveredId > 0 && currentHoveredId < 10000)
       fadeIn = Math.min(fadeIn + delta * CONFIG.fade.highlight, 1);
     if (fadeOut > 0)
       fadeOut = Math.max(fadeOut - delta * CONFIG.fade.highlight, 0);
+
+    // Ocean fade
+    if (currentHoveredId >= 10000)
+      fadeInOcean = Math.min(fadeInOcean + delta * CONFIG.fade.highlight, 1);
+    if (fadeOutOcean > 0)
+      fadeOutOcean = Math.max(fadeOutOcean - delta * CONFIG.fade.highlight, 0);
 
     hideAll3DLabelsExcept(
       [...selectedCountryIds, currentHoveredId].filter(
@@ -234,49 +277,39 @@ export async function startApp() {
     }
 
     // === Country selection texture update ===
-    for (let i = 0; i < selectedData.length; i++) {
-      const isSelected = selectedFlags[i] === 1;
-      selectedFadeIn[i] +=
-        delta * CONFIG.fade.selection * (isSelected ? 1 : -1);
-      selectedFadeIn[i] = THREE.MathUtils.clamp(selectedFadeIn[i], 0, 1);
-    }
-
-    const texData = (uniforms.selectedMask.value as THREE.DataTexture).image
-      .data as Uint8Array;
-    for (let i = 0; i < texData.length; i++) {
-      texData[i] = Math.floor(
-        selectedFadeIn[i] * CONFIG.selectionTexture.fadeMaxValue
-      );
-    }
-    (uniforms.selectedMask.value as THREE.DataTexture).needsUpdate = true;
+    updateSelectionTexture(
+      selectedFadeIn,
+      selectedFlags,
+      selectedData,
+      uniforms.selectedMask.value as THREE.DataTexture,
+      delta
+    );
 
     // === Ocean selection texture update ===
-    for (let i = 0; i < selectedOceanData.length; i++) {
-      const isSelected = selectedOceanFlags[i] === 1;
-      selectedOceanFadeIn[i] +=
-        delta * CONFIG.fade.selection * (isSelected ? 1 : -1);
-      selectedOceanFadeIn[i] = THREE.MathUtils.clamp(
-        selectedOceanFadeIn[i],
-        0,
-        1
-      );
-    }
-
-    for (let i = 0; i < selectedOceanData.length; i++) {
-      selectedOceanData[i] = Math.floor(
-        selectedOceanFadeIn[i] * CONFIG.selectionTexture.fadeMaxValue
-      );
-    }
-    (uniforms.selectedOceanMask.value as THREE.DataTexture).needsUpdate = true;
+    updateSelectionTexture(
+      selectedOceanFadeIn,
+      selectedOceanFlags,
+      selectedOceanData,
+      uniforms.selectedOceanMask.value as THREE.DataTexture,
+      delta
+    );
 
     // === Uniforms ===
     uniforms.hoveredCountryId.value =
       currentHoveredId < 10000 ? currentHoveredId : 0;
+
     uniforms.hoveredOceanId.value =
       currentHoveredId >= 10000 ? currentHoveredId : 0;
+
     uniforms.previousHoveredId.value = previousHoveredId;
-    uniforms.highlightFadeIn.value = fadeIn;
-    uniforms.highlightFadeOut.value = fadeOut;
+    uniforms.previousHoveredOceanId.value = previousHoveredOceanId;
+
+    uniforms.highlightFadeIn.value =
+      currentHoveredId >= 10000 ? fadeInOcean : fadeIn;
+
+    uniforms.highlightFadeOut.value =
+      currentHoveredId >= 10000 ? fadeOutOcean : fadeOut;
+
     uniforms.cameraDirection.value.copy(camera.position).normalize();
 
     globe.rotation.y = rotationY;
