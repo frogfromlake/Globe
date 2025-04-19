@@ -100,8 +100,8 @@ void main() {
     float tolerance = 0.5;
     bool isHovered = (hoveredCountryId > 0) && (abs(countryIdValue - float(hoveredCountryId)) < tolerance);
     bool isPrevious = (previousHoveredId > 0) && (abs(countryIdValue - float(previousHoveredId)) < tolerance);
-    bool isOceanHovered = (hoveredOceanId > 0) && (abs(oceanIdValue - float(hoveredOceanId)) < tolerance);
-    
+    bool isOceanHovered = (hoveredOceanId > 0) && (oceanIdValue == float(hoveredOceanId));
+
     // Country hover color
     // vec3 highlightColor = vec3(0.2, 0.95, 1.0);
     // vec3 highlightColor = vec3(0.565, 0.933, 0.565);

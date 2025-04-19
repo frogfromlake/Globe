@@ -19,8 +19,15 @@ export function initializeTextures(renderer: THREE.WebGLRenderer) {
     }
   );
 
-  const oceanIdMapTexture = new THREE.TextureLoader().load(
-    CONFIG.textures.oceanIdMapPath
+  const oceanIdMapTexture = loader.load(
+    CONFIG.textures.oceanIdMapPath,
+    (tex) => {
+      tex.colorSpace = THREE.LinearSRGBColorSpace;
+      tex.magFilter = CONFIG.textures.idMagFilter;
+      tex.minFilter = CONFIG.textures.idMinFilter;
+      tex.generateMipmaps = CONFIG.textures.generateMipmaps;
+      tex.needsUpdate = true;
+    }
   );
 
   const maxAnisotropy = Math.min(
