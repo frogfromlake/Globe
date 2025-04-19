@@ -151,8 +151,9 @@ void main() {
     }
 
     // Ocean selection logic
-    float oceanSelectedIndex = clamp(oceanIdValue - 10000.0, 0.0, 255.0);
-    vec2 oceanLookupUV = vec2((oceanSelectedIndex + 0.5) / 256.0, 0.5);
+    float oceanSelectedIndex = clamp(oceanIdValue - 10000.0, 0.0, 2047.0);
+    vec2 oceanLookupUV = vec2((oceanSelectedIndex + 0.5) / 512.0, 0.5);
+
     float oceanSelected = texture2D(selectedOceanMask, oceanLookupUV).r;
     bool isOceanSelected = oceanSelected > 0.5;
 

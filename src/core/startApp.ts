@@ -32,6 +32,7 @@ import {
   init3DOceanLabels,
   update3DOceanLabel,
 } from "../systems/oceanLabel3D";
+import { oceanIdToIndex } from "../data/oceanIdToIndex";
 
 export async function startApp() {
   const selectedCountryIds = new Set<number>();
@@ -87,6 +88,7 @@ export async function startApp() {
 
       const clickedCountryId = getCountryIdAtUV(hit.uv);
       const clickedOceanId = getOceanIdAtUV(hit.uv);
+      console.log("Clicked ocean ID:", clickedOceanId);
 
       // Handle country selection
       if (clickedCountryId > 0 && clickedCountryId < selectedFlags.length) {
@@ -100,15 +102,15 @@ export async function startApp() {
       }
 
       // Handle ocean selection
-      if (clickedOceanId >= 10000) {
-        const oceanIndex = clickedOceanId - 10000;
-        if (selectedOceanIds.has(clickedOceanId)) {
-          selectedOceanIds.delete(clickedOceanId);
-          selectedOceanFlags[oceanIndex] = 0;
-        } else {
-          selectedOceanIds.add(clickedOceanId);
-          selectedOceanFlags[oceanIndex] = 1;
-        }
+      const oceanIndex = oceanIdToIndex[clickedOceanId];
+      if (oceanIndex === undefined) return;
+
+      if (selectedOceanIds.has(clickedOceanId)) {
+        selectedOceanIds.delete(clickedOceanId);
+        selectedOceanFlags[oceanIndex] = 0;
+      } else {
+        selectedOceanIds.add(clickedOceanId);
+        selectedOceanFlags[oceanIndex] = 1;
       }
     },
   });

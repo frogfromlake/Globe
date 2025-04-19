@@ -15,7 +15,7 @@ export const CONFIG = {
     initialPosition: {
       x: 0,
       y: 0,
-      z: 3,
+      z: 2, // Change this value to zoom in or out by default
     },
   },
 
@@ -227,7 +227,7 @@ export const CONFIG = {
     oceanCenters: oceanCenters,
 
     /** Maximum number of oceans supported for selection and highlighting */
-    maxOceanCount: 256,
+    maxOceanCount: 512,
 
     /** Texture settings for ocean selection DataTexture (same format as country selection) */
     selectionTexture: {
