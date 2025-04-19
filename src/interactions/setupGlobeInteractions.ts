@@ -6,7 +6,6 @@ import {
   PerspectiveCamera,
   Intersection,
 } from "three";
-import { CONFIG } from "../configs/config";
 
 type InteractionOptions = {
   onHover?: (hit: Intersection) => void;
@@ -21,23 +20,38 @@ export function setupGlobeInteractions(
   camera: PerspectiveCamera,
   { onHover, onClick }: InteractionOptions
 ) {
-  renderer.domElement.addEventListener("pointermove", (event: PointerEvent) => {
+  const canvas = renderer.domElement;
+
+  let pointerDown = false;
+  const downPos = new Vector2();
+
+  canvas.addEventListener("pointerdown", (e: PointerEvent) => {
+    pointerDown = true;
+    downPos.set(e.clientX, e.clientY);
+  });
+
+  canvas.addEventListener("pointerup", (e: PointerEvent) => {
+    if (!pointerDown) return;
+    pointerDown = false;
+
+    const upPos = new Vector2(e.clientX, e.clientY);
+    const moved = downPos.distanceTo(upPos);
+    if (moved < 5) {
+      pointer.x = (e.clientX / window.innerWidth) * 2 - 1;
+      pointer.y = -(e.clientY / window.innerHeight) * 2 + 1;
+
+      raycaster.setFromCamera(pointer, camera);
+      const hit = raycaster.intersectObject(globe)[0];
+      if (hit && onClick) onClick(hit);
+    }
+  });
+
+  canvas.addEventListener("pointermove", (event: PointerEvent) => {
     pointer.x = (event.clientX / window.innerWidth) * 2 - 1;
     pointer.y = -(event.clientY / window.innerHeight) * 2 + 1;
 
     raycaster.setFromCamera(pointer, camera);
     const hit = raycaster.intersectObject(globe)[0];
     if (hit && onHover) onHover(hit);
-  });
-
-  let lastClickTime = 0;
-  renderer.domElement.addEventListener("click", () => {
-    const now = performance.now();
-    if (now - lastClickTime < CONFIG.interactionEvents.clickDebounceMs) return;
-    lastClickTime = now;
-
-    raycaster.setFromCamera(pointer, camera);
-    const hit = raycaster.intersectObject(globe)[0];
-    if (hit && onClick) onClick(hit);
   });
 }

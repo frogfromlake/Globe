@@ -58,7 +58,7 @@ void main() {
     boostedDay = mix(desaturatedDay, boostedDay, 1.1);
 
     // === NIGHT MAP STYLING ===
-    const float desaturationFactor = 0.5;
+    const float desaturationFactor = 0.12;
     vec3 nightOriginal = nightColor.rgb;
     float nightGray = dot(nightOriginal, vec3(0.299, 0.587, 0.114));
     vec3 tonedNight = mix(nightOriginal, vec3(nightGray), desaturationFactor);
@@ -72,7 +72,7 @@ void main() {
     vec3 baseColor = mix(nightBlended, boostedDay, sharpened);
 
     // === GAMMA CORRECTION ===
-    vec3 finalColor = pow(baseColor, vec3(0.9));
+    vec3 finalColor = pow(baseColor, vec3(0.95));
 
     // === VIEW NORMALS ===
     vec3 normal = normalize(vWorldNormal);
@@ -81,8 +81,8 @@ void main() {
 
     // === DAY-SIDE RIM LIGHTING ===
     float dayRimFade = smoothstep(0.0, 1.0, pow(rimDot, 5.0)) * sharpened;
-    vec3 rimColor = mix(vec3(0.5, 0.7, 1.0), vec3(0.5, 0.8, 0.9), rimDot); // sky blue to light cream
-    finalColor += rimColor * dayRimFade * 0.4;
+    vec3 rimColor = mix(vec3(0.5, 0.7, 1.0), vec3(0.5, 0.8, 0.9), rimDot);
+    finalColor += rimColor * dayRimFade * 0.6;
 
     // === NIGHT-SIDE RIM DARKENING ===
     float nightRimFade = smoothstep(0.0, 1.0, pow(rimDot, 3.5)) * (1.0 - sharpened);
@@ -115,42 +115,41 @@ void main() {
     bool isPreviousOcean = (previousHoveredOceanId > 0) && (oceanIdValue == float(previousHoveredOceanId));
 
     // === HOVER HIGHLIGHT EFFECTS ===
-
-    vec3 highlightColor = vec3(0.98, 1.0, 0.98);       // Country highlight color
-    vec3 oceanHighlight = vec3(0.00, 0.18, 0.44);      // Ocean hover highlight color
+    vec3 highlightColor = vec3(0.93, 0.99, 0.93);       // Country highlight color
+    vec3 oceanHighlight = vec3(0.19, 0.41, 0.74);      // Ocean hover highlight color
 
     float fresnel = pow(1.0 - dot(viewDir, normal), 2.5);
-    float pulse   = 0.5 + 0.5 * sin(uTime * 2.5);      // Sinusoidal pulsing
+    float pulse   = 0.2 + 0.2 * sin(uTime * 2.5);      // Sinusoidal pulsing
 
     // --- Active hover on country ---
     if (isHovered) {
         float glow = fresnel * pulse;
-        vec3 halo = highlightColor * glow * highlightFadeIn;
-        finalColor = mix(finalColor, highlightColor, 0.4 * highlightFadeIn);
+        vec3 halo = highlightColor * glow * highlightFadeIn * 0.6;
+        finalColor = mix(finalColor, highlightColor, 0.15 * highlightFadeIn);
         finalColor += halo;
     }
 
     // --- Active hover on ocean ---
     if (isOceanHovered) {
         float glow = fresnel * pulse;
-        vec3 halo = oceanHighlight * glow * highlightFadeIn;
-        finalColor = mix(finalColor, oceanHighlight, 0.4 * highlightFadeIn);
+        vec3 halo = oceanHighlight * glow * highlightFadeIn * 0.6;
+        finalColor = mix(finalColor, oceanHighlight, 0.1 * highlightFadeIn);
         finalColor += halo;
     }
 
-    // --- Previous hover (fading out) ---
+    // --- Previous country hover (fading out) ---
     if (isPrevious) {
         float glow = fresnel * pulse;
-        vec3 halo = highlightColor * glow * highlightFadeOut;
-        finalColor = mix(finalColor, highlightColor, 0.4 * highlightFadeOut);
+        vec3 halo = highlightColor * glow * highlightFadeOut * 0.6;
+        finalColor = mix(finalColor, highlightColor, 0.15 * highlightFadeOut);
         finalColor += halo;
     }
 
-    // --- Previous hover (fading out) ---
+    // --- Previous ocean hover (fading out) ---
     if (isPreviousOcean) {
         float glow = fresnel * pulse;
-        vec3 halo = oceanHighlight * glow * highlightFadeOut;
-        finalColor = mix(finalColor, oceanHighlight, 0.4 * highlightFadeOut);
+        vec3 halo = oceanHighlight * glow * highlightFadeOut * 0.6;
+        finalColor = mix(finalColor, oceanHighlight, 0.15 * highlightFadeOut);
         finalColor += halo;
     }
 
@@ -165,7 +164,7 @@ void main() {
     if (isSelected) {
         float glow = pow(1.0 - dot(viewDir, normal), 2.5);
         vec3 halo = highlightColor * glow * 0.6;
-        finalColor = mix(finalColor, highlightColor, 0.35);
+        finalColor = mix(finalColor, highlightColor, 0.2);
         finalColor += halo;
     }
 
@@ -178,7 +177,7 @@ void main() {
     if (isOceanSelected) {
         float glow = pow(1.0 - dot(viewDir, normal), 2.5);
         vec3 halo = oceanHighlight * glow * 0.6;
-        finalColor = mix(finalColor, oceanHighlight, 0.35);
+        finalColor = mix(finalColor, oceanHighlight, 0.15);
         finalColor += halo;
     }
 
