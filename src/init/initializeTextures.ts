@@ -19,6 +19,10 @@ export function initializeTextures(renderer: THREE.WebGLRenderer) {
     }
   );
 
+  const oceanIdMapTexture = new THREE.TextureLoader().load(
+    CONFIG.textures.oceanIdMapPath
+  );
+
   const maxAnisotropy = Math.min(
     CONFIG.textures.maxAnisotropy,
     renderer.capabilities.getMaxAnisotropy()
@@ -30,5 +34,5 @@ export function initializeTextures(renderer: THREE.WebGLRenderer) {
     tex.anisotropy = maxAnisotropy;
   });
 
-  return { dayTexture, nightTexture, countryIdMapTexture };
+  return { dayTexture, nightTexture, countryIdMapTexture, oceanIdMapTexture };
 }

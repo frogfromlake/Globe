@@ -36,7 +36,7 @@ export function updateHoveredCountry(
   camera: THREE.Camera,
   globe: THREE.Mesh,
   globeMaterial: THREE.ShaderMaterial
-): number | { id: number; position: THREE.Vector3 | null } {
+): { id: number; position: THREE.Vector3 | null } {
   if (!imageLoaded || !countryIdMapCanvas || !countryIdCtx) {
     return { id: -1, position: null };
   }
@@ -53,7 +53,7 @@ export function updateHoveredCountry(
 
   globeMaterial.uniforms.hoveredCountryId.value = countryId;
 
-  return countryId;
+  return { id: countryId, position: hit.point.clone() };
 }
 
 export function createSelectionTexture(): THREE.DataTexture {

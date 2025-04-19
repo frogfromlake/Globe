@@ -1,6 +1,9 @@
 uniform sampler2D dayTexture;
 uniform sampler2D nightTexture;
 uniform sampler2D countryIdMap;
+uniform sampler2D oceanIdMap;
+uniform sampler2D selectedMask;
+uniform sampler2D selectedOceanMask;
 uniform int hoveredCountryId;
 uniform int previousHoveredId;
 uniform float highlightFadeIn;
@@ -8,13 +11,13 @@ uniform float highlightFadeOut;
 uniform float uTime;
 uniform vec3 lightDirection;
 uniform int selectedCountryId;
-uniform sampler2D selectedMask;
 uniform vec3 cameraDirection;
 uniform float cityLightStrength;
 uniform vec3 cursorWorldPos;
 uniform float cursorGlowStrength;
 uniform float cursorGlowRadius;
 uniform vec2 cursorUV;
+uniform int hoveredOceanId;
 
 varying vec2 vUv;
 varying vec3 vWorldNormal;
@@ -88,12 +91,17 @@ void main() {
 
     // Read encoded country ID
     vec2 flippedUv = vec2(vUv.x, 1.0 - vUv.y);
-    vec3 encoded = texture2D(countryIdMap, flippedUv).rgb;
-    float countryIdValue = encoded.r * 255.0 * 65536.0 + encoded.g * 255.0 * 256.0 + encoded.b * 255.0;
+    vec3 countryEncoded = texture2D(countryIdMap, flippedUv).rgb;
+    vec3 oceanEncoded = texture2D(oceanIdMap, vUv).rgb;
+
+    float countryIdValue = countryEncoded.r * 255.0 * 65536.0 + countryEncoded.g * 255.0 * 256.0 + countryEncoded.b * 255.0;
+    float oceanIdValue   = oceanEncoded.r   * 255.0 * 65536.0 + oceanEncoded.g   * 255.0 * 256.0 + oceanEncoded.b   * 255.0;
+
     float tolerance = 0.5;
     bool isHovered = (hoveredCountryId > 0) && (abs(countryIdValue - float(hoveredCountryId)) < tolerance);
     bool isPrevious = (previousHoveredId > 0) && (abs(countryIdValue - float(previousHoveredId)) < tolerance);
-
+    bool isOceanHovered = (hoveredOceanId > 0) && (abs(oceanIdValue - float(hoveredOceanId)) < tolerance);
+    
     // Country hover color
     // vec3 highlightColor = vec3(0.2, 0.95, 1.0);
     // vec3 highlightColor = vec3(0.565, 0.933, 0.565);
@@ -107,6 +115,16 @@ void main() {
         vec3 halo = highlightColor * glowAmount * highlightFadeIn;
         finalColor = mix(finalColor, highlightColor, 0.4 * highlightFadeIn);
         finalColor += halo;
+    }
+
+    // Ocean hover highlight
+    if (isOceanHovered) {
+        float pulse = 0.5 + 0.5 * sin(uTime * 2.5);
+        float fresnel = pow(1.0 - dot(viewDir, normal), 2.5);
+        float glowAmount = fresnel * pulse;
+        vec3 oceanHighlight = vec3(0.3, 0.85, 1.0); // turquoise glow
+        finalColor = mix(finalColor, oceanHighlight, 0.4);
+        finalColor += oceanHighlight * glowAmount * 0.8;
     }
 
     // Previous hover
@@ -129,6 +147,20 @@ void main() {
         float fresnel = pow(1.0 - dot(viewDir, normal), 2.5);
         vec3 halo = highlightColor * fresnel * 0.6;
         finalColor = mix(finalColor, highlightColor, 0.35);
+        finalColor += halo;
+    }
+
+    // Ocean selection logic
+    float oceanSelectedIndex = clamp(oceanIdValue - 10000.0, 0.0, 255.0);
+    vec2 oceanLookupUV = vec2((oceanSelectedIndex + 0.5) / 256.0, 0.5);
+    float oceanSelected = texture2D(selectedOceanMask, oceanLookupUV).r;
+    bool isOceanSelected = oceanSelected > 0.5;
+
+    if (isOceanSelected) {
+        float fresnel = pow(1.0 - dot(viewDir, normal), 2.5);
+        vec3 oceanColor = vec3(0.3, 0.85, 1.0); // turquoise glow
+        vec3 halo = oceanColor * fresnel * 0.6;
+        finalColor = mix(finalColor, oceanColor, 0.3);
         finalColor += halo;
     }
 

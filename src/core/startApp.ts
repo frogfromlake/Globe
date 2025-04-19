@@ -1,4 +1,3 @@
-// startApp.ts
 import * as THREE from "three";
 import { setupGlobeInteractions } from "../interactions/setupGlobeInteractions";
 import { setupUserLocation } from "../interactions/showUserLocation";
@@ -23,22 +22,47 @@ import {
   earthFragmentShader,
   earthVertexShader,
 } from "../shaders/earthShaders";
+import {
+  getOceanIdAtUV,
+  loadOceanIdMapTexture,
+  updateHoveredOcean,
+} from "../systems/oceanHover";
+import {
+  hideAll3DOceanLabels,
+  init3DOceanLabels,
+  update3DOceanLabel,
+} from "../systems/oceanLabel3D";
 
 export async function startApp() {
   const selectedCountryIds = new Set<number>();
+  const selectedOceanIds = new Set<number>();
   const raycaster = new THREE.Raycaster();
   const pointer = new THREE.Vector2();
 
   const camera = initializeCamera();
   const renderer = initializeRenderer(camera);
   const { scene, controls } = initializeScene(camera, renderer);
-  const { dayTexture, nightTexture, countryIdMapTexture } =
+  const { dayTexture, nightTexture, countryIdMapTexture, oceanIdMapTexture } =
     initializeTextures(renderer);
-  const { uniforms, selectedData, selectedFadeIn, selectedFlags } =
-    initializeUniforms(dayTexture, nightTexture, countryIdMapTexture);
+  const {
+    uniforms,
+    selectedData,
+    selectedFadeIn,
+    selectedFlags,
+    selectedOceanData,
+    selectedOceanFadeIn,
+    selectedOceanFlags,
+  } = initializeUniforms(
+    dayTexture,
+    nightTexture,
+    countryIdMapTexture,
+    oceanIdMapTexture
+  );
 
   await loadCountryIdMapTexture();
+  await loadOceanIdMapTexture();
   init3DLabels(scene);
+  init3DOceanLabels(scene);
 
   const globe = new THREE.Mesh(
     new THREE.SphereGeometry(
@@ -60,15 +84,31 @@ export async function startApp() {
     },
     onClick: (hit) => {
       if (!hit.uv) return;
-      const clickedId = getCountryIdAtUV(hit.uv);
-      if (clickedId <= 0 || clickedId >= selectedFlags.length) return;
 
-      if (selectedCountryIds.has(clickedId)) {
-        selectedCountryIds.delete(clickedId);
-        selectedFlags[clickedId] = 0;
-      } else {
-        selectedCountryIds.add(clickedId);
-        selectedFlags[clickedId] = 1;
+      const clickedCountryId = getCountryIdAtUV(hit.uv);
+      const clickedOceanId = getOceanIdAtUV(hit.uv);
+
+      // Handle country selection
+      if (clickedCountryId > 0 && clickedCountryId < selectedFlags.length) {
+        if (selectedCountryIds.has(clickedCountryId)) {
+          selectedCountryIds.delete(clickedCountryId);
+          selectedFlags[clickedCountryId] = 0;
+        } else {
+          selectedCountryIds.add(clickedCountryId);
+          selectedFlags[clickedCountryId] = 1;
+        }
+      }
+
+      // Handle ocean selection
+      if (clickedOceanId >= 10000) {
+        const oceanIndex = clickedOceanId - 10000;
+        if (selectedOceanIds.has(clickedOceanId)) {
+          selectedOceanIds.delete(clickedOceanId);
+          selectedOceanFlags[oceanIndex] = 0;
+        } else {
+          selectedOceanIds.add(clickedOceanId);
+          selectedOceanFlags[oceanIndex] = 1;
+        }
       }
     },
   });
@@ -93,6 +133,7 @@ export async function startApp() {
     const distance = camera.position.distanceTo(controls.target);
     const normalized =
       (distance - CONFIG.zoom.min) / (CONFIG.zoom.max - CONFIG.zoom.min);
+
     controls.rotateSpeed = THREE.MathUtils.clamp(
       CONFIG.interaction.rotateSpeed.base +
         normalized * CONFIG.interaction.rotateSpeed.scale,
@@ -110,39 +151,87 @@ export async function startApp() {
     uniforms.lightDirection.value.copy(getSunDirectionUTC());
     controls.update();
 
-    const newId = updateHoveredCountry(
+    // === Hover detection ===
+    const countryResult = updateHoveredCountry(
       raycaster,
       pointer,
       camera,
       globe,
       globe.material
     );
+    const oceanResult = updateHoveredOcean(raycaster, pointer, camera, globe);
 
-    if (newId !== currentHoveredId) {
+    let newHoveredId = -1;
+    let newHoverPosition: THREE.Vector3 | null = null;
+
+    if (countryResult.id > 0) {
+      newHoveredId = countryResult.id;
+      newHoverPosition = countryResult.position;
+    } else if (oceanResult.id >= 10000) {
+      newHoveredId = oceanResult.id;
+      newHoverPosition = oceanResult.position;
+    }
+
+    if (newHoveredId !== currentHoveredId) {
       previousHoveredId = currentHoveredId;
       fadeOut = fadeIn;
       fadeIn = 0;
-      currentHoveredId = typeof newId === "number" ? newId : newId.id;
+      currentHoveredId = newHoveredId;
     }
 
     if (currentHoveredId > 0)
       fadeIn = Math.min(fadeIn + delta * CONFIG.fade.highlight, 1);
     if (fadeOut > 0)
       fadeOut = Math.max(fadeOut - delta * CONFIG.fade.highlight, 0);
+
     hideAll3DLabelsExcept(
-      [...selectedCountryIds, currentHoveredId].filter((id) => id > 0)
+      [...selectedCountryIds, currentHoveredId].filter(
+        (id) => id > 0 && id < 10000
+      )
     );
+    hideAll3DOceanLabels();
 
     const rotationY = getEarthRotationAngle();
     const cameraDist = camera.position.length();
 
-    if (currentHoveredId > 0)
+    // === Label display ===
+    if (currentHoveredId > 0 && currentHoveredId < 10000) {
       update3DLabel(currentHoveredId, rotationY, cameraDist);
-    for (const selectedId of selectedCountryIds) {
-      if (selectedId !== currentHoveredId)
-        update3DLabel(selectedId, rotationY, cameraDist);
+    } else if (currentHoveredId >= 10000) {
+      const ocean = CONFIG.oceanHover.oceanCenters[currentHoveredId];
+      if (ocean) {
+        update3DOceanLabel(
+          ocean.name,
+          ocean.lat,
+          ocean.lon,
+          rotationY,
+          cameraDist
+        );
+      }
     }
 
+    for (const selectedId of selectedCountryIds) {
+      if (selectedId !== currentHoveredId) {
+        update3DLabel(selectedId, rotationY, cameraDist);
+      }
+    }
+
+    for (const selectedOceanId of selectedOceanIds) {
+      if (selectedOceanId !== currentHoveredId) {
+        const ocean = CONFIG.oceanHover.oceanCenters[selectedOceanId];
+        if (ocean) {
+          update3DOceanLabel(
+            ocean.name,
+            ocean.lat,
+            ocean.lon,
+            rotationY,
+            cameraDist
+          );
+        }
+      }
+    }
+
+    // === Country selection texture update ===
     for (let i = 0; i < selectedData.length; i++) {
       const isSelected = selectedFlags[i] === 1;
       selectedFadeIn[i] +=
@@ -159,13 +248,36 @@ export async function startApp() {
     }
     (uniforms.selectedMask.value as THREE.DataTexture).needsUpdate = true;
 
-    uniforms.hoveredCountryId.value = currentHoveredId;
+    // === Ocean selection texture update ===
+    for (let i = 0; i < selectedOceanData.length; i++) {
+      const isSelected = selectedOceanFlags[i] === 1;
+      selectedOceanFadeIn[i] +=
+        delta * CONFIG.fade.selection * (isSelected ? 1 : -1);
+      selectedOceanFadeIn[i] = THREE.MathUtils.clamp(
+        selectedOceanFadeIn[i],
+        0,
+        1
+      );
+    }
+
+    for (let i = 0; i < selectedOceanData.length; i++) {
+      selectedOceanData[i] = Math.floor(
+        selectedOceanFadeIn[i] * CONFIG.selectionTexture.fadeMaxValue
+      );
+    }
+    (uniforms.selectedOceanMask.value as THREE.DataTexture).needsUpdate = true;
+
+    // === Uniforms ===
+    uniforms.hoveredCountryId.value =
+      currentHoveredId < 10000 ? currentHoveredId : 0;
+    uniforms.hoveredOceanId.value =
+      currentHoveredId >= 10000 ? currentHoveredId : 0;
     uniforms.previousHoveredId.value = previousHoveredId;
     uniforms.highlightFadeIn.value = fadeIn;
     uniforms.highlightFadeOut.value = fadeOut;
     uniforms.cameraDirection.value.copy(camera.position).normalize();
 
-    globe.rotation.y = getEarthRotationAngle();
+    globe.rotation.y = rotationY;
     renderer.render(scene, camera);
   }
 

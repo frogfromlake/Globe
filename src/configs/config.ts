@@ -1,5 +1,6 @@
 // src/configs/config.ts
 import * as THREE from "three";
+import { oceanCenters } from "../data/oceanCenters";
 
 export const CONFIG = {
   /** Camera settings for perspective projection */
@@ -132,6 +133,8 @@ export const CONFIG = {
     nightMapPath: "/textures/earth_night_8k.jpg",
     /** Path to the RGB-encoded country ID map */
     countryIdMapPath: "/textures/country_id_map_8k_rgb.png",
+    /** Path to the RGB-encoded ocean ID map */
+    oceanIdMapPath: "/textures/ocean_id_map_8k_rgb.png",
     /** Min filter for day/night textures */
     minFilter: THREE.LinearFilter,
     /** Mag filter for day/night textures */
@@ -210,6 +213,23 @@ export const CONFIG = {
     /** Maximum number of countries supported for selection */
     maxCountryCount: 2048,
     /** Texture settings for country selection DataTexture */
+    selectionTexture: {
+      minFilter: THREE.NearestFilter,
+      magFilter: THREE.NearestFilter,
+      wrapS: THREE.ClampToEdgeWrapping,
+      wrapT: THREE.ClampToEdgeWrapping,
+    },
+  },
+
+  /** Settings related to the ocean ID hover and selection system */
+  oceanHover: {
+    /** Precomputed geographic center coordinates for each ocean ID */
+    oceanCenters: oceanCenters,
+
+    /** Maximum number of oceans supported for selection and highlighting */
+    maxOceanCount: 256,
+
+    /** Texture settings for ocean selection DataTexture (same format as country selection) */
     selectionTexture: {
       minFilter: THREE.NearestFilter,
       magFilter: THREE.NearestFilter,

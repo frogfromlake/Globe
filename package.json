@@ -8,7 +8,9 @@
     "build": "vite build",
     "preview": "vite preview",
     "generate:rgbmap": "tsx src/data/generateRgbMap.ts",
-    "generate:centroids": "tsx src/data/generateCountryCenters.ts"
+    "generate:oceanrgbmap": "tsx src/data/generateOceanRgbMap.ts",
+    "generate:centroids": "tsx src/data/generateCountryCenters.ts",
+    "generate:oceancentroids": "tsx src/data/generateOceanCenters.ts"
   },
   "devDependencies": {
     "@types/d3-geo": "^3.1.0",

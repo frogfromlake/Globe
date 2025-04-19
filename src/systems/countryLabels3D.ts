@@ -3,7 +3,6 @@ import { countryCenters } from "../data/countryCenters";
 import { latLonToSphericalCoordsGeographic } from "../utils/geo";
 import { CONFIG } from "../configs/config";
 
-type CountryCenter = { lat: number; lon: number; name: string };
 type LabelObject = {
   sprite: THREE.Sprite;
   line: THREE.Line;
@@ -13,7 +12,7 @@ type LabelObject = {
 const labelGroup = new THREE.Group();
 const labelObjects = new Map<number, LabelObject>();
 
-const createTextSprite = async (message: string): Promise<THREE.Sprite> => {
+export const createTextSprite = async (message: string): Promise<THREE.Sprite> => {
   await document.fonts.ready;
 
   const canvas = document.createElement("canvas");
