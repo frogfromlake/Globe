@@ -241,23 +241,17 @@ export async function startApp() {
 
     // === Label display ===
     if (currentHoveredId > 0 && currentHoveredId < 10000) {
-      update3DLabel(currentHoveredId, rotationY, cameraDist);
+      update3DLabel(currentHoveredId, rotationY, camera);
     } else if (currentHoveredId >= 10000) {
       const ocean = CONFIG.oceanHover.oceanCenters[currentHoveredId];
       if (ocean) {
-        update3DOceanLabel(
-          ocean.name,
-          ocean.lat,
-          ocean.lon,
-          rotationY,
-          cameraDist
-        );
+        update3DOceanLabel(ocean.name, ocean.lat, ocean.lon, rotationY, camera);
       }
     }
 
     for (const selectedId of selectedCountryIds) {
       if (selectedId !== currentHoveredId) {
-        update3DLabel(selectedId, rotationY, cameraDist);
+        update3DLabel(selectedId, rotationY, camera);
       }
     }
 
@@ -270,7 +264,7 @@ export async function startApp() {
             ocean.lat,
             ocean.lon,
             rotationY,
-            cameraDist
+            camera
           );
         }
       }

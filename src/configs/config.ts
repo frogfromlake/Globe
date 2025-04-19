@@ -44,7 +44,7 @@ export const CONFIG = {
   /** Limits for zoom distance using orbit controls */
   zoom: {
     /** Minimum zoom distance — how close the camera can get to the globe */
-    min: 1.1,
+    min: 1.13,
     /** Maximum zoom distance — how far the camera can pull back from the globe */
     max: 10,
   },
@@ -240,8 +240,6 @@ export const CONFIG = {
 
   /** Configuration for 3D country labels */
   labels3D: {
-    /** Font size used for country label sprites (px) */
-    fontSize: 128,
     /** Glow effect for text labels */
     glow: {
       /** Shadow color for glow effect */
@@ -251,8 +249,10 @@ export const CONFIG = {
       /** Fill color for label text */
       fillStyle: "#BFE1FF",
     },
-    /** Base scale for the text sprite relative to canvas size */
-    spriteScale: 0.1,
+    /** Base scale for the text sprite relative to canvas size (actual fontsize) */
+    spriteScale: 0.2,
+    /** Canvas font size for text clarity (px) */
+    canvasFontSize: 128,
     /** Line color connecting label to country */
     lineColor: 0x3399ff,
     /** Distance from globe center for label anchor point */
@@ -260,7 +260,7 @@ export const CONFIG = {
     /** Zoom range used to calculate dynamic label offset */
     zoomRange: { min: 1.1, max: 10 },
     /** Label offset range (minimum and maximum label distance from anchor) */
-    offsetRange: { min: 0.15, max: 0.6 },
+    offsetRange: { min: 0.0, max: 1.0 },
   },
 
   /** Geographic and astronomy-related constants */

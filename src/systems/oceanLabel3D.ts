@@ -21,7 +21,7 @@ export async function update3DOceanLabel(
   lat: number,
   lon: number,
   rotationY: number,
-  cameraDistance: number
+  camera: THREE.Camera
 ): Promise<void> {
   if (!labelObjectsOcean.has(name)) {
     const sprite = await createTextSprite(name);
@@ -54,25 +54,42 @@ export async function update3DOceanLabel(
   const center = new THREE.Vector3().setFromSphericalCoords(radius, phi, theta);
   center.applyAxisAngle(new THREE.Vector3(0, 1, 0), rotationY);
 
-  const zoomFactor = THREE.MathUtils.clamp(
-    (cameraDistance - CONFIG.labels3D.zoomRange.min) /
-      (CONFIG.labels3D.zoomRange.max - CONFIG.labels3D.zoomRange.min),
-    0,
-    1
-  );
-  const offset = THREE.MathUtils.lerp(
+  const cameraDistance = camera.position.length();
+
+  // === Offset logic (stronger lift when zoomed out) ===
+  const offset = THREE.MathUtils.mapLinear(
+    cameraDistance,
+    CONFIG.labels3D.zoomRange.min,
+    CONFIG.labels3D.zoomRange.max,
     CONFIG.labels3D.offsetRange.min,
-    CONFIG.labels3D.offsetRange.max,
-    Math.sqrt(zoomFactor)
+    CONFIG.labels3D.offsetRange.max
   );
 
   const labelPos = center
     .clone()
     .add(center.clone().normalize().multiplyScalar(offset));
 
+  // === Label scale logic ===
+  const baseScale = CONFIG.labels3D.spriteScale;
+  const canvas = sprite.material.map?.image as HTMLCanvasElement;
+  const aspect = canvas.width / canvas.height || 2.5;
+
+  const scaleFactor = THREE.MathUtils.mapLinear(
+    cameraDistance,
+    CONFIG.labels3D.zoomRange.min,
+    CONFIG.labels3D.zoomRange.max,
+    0.1, // smaller when close
+    5.0 // bigger when far
+  );
+
+  const scaleX = aspect * baseScale * scaleFactor;
+  const scaleY = baseScale * scaleFactor;
+
+  sprite.scale.set(scaleX, scaleY, 1);
+
+  // === Label geometry ===
   sprite.position.copy(labelPos);
-  const points = [center, labelPos];
-  line.geometry.setFromPoints(points);
+  line.geometry.setFromPoints([center, labelPos]);
   line.geometry.attributes.position.needsUpdate = true;
 
   group.visible = true;
