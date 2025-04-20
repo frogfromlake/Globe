@@ -33,10 +33,12 @@ import {
   update3DOceanLabel,
 } from "../systems/oceanLabel3D";
 import { oceanIdToIndex } from "../data/oceanIdToIndex";
+import { clearAllSelections } from "../interactions/clearSelections";
+
+export const selectedCountryIds = new Set<number>();
+export const selectedOceanIds = new Set<number>();
 
 export async function startApp() {
-  const selectedCountryIds = new Set<number>();
-  const selectedOceanIds = new Set<number>();
   const raycaster = new THREE.Raycaster();
   const pointer = new THREE.Vector2();
 
@@ -88,7 +90,6 @@ export async function startApp() {
 
       const clickedCountryId = getCountryIdAtUV(hit.uv);
       const clickedOceanId = getOceanIdAtUV(hit.uv);
-      console.log("Clicked ocean ID:", clickedOceanId);
 
       // Handle country selection
       if (clickedCountryId > 0 && clickedCountryId < selectedFlags.length) {
@@ -116,6 +117,7 @@ export async function startApp() {
   });
 
   setupUserLocation(scene, globe);
+  clearAllSelections(selectedFlags, selectedOceanFlags);
 
   let fadeIn = 0,
     fadeOut = 0;
