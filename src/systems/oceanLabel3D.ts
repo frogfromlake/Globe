@@ -21,13 +21,15 @@ export async function update3DOceanLabel(
   lat: number,
   lon: number,
   rotationY: number,
-  camera: THREE.Camera
+  camera: THREE.Camera,
+  fade: number
 ): Promise<void> {
   if (!labelObjectsOcean.has(name)) {
     const sprite = await createTextSprite(name);
 
     const material = new THREE.LineBasicMaterial({
       color: CONFIG.labels3D.lineColor,
+      transparent: true, // <-- allow opacity
     });
     const geometry = new THREE.BufferGeometry().setFromPoints([
       new THREE.Vector3(),
@@ -39,6 +41,10 @@ export async function update3DOceanLabel(
     group.add(sprite);
     group.add(line);
     labelGroup.add(group);
+
+    // sprite material must be transparent too
+    sprite.material.transparent = true;
+    sprite.material.opacity = 0;
 
     labelObjectsOcean.set(name, { sprite, line, group });
   }
@@ -56,7 +62,6 @@ export async function update3DOceanLabel(
 
   const cameraDistance = camera.position.length();
 
-  // === Offset logic (stronger lift when zoomed out) ===
   const offset = THREE.MathUtils.mapLinear(
     cameraDistance,
     CONFIG.labels3D.zoomRange.min,
@@ -69,7 +74,7 @@ export async function update3DOceanLabel(
     .clone()
     .add(center.clone().normalize().multiplyScalar(offset));
 
-  // === Label scale logic ===
+  // === Label scale ===
   const baseScale = CONFIG.labels3D.spriteScale;
   const canvas = sprite.material.map?.image as HTMLCanvasElement;
   const aspect = canvas.width / canvas.height || 2.5;
@@ -78,21 +83,29 @@ export async function update3DOceanLabel(
     cameraDistance,
     CONFIG.labels3D.zoomRange.min,
     CONFIG.labels3D.zoomRange.max,
-    0.1, // smaller when close
-    5.0 // bigger when far
+    0.1,
+    5.0
   );
 
   const scaleX = aspect * baseScale * scaleFactor;
   const scaleY = baseScale * scaleFactor;
 
   sprite.scale.set(scaleX, scaleY, 1);
-
-  // === Label geometry ===
   sprite.position.copy(labelPos);
+
+  // === Apply fade ===
+  sprite.material.opacity = fade;
+  if (Array.isArray(line.material)) {
+    line.material.forEach((mat) => (mat.opacity = fade));
+  } else {
+    line.material.opacity = fade;
+  }
+
+  // === Geometry ===
   line.geometry.setFromPoints([center, labelPos]);
   line.geometry.attributes.position.needsUpdate = true;
 
-  group.visible = true;
+  group.visible = fade > 0.01;
 }
 
 export function hideAll3DOceanLabels(): void {

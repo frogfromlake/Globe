@@ -224,10 +224,15 @@ export async function startApp() {
       fadeOut = Math.max(fadeOut - delta * CONFIG.fade.highlight, 0);
 
     // Ocean fade
-    if (currentHoveredId >= 10000)
+    if (currentHoveredId >= 10000) {
       fadeInOcean = Math.min(fadeInOcean + delta * CONFIG.fade.highlight, 1);
-    if (fadeOutOcean > 0)
+    }
+    if (
+      previousHoveredOceanId >= 10000 &&
+      previousHoveredOceanId !== currentHoveredOceanId
+    ) {
       fadeOutOcean = Math.max(fadeOutOcean - delta * CONFIG.fade.highlight, 0);
+    }
 
     hideAll3DLabelsExcept(
       [...selectedCountryIds, currentHoveredId].filter(
@@ -241,17 +246,29 @@ export async function startApp() {
 
     // === Label display ===
     if (currentHoveredId > 0 && currentHoveredId < 10000) {
-      update3DLabel(currentHoveredId, rotationY, camera);
+      update3DLabel(currentHoveredId, rotationY, camera, fadeIn);
     } else if (currentHoveredId >= 10000) {
       const ocean = CONFIG.oceanHover.oceanCenters[currentHoveredId];
       if (ocean) {
-        update3DOceanLabel(ocean.name, ocean.lat, ocean.lon, rotationY, camera);
+        update3DOceanLabel(
+          ocean.name,
+          ocean.lat,
+          ocean.lon,
+          rotationY,
+          camera,
+          fadeInOcean
+        );
       }
     }
 
     for (const selectedId of selectedCountryIds) {
       if (selectedId !== currentHoveredId) {
-        update3DLabel(selectedId, rotationY, camera);
+        update3DLabel(
+          selectedId,
+          rotationY,
+          camera,
+          selectedFadeIn[selectedId]
+        );
       }
     }
 
@@ -264,7 +281,8 @@ export async function startApp() {
             ocean.lat,
             ocean.lon,
             rotationY,
-            camera
+            camera,
+            selectedOceanFadeIn[oceanIdToIndex[selectedOceanId]]
           );
         }
       }

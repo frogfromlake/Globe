@@ -240,6 +240,20 @@ export const CONFIG = {
 
   /** Configuration for 3D country labels */
   labels3D: {
+    /** Font type for both country and ocean labels */
+    fontFamily: "Inter",
+    /** Base scale for the text sprite relative to canvas size (actual fontsize) */
+    spriteScale: 0.2,
+    /** Canvas font size for text clarity (px) */
+    canvasFontSize: 256,
+    /** Line color connecting label to country */
+    lineColor: 0x3399ff,
+    /** Distance from globe center for label anchor point */
+    markerRadius: 1.01,
+    /** Zoom range used to calculate dynamic label offset */
+    zoomRange: { min: 1.1, max: 10 },
+    /** Label offset range (minimum and maximum label distance from anchor) */
+    offsetRange: { min: 0.0, max: 1.0 },
     /** Glow effect for text labels */
     glow: {
       /** Shadow color for glow effect */
@@ -249,18 +263,6 @@ export const CONFIG = {
       /** Fill color for label text */
       fillStyle: "#BFE1FF",
     },
-    /** Base scale for the text sprite relative to canvas size (actual fontsize) */
-    spriteScale: 0.2,
-    /** Canvas font size for text clarity (px) */
-    canvasFontSize: 128,
-    /** Line color connecting label to country */
-    lineColor: 0x3399ff,
-    /** Distance from globe center for label anchor point */
-    markerRadius: 1.01,
-    /** Zoom range used to calculate dynamic label offset */
-    zoomRange: { min: 1.1, max: 10 },
-    /** Label offset range (minimum and maximum label distance from anchor) */
-    offsetRange: { min: 0.0, max: 1.0 },
   },
 
   /** Geographic and astronomy-related constants */
