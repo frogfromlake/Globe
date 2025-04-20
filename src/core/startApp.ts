@@ -34,11 +34,17 @@ import {
 } from "../systems/oceanLabel3D";
 import { oceanIdToIndex } from "../data/oceanIdToIndex";
 import { clearAllSelections } from "../interactions/clearSelections";
-
-export const selectedCountryIds = new Set<number>();
-export const selectedOceanIds = new Set<number>();
+import {
+  toggleCountryInteractivity,
+  toggleCountrySelection,
+  toggleOceanInteractivity,
+  toggleOceanSelection,
+} from "../interactions/toggleSelections";
+import { interactionState } from "../state/interactionState";
 
 export async function startApp() {
+  const selectedCountryIds = new Set<number>();
+  const selectedOceanIds = new Set<number>();
   const raycaster = new THREE.Raycaster();
   const pointer = new THREE.Vector2();
 
@@ -88,8 +94,12 @@ export async function startApp() {
     onClick: (hit) => {
       if (!hit.uv) return;
 
-      const clickedCountryId = getCountryIdAtUV(hit.uv);
-      const clickedOceanId = getOceanIdAtUV(hit.uv);
+      const clickedCountryId = interactionState.countryEnabled
+        ? getCountryIdAtUV(hit.uv)
+        : -1;
+      const clickedOceanId = interactionState.oceanEnabled
+        ? getOceanIdAtUV(hit.uv)
+        : -1;
 
       // Handle country selection
       if (clickedCountryId > 0 && clickedCountryId < selectedFlags.length) {
@@ -115,9 +125,6 @@ export async function startApp() {
       }
     },
   });
-
-  setupUserLocation(scene, globe);
-  clearAllSelections(selectedFlags, selectedOceanFlags);
 
   let fadeIn = 0,
     fadeOut = 0;
@@ -157,6 +164,20 @@ export async function startApp() {
     lastFrameTime = now;
     uniforms.uTime.value = now / 1000;
 
+    // === Detect if mouse is on the globe ===
+    raycaster.setFromCamera(pointer, camera);
+    const globeIntersection = raycaster.intersectObject(globe);
+
+    if (globeIntersection.length > 0) {
+      uniforms.cursorWorldPos.value.copy(
+        globeIntersection[0].point.clone().normalize()
+      );
+      uniforms.uCursorOnGlobe.value = true;
+    } else {
+      uniforms.uCursorOnGlobe.value = false;
+    }
+
+    // === Camera distance based interaction ===
     const distance = camera.position.distanceTo(controls.target);
     const normalized =
       (distance - CONFIG.zoom.min) / (CONFIG.zoom.max - CONFIG.zoom.min);
@@ -179,14 +200,13 @@ export async function startApp() {
     controls.update();
 
     // === Hover detection ===
-    const countryResult = updateHoveredCountry(
-      raycaster,
-      pointer,
-      camera,
-      globe,
-      globe.material
-    );
-    const oceanResult = updateHoveredOcean(raycaster, pointer, camera, globe);
+    const countryResult = interactionState.countryEnabled
+      ? updateHoveredCountry(raycaster, pointer, camera, globe, globe.material)
+      : { id: -1, position: null };
+
+    const oceanResult = interactionState.oceanEnabled
+      ? updateHoveredOcean(raycaster, pointer, camera, globe)
+      : { id: -1, position: null };
 
     let newHoveredId = -1;
     let newHoverPosition: THREE.Vector3 | null = null;
@@ -201,12 +221,10 @@ export async function startApp() {
 
     if (newHoveredId !== currentHoveredId) {
       if (newHoveredId < 10000) {
-        // Country hover changed
         previousHoveredId = currentHoveredId;
         fadeOut = fadeIn;
         fadeIn = 0;
       } else {
-        // Ocean hover changed
         previousHoveredOceanId = currentHoveredOceanId;
         fadeOutOcean = fadeInOcean;
         fadeInOcean = 0;
@@ -219,13 +237,12 @@ export async function startApp() {
       }
     }
 
-    // Country fade
+    // === Hover fade logic ===
     if (currentHoveredId > 0 && currentHoveredId < 10000)
       fadeIn = Math.min(fadeIn + delta * CONFIG.fade.highlight, 1);
     if (fadeOut > 0)
       fadeOut = Math.max(fadeOut - delta * CONFIG.fade.highlight, 0);
 
-    // Ocean fade
     if (currentHoveredId >= 10000) {
       fadeInOcean = Math.min(fadeInOcean + delta * CONFIG.fade.highlight, 1);
     }
@@ -236,6 +253,7 @@ export async function startApp() {
       fadeOutOcean = Math.max(fadeOutOcean - delta * CONFIG.fade.highlight, 0);
     }
 
+    // === Label visibility ===
     hideAll3DLabelsExcept(
       [...selectedCountryIds, currentHoveredId].filter(
         (id) => id > 0 && id < 10000
@@ -246,7 +264,6 @@ export async function startApp() {
     const rotationY = getEarthRotationAngle();
     const cameraDist = camera.position.length();
 
-    // === Label display ===
     if (currentHoveredId > 0 && currentHoveredId < 10000) {
       update3DLabel(currentHoveredId, rotationY, camera, fadeIn);
     } else if (currentHoveredId >= 10000) {
@@ -290,7 +307,7 @@ export async function startApp() {
       }
     }
 
-    // === Country selection texture update ===
+    // === Selection textures ===
     updateSelectionTexture(
       selectedFadeIn,
       selectedFlags,
@@ -299,7 +316,6 @@ export async function startApp() {
       delta
     );
 
-    // === Ocean selection texture update ===
     updateSelectionTexture(
       selectedOceanFadeIn,
       selectedOceanFlags,
@@ -308,10 +324,9 @@ export async function startApp() {
       delta
     );
 
-    // === Uniforms ===
+    // === Update shader uniforms ===
     uniforms.hoveredCountryId.value =
       currentHoveredId < 10000 ? currentHoveredId : 0;
-
     uniforms.hoveredOceanId.value =
       currentHoveredId >= 10000 ? currentHoveredId : 0;
 
@@ -320,7 +335,6 @@ export async function startApp() {
 
     uniforms.highlightFadeIn.value =
       currentHoveredId >= 10000 ? fadeInOcean : fadeIn;
-
     uniforms.highlightFadeOut.value =
       currentHoveredId >= 10000 ? fadeOutOcean : fadeOut;
 
@@ -329,6 +343,84 @@ export async function startApp() {
     globe.rotation.y = rotationY;
     renderer.render(scene, camera);
   }
+
+  // Button functionalities
+  setupUserLocation(scene, globe);
+
+  // === Button state management ===
+  function updateButtonState(button: HTMLButtonElement, enabled: boolean) {
+    button.classList.toggle("enabled", enabled);
+    button.classList.toggle("disabled", !enabled);
+  }
+
+  // Get all button references
+  const countryBtn = document.getElementById(
+    "toggle-country"
+  ) as HTMLButtonElement;
+  const oceanBtn = document.getElementById("toggle-ocean") as HTMLButtonElement;
+  const flashlightBtn = document.getElementById(
+    "toggle-flashlight"
+  ) as HTMLButtonElement;
+  const clearBtn = document.getElementById(
+    "clear-selection"
+  ) as HTMLButtonElement;
+
+  // Attach button event listeners
+  clearBtn?.addEventListener("click", () => {
+    clearAllSelections(
+      selectedFlags,
+      selectedOceanFlags,
+      selectedCountryIds,
+      selectedOceanIds
+    );
+  });
+
+  countryBtn?.addEventListener("click", () => {
+    toggleCountryInteractivity(countryBtn);
+    countryBtn.textContent = interactionState.countryEnabled
+      ? "Disable Country Interactivity"
+      : "Enable Country Interactivity";
+    updateButtonState(countryBtn, interactionState.countryEnabled);
+  });
+
+  oceanBtn?.addEventListener("click", () => {
+    toggleOceanInteractivity(oceanBtn);
+    oceanBtn.textContent = interactionState.oceanEnabled
+      ? "Disable Ocean Interactivity"
+      : "Enable Ocean Interactivity";
+    updateButtonState(oceanBtn, interactionState.oceanEnabled);
+  });
+
+  flashlightBtn?.addEventListener("click", () => {
+    interactionState.flashlightEnabled = !interactionState.flashlightEnabled;
+    uniforms.uFlashlightEnabled.value = interactionState.flashlightEnabled;
+    flashlightBtn.textContent = interactionState.flashlightEnabled
+      ? "Disable Flashlight"
+      : "Enable Flashlight";
+    updateButtonState(flashlightBtn, interactionState.flashlightEnabled);
+  });
+
+  // === Set initial button states ===
+  countryBtn.textContent = interactionState.countryEnabled
+    ? "Disable Country Interactivity"
+    : "Enable Country Interactivity";
+  oceanBtn.textContent = interactionState.oceanEnabled
+    ? "Disable Ocean Interactivity"
+    : "Enable Ocean Interactivity";
+  flashlightBtn.textContent = interactionState.flashlightEnabled
+    ? "Disable Flashlight"
+    : "Enable Flashlight";
+
+  updateButtonState(countryBtn, interactionState.countryEnabled);
+  updateButtonState(oceanBtn, interactionState.oceanEnabled);
+  updateButtonState(flashlightBtn, interactionState.flashlightEnabled);
+
+  const sidebar = document.getElementById("sidebar")!;
+  const toggle = document.getElementById("sidebar-toggle")!;
+
+  toggle.addEventListener("click", () => {
+    sidebar.classList.toggle("open");
+  });
 
   animate();
 }

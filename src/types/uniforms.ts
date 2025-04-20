@@ -20,4 +20,5 @@ export interface GlobeUniforms {
   cursorGlowRadius: THREE.IUniform<number>;
   cursorUV: THREE.IUniform<THREE.Vector2>;
   hoveredOceanId: THREE.IUniform<number>;
+  uCursorOnGlobe: THREE.IUniform<boolean>;
 }

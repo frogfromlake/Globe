@@ -1,20 +1,73 @@
 body {
   margin: 0;
   overflow: hidden;
+  font-family: 'Inter', sans-serif;
 }
 
 canvas {
   display: block;
 }
 
-.location-btn {
+/* Sidebar panel */
+.sidebar {
+  position: absolute;
+  top: 1.5rem; /* fixed: same as toggle button */
+  left: -18rem;
+  width: 16rem;
+  padding: 1rem 0.75rem;
+  padding-top: 4.5rem; /* pushes content below the toggle */
+  transition: left 0.35s ease;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  backdrop-filter: blur(6px);
+}
+
+.sidebar.open {
+  left: 0;
+}
+
+
+/* Toggle button: circular glowing hamburger icon */
+.sidebar-toggle {
   position: absolute;
   top: 1.5rem;
-  left: 1rem;
-  z-index: 10;
+  left: 0.75rem;
+  width: 2.5rem;
+  height: 2.5rem;
+  background: rgba(0, 0, 0, 0.75);
+  box-shadow: 0 0 18px rgba(135, 190, 255, 0.5);
+  border-radius: 50%;
+  box-shadow: 0 0 12px rgba(135, 190, 255, 0.25);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+  z-index: 30;
+  transition: background 0.3s ease, transform 0.3s ease;
+}
+
+.sidebar-toggle:hover {
+  background: rgba(0, 0, 0, 0.75);
+  box-shadow: 0 0 18px rgba(135, 190, 255, 0.5);
+}
+
+/* Hamburger bars */
+.sidebar-toggle .bar {
+  width: 20px;
+  height: 2px;
+  background-color: #cbe7ff;
+  margin: 2.5px 0;
+  transition: all 0.3s ease;
+}
+
+.location-btn {
+  width: 100%;
   padding: 0.6rem 1.2rem;
   background: rgba(0, 0, 0, 0.5);
-  color: #fff;
+  color: #ffffffc5;
   font-weight: 500;
   border: 1px solid rgba(255, 255, 255, 0.2);
   border-radius: 8px;
@@ -22,9 +75,18 @@ canvas {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
   cursor: pointer;
   transition: background 0.3s, transform 0.2s;
+  text-align: left;
 }
 
 .location-btn:hover {
   background: rgba(0, 140, 255, 0.054);
-  box-shadow: 0 0 12px rgba(0, 140, 255, 0.4);
+  box-shadow: 0 0 12px rgba(137, 218, 253, 0.332);
+}
+
+.location-btn.enabled {
+  background-color: rgba(37, 59, 85, 0.445); /* light pastel green */
+}
+
+.location-btn.disabled {
+  background-color: rgba(1, 10, 29, 0.3); /* light pastel pink */
 }

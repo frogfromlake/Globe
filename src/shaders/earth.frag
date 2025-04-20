@@ -25,6 +25,9 @@ uniform vec3 cursorWorldPos;
 
 uniform vec2 cursorUV;
 
+uniform bool uFlashlightEnabled;
+uniform bool uCursorOnGlobe;
+
 // === VARYINGS ===
 varying vec2 vUv;
 varying vec3 vWorldNormal;
@@ -182,12 +185,14 @@ void main() {
     }
 
     // === CURSOR GLOW ON NIGHT SIDE ===
-    float cursorDistance = distance(normalize(vWorldNormal), normalize(cursorWorldPos));
-    float glowFalloff = smoothstep(cursorGlowRadius, 0.0, cursorDistance);
-    float nightFactor = 1.0 - sharpened;
+    if (uFlashlightEnabled && uCursorOnGlobe) {
+        float cursorDistance = distance(normalize(vWorldNormal), normalize(cursorWorldPos));
+        float glowFalloff = smoothstep(cursorGlowRadius, 0.0, cursorDistance);
+        float nightFactor = 1.0 - sharpened;
 
-    vec3 cursorGlowColor = vec3(0.65, 0.74, 1.0); // soft blue
-    finalColor += cursorGlowColor * glowFalloff * nightFactor * cursorGlowStrength;
+        vec3 cursorGlowColor = vec3(0.65, 0.74, 1.0); // soft blue
+        finalColor += cursorGlowColor * glowFalloff * nightFactor * cursorGlowStrength;
+    }
 
     gl_FragColor = vec4(finalColor, 1.0);
 }
