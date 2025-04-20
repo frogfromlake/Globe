@@ -6,7 +6,7 @@ export const CONFIG = {
   /** Camera settings for perspective projection */
   camera: {
     /** Field of view in degrees for the perspective camera */
-    fov: 75,
+    fov: 50,
     /** Near clipping plane distance */
     near: 0.1,
     /** Far clipping plane distance */
@@ -17,6 +17,8 @@ export const CONFIG = {
       y: 0,
       z: 1.9, // Change this value to zoom in or out by default
     },
+    /** Multiplier to adjust camera Z based on FOV (e.g., lower FOV = pull back) */
+    fovDistanceMultiplier: 1.5,
   },
 
   /** Globe mesh geometry settings */
@@ -26,6 +28,27 @@ export const CONFIG = {
     /** Horizontal resolution (longitude segments) */
     widthSegments: 128,
     /** Vertical resolution (latitude segments) */
+    heightSegments: 128,
+  },
+
+  stars: {
+    /** Offset for panning the texture horizontally (U) and vertically (V) */
+    offset: {
+      x: 0.7,
+      y: 0.0,
+    },
+
+    /** Opacity of the starfield (0 = transparent, 1 = fully visible) */
+    opacity: 0.18,
+
+    /** RGB color tint applied to the star texture (in 0–1 range) */
+    tint: [0.85, 0.9, 1.0] as [number, number, number],
+
+    /** Radius of the sphere geometry for the starscape */
+    radius: 500,
+
+    /** Resolution of the sphere used for the star background */
+    widthSegments: 128,
     heightSegments: 128,
   },
 
@@ -135,6 +158,8 @@ export const CONFIG = {
     countryIdMapPath: "/textures/country_id_map_8k_rgb.png",
     /** Path to the RGB-encoded ocean ID map */
     oceanIdMapPath: "/textures/ocean_id_map_8k_rgb.png",
+    /** Path to the eso sky map */
+    esoSkyMapPath: "/textures/eso_sky.jpg",
     /** Min filter for day/night textures */
     minFilter: THREE.LinearFilter,
     /** Mag filter for day/night textures */

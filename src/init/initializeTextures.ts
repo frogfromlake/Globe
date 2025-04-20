@@ -30,6 +30,13 @@ export function initializeTextures(renderer: THREE.WebGLRenderer) {
     }
   );
 
+  const esoSkyMapTexture = loader.load(
+    CONFIG.textures.esoSkyMapPath,
+    (tex) => {
+      tex.colorSpace = THREE.SRGBColorSpace;
+    }
+  );
+
   const maxAnisotropy = Math.min(
     CONFIG.textures.maxAnisotropy,
     renderer.capabilities.getMaxAnisotropy()
@@ -41,5 +48,5 @@ export function initializeTextures(renderer: THREE.WebGLRenderer) {
     tex.anisotropy = maxAnisotropy;
   });
 
-  return { dayTexture, nightTexture, countryIdMapTexture, oceanIdMapTexture };
+  return { dayTexture, nightTexture, countryIdMapTexture, oceanIdMapTexture, esoSkyMapTexture };
 }

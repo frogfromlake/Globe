@@ -36,11 +36,10 @@ import { oceanIdToIndex } from "../data/oceanIdToIndex";
 import { clearAllSelections } from "../interactions/clearSelections";
 import {
   toggleCountryInteractivity,
-  toggleCountrySelection,
   toggleOceanInteractivity,
-  toggleOceanSelection,
 } from "../interactions/toggleSelections";
 import { interactionState } from "../state/interactionState";
+import { createStarMaterial } from "../materials/starMaterials";
 
 export async function startApp() {
   const selectedCountryIds = new Set<number>();
@@ -51,8 +50,13 @@ export async function startApp() {
   const camera = initializeCamera();
   const renderer = initializeRenderer(camera);
   const { scene, controls } = initializeScene(camera, renderer);
-  const { dayTexture, nightTexture, countryIdMapTexture, oceanIdMapTexture } =
-    initializeTextures(renderer);
+  const {
+    dayTexture,
+    nightTexture,
+    countryIdMapTexture,
+    oceanIdMapTexture,
+    esoSkyMapTexture,
+  } = initializeTextures(renderer);
   const {
     uniforms,
     selectedData,
@@ -86,6 +90,24 @@ export async function startApp() {
     })
   );
   scene.add(globe);
+
+  // === Background starsphere ===
+  let useFixedBackground = false; // default to realistic
+
+  // Add star sphere to scene
+  esoSkyMapTexture.wrapS = THREE.RepeatWrapping;
+  esoSkyMapTexture.wrapT = THREE.RepeatWrapping;
+  esoSkyMapTexture.offset.set(CONFIG.stars.offset.x, CONFIG.stars.offset.y); // Move horizontally (U), vertically (V)
+
+  const starSphere = new THREE.Mesh(
+    new THREE.SphereGeometry(
+      CONFIG.stars.radius,
+      CONFIG.stars.widthSegments,
+      CONFIG.stars.heightSegments
+    ),
+    createStarMaterial()
+  );
+  scene.add(starSphere);
 
   setupGlobeInteractions(renderer, globe, raycaster, pointer, camera, {
     onHover: (hit) => {
@@ -262,7 +284,6 @@ export async function startApp() {
     hideAll3DOceanLabels();
 
     const rotationY = getEarthRotationAngle();
-    const cameraDist = camera.position.length();
 
     if (currentHoveredId > 0 && currentHoveredId < 10000) {
       update3DLabel(currentHoveredId, rotationY, camera, fadeIn);
@@ -341,6 +362,17 @@ export async function startApp() {
     uniforms.cameraDirection.value.copy(camera.position).normalize();
 
     globe.rotation.y = rotationY;
+
+    if (useFixedBackground) {
+      // Keep stars always behind camera like a static skydome
+      starSphere.quaternion.copy(camera.quaternion);
+      starSphere.position.copy(camera.position);
+    } else {
+      // Reset to origin and rotation for realistic celestial backdrop
+      starSphere.quaternion.identity();
+      starSphere.position.set(0, 0, 0);
+    }
+
     renderer.render(scene, camera);
   }
 
@@ -363,6 +395,9 @@ export async function startApp() {
   ) as HTMLButtonElement;
   const clearBtn = document.getElementById(
     "clear-selection"
+  ) as HTMLButtonElement;
+  const starBtn = document.getElementById(
+    "toggle-star-mode"
   ) as HTMLButtonElement;
 
   // Attach button event listeners
@@ -411,9 +446,18 @@ export async function startApp() {
     ? "Disable Flashlight"
     : "Enable Flashlight";
 
+  starBtn?.addEventListener("click", () => {
+    useFixedBackground = !useFixedBackground;
+    starBtn.textContent = useFixedBackground
+      ? "Background: Infinite"
+      : "Background: Realistic";
+    updateButtonState(starBtn, useFixedBackground);
+  });
+
   updateButtonState(countryBtn, interactionState.countryEnabled);
   updateButtonState(oceanBtn, interactionState.oceanEnabled);
   updateButtonState(flashlightBtn, interactionState.flashlightEnabled);
+  updateButtonState(starBtn, useFixedBackground);
 
   const sidebar = document.getElementById("sidebar")!;
   const toggle = document.getElementById("sidebar-toggle")!;

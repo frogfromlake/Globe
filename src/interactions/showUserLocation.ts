@@ -18,7 +18,7 @@ export function setupUserLocation(scene: THREE.Scene, globe: THREE.Mesh) {
   locationBtn.addEventListener("click", () => {
     if (locationVisible) {
       if (userMarker) {
-        scene.remove(userMarker);
+        globe.remove(userMarker);
         userMarker.geometry.dispose();
         (Array.isArray(userMarker.material)
           ? userMarker.material
@@ -57,7 +57,6 @@ export function setupUserLocation(scene: THREE.Scene, globe: THREE.Mesh) {
         );
 
         userMarker.position.setFromSphericalCoords(radius, phi, theta);
-        scene.add(userMarker);
         globe.add(userMarker);
 
         locationVisible = true;
