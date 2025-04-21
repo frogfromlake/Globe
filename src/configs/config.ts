@@ -177,7 +177,7 @@ export const CONFIG = {
     /** Max anisotropy for day/night maps (clamped in code) */
     maxAnisotropy: 4,
     /** Night Brightness*/
-    nightBrightness: 1.5,
+    nightBrightness: 1.3,
   },
 
   /** Default uniform values for shaders */
