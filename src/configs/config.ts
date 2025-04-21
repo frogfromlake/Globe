@@ -19,6 +19,8 @@ export const CONFIG = {
     },
     /** Multiplier to adjust camera Z based on FOV (e.g., lower FOV = pull back) */
     fovDistanceMultiplier: 1.5,
+    /** How fast (in seconds) the automatic camera transition to the searched country happens */
+    autoTransitionDuration: 1.8,
   },
 
   /** Globe mesh geometry settings */
@@ -39,7 +41,7 @@ export const CONFIG = {
     },
 
     /** Opacity of the starfield (0 = transparent, 1 = fully visible) */
-    opacity: 0.30,
+    opacity: 0.3,
 
     /** RGB color tint applied to the star texture (in 0–1 range) */
     tint: [0.85, 0.9, 1.0] as [number, number, number],

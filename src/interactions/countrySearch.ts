@@ -15,6 +15,8 @@ export function setupCountrySearch(
   selectedFlags: Uint8Array
 ) {
   const nameToIdMap = new Map<string, number>();
+  const transitionDuration = CONFIG.camera.autoTransitionDuration;
+
   for (const [id, data] of Object.entries(countryCenters)) {
     nameToIdMap.set(data.name.toLowerCase(), Number(id));
   }
@@ -29,10 +31,15 @@ export function setupCountrySearch(
       return;
     }
 
-    if (!selectedCountryIds.has(countryId)) {
-      selectedCountryIds.add(countryId);
-      selectedFlags[countryId] = 1;
+    // 🔹 Clear previous selections
+    for (const id of selectedCountryIds) {
+      selectedFlags[id] = 0;
     }
+    selectedCountryIds.clear();
+
+    // 🔹 Add new selected country
+    selectedCountryIds.add(countryId);
+    selectedFlags[countryId] = 1;
 
     const { lat, lon } = countryCenters[countryId];
     const { phi, theta, radius } = latLonToSphericalCoordsGeographic(
@@ -61,7 +68,7 @@ export function setupCountrySearch(
 
     gsap.to(tmp, {
       t: 1,
-      duration: 2.4,
+      duration: transitionDuration,
       ease: "power2.inOut",
       onUpdate: () => {
         const zoomFactor = shouldZoom
@@ -89,7 +96,7 @@ export function setupCountrySearch(
       x: 0,
       y: 0,
       z: 0,
-      duration: 2.4,
+      duration: transitionDuration,
       ease: "power2.inOut",
     });
   });
