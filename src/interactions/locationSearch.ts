@@ -54,6 +54,10 @@ export function setupLocationSearch(
     selectedCountryIds.clear();
     selectedOceanIds.clear();
 
+    for (let i = 0; i < selectedOceanFlags.length; i++) {
+      selectedOceanFlags[i] = 0;
+    }
+
     // Set new selection
     if (id < selectedFlags.length) {
       if (type === "country") {
