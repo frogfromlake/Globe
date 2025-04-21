@@ -102,14 +102,14 @@ canvas {
   padding: 0.55rem 0.9rem;
   font-size: 0.92rem;
   font-weight: 500;
-  color: #e0f0ff;
+  color: #e0f0ffd8;
   background: rgba(0, 0, 0, 0.45);
-  border: 1px solid rgba(255, 255, 255, 0.15);
+  border: 1.5px solid rgba(171, 202, 237, 0.429);
   border-radius: 8px;
   backdrop-filter: blur(5px);
   outline: none;
   transition: background 0.3s ease, box-shadow 0.3s ease;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
   font-family: inherit;
 }
 
