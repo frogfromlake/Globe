@@ -9,6 +9,16 @@
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500&display=swap" rel="stylesheet" />
 </head>
 <body>
+
+  <!-- Country search input: now outside the sidebar -->
+  <input
+    id="country-search"
+    class="country-search"
+    type="search"
+    placeholder="Search country..."
+    autocomplete="off"
+  />
+
   <!-- Sidebar toggle button (hamburger icon in a circle) -->
   <div id="sidebar-toggle" class="sidebar-toggle">
     <div class="bar"></div>
@@ -18,12 +28,12 @@
 
   <!-- Sidebar menu -->
   <div id="sidebar" class="sidebar">
-    <button id="show-location" class="location-btn">Show My Location</button>
-    <button id="clear-selection" class="location-btn">Clear All Selections</button>
-    <button id="toggle-country" class="location-btn">Toggle Country Interactivity</button>
-    <button id="toggle-ocean" class="location-btn">Toggle Ocean Interactivity</button>
-    <button id="toggle-flashlight" class="location-btn">Disable Flashlight</button>
-    <button id="toggle-star-mode" class="location-btn">Background: Realistic</button>
+    <button id="show-location" class="globe-btn">Show My Location</button>
+    <button id="clear-selection" class="globe-btn">Clear All Selections</button>
+    <button id="toggle-country" class="globe-btn">Toggle Country Interactivity</button>
+    <button id="toggle-ocean" class="globe-btn">Toggle Ocean Interactivity</button>
+    <button id="toggle-flashlight" class="globe-btn">Disable Flashlight</button>
+    <button id="toggle-star-mode" class="globe-btn">Background: Realistic</button>
   </div>
 
   <canvas id="globe"></canvas>

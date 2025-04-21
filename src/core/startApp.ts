@@ -1,7 +1,11 @@
 import * as THREE from "three";
 import { setupGlobeInteractions } from "../interactions/setupGlobeInteractions";
 import { setupUserLocation } from "../interactions/showUserLocation";
-import { getEarthRotationAngle, getSunDirectionUTC } from "../utils/geo";
+import {
+  getEarthRotationAngle,
+  getSunDirectionUTC,
+  latLonToUnitVector,
+} from "../utils/geo";
 import {
   loadCountryIdMapTexture,
   updateHoveredCountry,
@@ -40,6 +44,9 @@ import {
 } from "../interactions/toggleSelections";
 import { interactionState } from "../state/interactionState";
 import { createStarMaterial } from "../materials/starMaterials";
+import { countryCenters } from "../data/countryCenters";
+import gsap from "gsap";
+import { setupCountrySearch } from "../interactions/countrySearch";
 
 export async function startApp() {
   const selectedCountryIds = new Set<number>();
@@ -50,6 +57,9 @@ export async function startApp() {
   const camera = initializeCamera();
   const renderer = initializeRenderer(camera);
   const { scene, controls } = initializeScene(camera, renderer);
+  const countrySearchInput = document.getElementById(
+    "country-search"
+  ) as HTMLInputElement;
   const {
     dayTexture,
     nightTexture,
@@ -467,4 +477,12 @@ export async function startApp() {
   });
 
   animate();
+
+  setupCountrySearch(
+    countrySearchInput,
+    camera,
+    controls,
+    selectedCountryIds,
+    selectedFlags
+  );
 }

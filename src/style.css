@@ -63,7 +63,7 @@ canvas {
   transition: all 0.3s ease;
 }
 
-.location-btn {
+.globe-btn {
   width: 100%;
   padding: 0.6rem 1.2rem;
   background: rgba(0, 0, 0, 0.5);
@@ -78,15 +78,46 @@ canvas {
   text-align: left;
 }
 
-.location-btn:hover {
+.globe-btn:hover {
   background: rgba(0, 140, 255, 0.054);
   box-shadow: 0 0 12px rgba(137, 218, 253, 0.332);
 }
 
-.location-btn.enabled {
-  background-color: rgba(37, 59, 85, 0.445); /* light pastel green */
+.globe-btn.enabled {
+  background-color: rgba(37, 59, 85, 0.445);
 }
 
-.location-btn.disabled {
-  background-color: rgba(1, 10, 29, 0.3); /* light pastel pink */
+.globe-btn.disabled {
+  background-color: rgba(1, 10, 29, 0.3);
+}
+
+/* Fixed country search input (top-left corner) */
+#country-search {
+  position: absolute;
+  top: 1.5rem;
+  left: 4.25rem; /* leaves space next to the sidebar toggle */
+  z-index: 25;
+
+  width: 16rem;
+  padding: 0.55rem 0.9rem;
+  font-size: 0.92rem;
+  font-weight: 500;
+  color: #e0f0ff;
+  background: rgba(0, 0, 0, 0.45);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 8px;
+  backdrop-filter: blur(5px);
+  outline: none;
+  transition: background 0.3s ease, box-shadow 0.3s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  font-family: inherit;
+}
+
+#country-search::placeholder {
+  color: rgba(200, 225, 255, 0.45);
+}
+
+#country-search:focus {
+  background: rgba(0, 0, 0, 0.55);
+  box-shadow: 0 0 0 2px rgba(135, 190, 255, 0.4);
 }

@@ -39,7 +39,6 @@ vec3 desaturate(vec3 color, float factor) {
     return mix(color, vec3(gray), factor);
 }
 
-
 void main() {
     // === LIGHTING CALCULATION ===
     float intensity = dot(normalize(vWorldNormal), normalize(lightDirection));
@@ -94,7 +93,7 @@ void main() {
     // === DAY/NIGHT TRANSITION EDGE FILL ===
     float edgeFill = smoothstep(0.0, 0.2, sharpened);
     finalColor += vec3(0.01, 0.015, 0.025) * edgeFill;
-        
+
     // === ID MAP DECODING ===
     // Country ID is Y-flipped (vUv.y is upside-down)
     vec2 flippedUv = vec2(vUv.x, 1.0 - vUv.y);
@@ -157,7 +156,6 @@ void main() {
     }
 
     // === SELECTION HIGHLIGHTS ===
-
     // Country selection
     float selectedIndex = clamp(countryIdValue, 0.0, 2047.0);
     vec2 selectedUV = vec2((selectedIndex + 0.5) / 2048.0, 0.5);

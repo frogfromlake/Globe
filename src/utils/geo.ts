@@ -1,13 +1,19 @@
 import * as THREE from "three";
 import { CONFIG } from "../configs/config";
 
+export function latLonToUnitVector(lat: number, lon: number): THREE.Vector3 {
+  const phi = (90 - lat) * CONFIG.geo.degToRad;
+  const theta = (lon + 90) * CONFIG.geo.degToRad; // +90 to match texture rotation
+  return new THREE.Vector3().setFromSphericalCoords(1, phi, theta).normalize();
+}
+
 export function latLonToSphericalCoordsGeographic(
   lat: number,
   lon: number,
   radius = CONFIG.geo.defaultRadius
 ): { phi: number; theta: number; radius: number } {
-  const phi = (CONFIG.geo.latOffset - lat) * CONFIG.geo.degToRad;
-  const theta = (lon + CONFIG.geo.lonOffset) * CONFIG.geo.degToRad;
+  const phi = (90 - lat) * CONFIG.geo.degToRad;
+  const theta = (lon + 90) * CONFIG.geo.degToRad;
   return { phi, theta, radius };
 }
 

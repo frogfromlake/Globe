@@ -39,7 +39,7 @@ export const CONFIG = {
     },
 
     /** Opacity of the starfield (0 = transparent, 1 = fully visible) */
-    opacity: 0.18,
+    opacity: 0.30,
 
     /** RGB color tint applied to the star texture (in 0–1 range) */
     tint: [0.85, 0.9, 1.0] as [number, number, number],
