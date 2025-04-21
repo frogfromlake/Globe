@@ -21,4 +21,5 @@ export interface GlobeUniforms {
   cursorUV: THREE.IUniform<THREE.Vector2>;
   hoveredOceanId: THREE.IUniform<number>;
   uCursorOnGlobe: THREE.IUniform<boolean>;
+  nightBrightness: THREE.IUniform<number>;
 }

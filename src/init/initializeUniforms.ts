@@ -62,7 +62,8 @@ export function initializeUniforms(
     cursorGlowRadius: { value: cursorGlowRadius },
     cursorUV: { value: new THREE.Vector2(...initialCursorUV) },
     uFlashlightEnabled: { value: true },
-    uCursorOnGlobe: { value: false }
+    uCursorOnGlobe: { value: false },
+    nightBrightness: { value: CONFIG.textures.nightBrightness },
   };
 
   return {

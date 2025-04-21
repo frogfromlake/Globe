@@ -18,6 +18,7 @@ uniform float uTime;
 uniform float cityLightStrength;
 uniform float cursorGlowStrength;
 uniform float cursorGlowRadius;
+uniform float nightBrightness;
 
 uniform vec3 lightDirection;
 uniform vec3 cameraDirection;
@@ -62,13 +63,23 @@ void main() {
     // === NIGHT MAP STYLING ===
     const float desaturationFactor = 0.12;
     vec3 nightOriginal = nightColor.rgb;
+
+    // Soft desaturation of night texture
     float nightGray = dot(nightOriginal, vec3(0.299, 0.587, 0.114));
     vec3 tonedNight = mix(nightOriginal, vec3(nightGray), desaturationFactor);
 
-    // Add city light glow
-    vec3 lightTint = vec3(1.1, 1.0, 0.85);
-    vec3 cityGlow = nightColor.rgb * lightTint * cityLightStrength * 0.035 * (1.0 - sharpened);
+    // Realistic warm light tint
+    vec3 lightTint = vec3(1.05, 0.9, 0.7); // subtle amber
+
+    // Smooth city glow with clean falloff
+    float cityFalloff = smoothstep(0.0, 0.7, 1.0 - sharpened);
+    vec3 cityGlow = tonedNight * lightTint * cityLightStrength * cityFalloff * 0.05;
+
+    // Combine and darken near the terminator
     vec3 nightBlended = tonedNight + cityGlow;
+
+    // Apply brightness (user controlled)
+    nightBlended *= nightBrightness;
 
     // === FINAL BLEND BASE COLOR ===
     vec3 baseColor = mix(nightBlended, boostedDay, sharpened);
