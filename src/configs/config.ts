@@ -1,6 +1,8 @@
 // src/configs/config.ts
 import * as THREE from "three";
 import { oceanCenters } from "../data/oceanCenters";
+import { countryCenters } from "../data/countryCenters";
+import { oceanIdToIndex } from "../data/oceanIdToIndex";
 
 export const CONFIG = {
   /** Camera settings for perspective projection */
@@ -237,6 +239,9 @@ export const CONFIG = {
 
   /** Settings related to the country ID hover system */
   countryHover: {
+    /** Precomputed geographic center coordinates for each country ID */
+    countryCenters: countryCenters,
+
     /** Path to the RGB-encoded country ID map image */
     idMapPath: "textures/country_id_map_8k_rgb.png",
     /** Maximum number of countries supported for selection */
@@ -254,6 +259,9 @@ export const CONFIG = {
   oceanHover: {
     /** Precomputed geographic center coordinates for each ocean ID */
     oceanCenters: oceanCenters,
+
+    /** ID-to-index map for ocean selections */
+    oceanIdToIndex: oceanIdToIndex,
 
     /** Maximum number of oceans supported for selection and highlighting */
     maxOceanCount: 512,

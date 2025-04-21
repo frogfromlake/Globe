@@ -24,13 +24,40 @@ export function initializeUniforms(
   const selectedData = selectedCountryMask.image.data as Uint8Array;
   const selectedOceanData = selectedOceanMask.image.data as Uint8Array;
 
-  const selectedFadeIn = new Float32Array(selectedData.length).fill(0);
-  const selectedFlags = new Uint8Array(selectedData.length).fill(0);
-
-  const selectedOceanFadeIn = new Float32Array(selectedOceanData.length).fill(
-    0
+  const maxCountryId = Math.max(...Object.keys(CONFIG.countryHover.countryCenters).map(Number));
+  const maxOceanId = Math.max(
+    ...Object.keys(CONFIG.oceanHover.oceanCenters).map(Number)
   );
-  const selectedOceanFlags = new Uint8Array(selectedOceanData.length).fill(0);
+  const maxId = Math.max(maxCountryId, maxOceanId);
+
+  // Ensure all selection arrays are large enough
+  const ensureSize = <T extends Uint8Array | Float32Array>(
+    arr: T,
+    length: number
+  ): T => {
+    if (arr.length >= length) return arr;
+    const newArr = new (arr.constructor as any)(length);
+    newArr.set(arr);
+    return newArr;
+  };
+
+  const selectedFadeIn = ensureSize(
+    new Float32Array(selectedData.length).fill(0),
+    maxId + 1
+  );
+  const selectedFlags = ensureSize(
+    new Uint8Array(selectedData.length).fill(0),
+    maxId + 1
+  );
+
+  const selectedOceanFadeIn = ensureSize(
+    new Float32Array(selectedOceanData.length).fill(0),
+    maxId + 1
+  );
+  const selectedOceanFlags = ensureSize(
+    new Uint8Array(selectedOceanData.length).fill(0),
+    maxId + 1
+  );
 
   const {
     defaultHoveredId,
@@ -63,7 +90,7 @@ export function initializeUniforms(
     cursorUV: { value: new THREE.Vector2(...initialCursorUV) },
     uFlashlightEnabled: { value: true },
     uCursorOnGlobe: { value: false },
-    nightBrightness: { value: CONFIG.textures.nightBrightness }
+    nightBrightness: { value: CONFIG.textures.nightBrightness },
   };
 
   return {

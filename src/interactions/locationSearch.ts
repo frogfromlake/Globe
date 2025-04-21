@@ -5,43 +5,76 @@ import {
   latLonToSphericalCoordsGeographic,
 } from "../utils/geo";
 import { countryCenters } from "../data/countryCenters";
+import { oceanCenters } from "../data/oceanCenters";
 import { CONFIG } from "../configs/config";
 
-export function setupCountrySearch(
-  inputEl: HTMLInputElement,
+export function setupLocationSearch(
+  inputLocation: HTMLInputElement,
   camera: THREE.Camera,
   controls: any,
   selectedCountryIds: Set<number>,
-  selectedFlags: Uint8Array
+  selectedOceanIds: Set<number>,
+  selectedFlags: Uint8Array,
+  selectedOceanFlags: Uint8Array
 ) {
-  const nameToIdMap = new Map<string, number>();
+  const nameToIdMap = new Map<
+    string,
+    { id: number; type: "country" | "ocean" }
+  >();
   const transitionDuration = CONFIG.camera.autoTransitionDuration;
 
   for (const [id, data] of Object.entries(countryCenters)) {
-    nameToIdMap.set(data.name.toLowerCase(), Number(id));
+    nameToIdMap.set(data.name.toLowerCase(), {
+      id: Number(id),
+      type: "country",
+    });
   }
 
-  inputEl?.addEventListener("change", () => {
-    const query = inputEl.value.trim().toLowerCase();
+  for (const [id, data] of Object.entries(oceanCenters)) {
+    nameToIdMap.set(data.name.toLowerCase(), { id: Number(id), type: "ocean" });
+  }
+
+  inputLocation?.addEventListener("change", () => {
+    const query = inputLocation.value.trim().toLowerCase();
     if (!query) return;
 
-    const countryId = nameToIdMap.get(query);
-    if (!countryId) {
-      console.warn("Country not found:", query);
+    const result = nameToIdMap.get(query);
+    if (!result) {
+      console.warn("Country or ocean not found:", query);
       return;
     }
 
-    // 🔹 Clear previous selections
-    for (const id of selectedCountryIds) {
-      selectedFlags[id] = 0;
-    }
+    const { id, type } = result;
+    const centerData =
+      type === "country" ? countryCenters[id] : oceanCenters[id];
+
+    // Clear previous selections
+    for (const cid of selectedCountryIds) selectedFlags[cid] = 0;
+    for (const oid of selectedOceanIds) selectedFlags[oid] = 0;
     selectedCountryIds.clear();
+    selectedOceanIds.clear();
 
-    // 🔹 Add new selected country
-    selectedCountryIds.add(countryId);
-    selectedFlags[countryId] = 1;
+    // Set new selection
+    if (id < selectedFlags.length) {
+      if (type === "country") {
+        selectedCountryIds.add(id);
+        selectedFlags[id] = 1;
+      } else {
+        selectedOceanIds.add(id);
+        console.log("Added Ocean ID:", id);
+        selectedFlags[id] = 1;
 
-    const { lat, lon } = countryCenters[countryId];
+        const oceanIndex = CONFIG.oceanHover.oceanIdToIndex?.[id];
+        if (
+          typeof oceanIndex === "number" &&
+          oceanIndex < CONFIG.oceanHover.maxOceanCount
+        ) {
+          selectedOceanFlags[oceanIndex] = 1;
+        }
+      }
+    }
+
+    const { lat, lon } = centerData;
     const { phi, theta, radius } = latLonToSphericalCoordsGeographic(
       lat,
       lon,
@@ -59,13 +92,11 @@ export function setupCountrySearch(
       .clone()
       .sub(controls.target)
       .normalize();
-
     const originalDistance = camera.position.distanceTo(controls.target);
     const defaultDistance = CONFIG.camera.initialPosition.z ?? originalDistance;
     const shouldZoom = originalDistance < defaultDistance * 0.98;
 
     const tmp = { t: 0 };
-
     gsap.to(tmp, {
       t: 1,
       duration: transitionDuration,
@@ -85,7 +116,6 @@ export function setupCountrySearch(
           .clone()
           .lerp(targetDirection, tmp.t)
           .normalize();
-
         const newPos = interpolatedDirection.multiplyScalar(zoomFactor);
         camera.position.copy(newPos);
         controls.update();
