@@ -7,6 +7,8 @@ import {
 import { countryCenters } from "../data/countryCenters";
 import { oceanCenters } from "../data/oceanCenters";
 import { CONFIG } from "../configs/config";
+import { countryIdToIso } from "../data/countryIdToIso";
+import { showNewsPanel } from "../features/news/showNewsPanel";
 
 export function setupLocationSearch(
   inputLocation: HTMLInputElement,
@@ -63,6 +65,13 @@ export function setupLocationSearch(
       if (type === "country") {
         selectedCountryIds.add(id);
         selectedFlags[id] = 1;
+
+        const isoCode = countryIdToIso[id];
+        if (isoCode) {
+          showNewsPanel(isoCode);
+        } else {
+          console.warn(`No ISO code found for searched country ID: ${id}`);
+        }
       } else {
         selectedOceanIds.add(id);
         console.log("Added Ocean ID:", id);

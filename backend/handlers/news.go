@@ -1,0 +1,48 @@
+// backend/handlers/news.go
+package handlers
+
+import (
+	"encoding/json"
+	"log"
+	"net/http"
+	"strings"
+
+	"github.com/frogfromlake/globe-news-backend/utils"
+)
+
+func NewsHandler(w http.ResponseWriter, r *http.Request) {
+	// w.Header().Set("Access-Control-Allow-Origin", "*") // ✅ CORS fix
+	w.Header().Set("Access-Control-Allow-Origin", "http://localhost:5173")
+	w.Header().Set("Access-Control-Allow-Methods", "GET")
+	w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+
+	countryCode := r.URL.Query().Get("country")
+	countryCode = strings.ToUpper(countryCode)
+
+	if countryCode == "" {
+		http.Error(w, "Missing country code", http.StatusBadRequest)
+		return
+	}
+
+	articles, err := utils.GetNewsByCountry(countryCode)
+	if err != nil {
+		log.Printf("Error fetching news for %s: %v\n", countryCode, err)
+
+		// If it's a "no feeds" error, return 204 No Content
+		if strings.Contains(err.Error(), "No feeds found") {
+			w.WriteHeader(http.StatusNoContent)
+			return
+		}
+
+		http.Error(w, "Failed to fetch news", http.StatusInternalServerError)
+		return
+	}
+
+	if len(articles) == 0 {
+		w.WriteHeader(http.StatusNoContent)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(articles)
+}

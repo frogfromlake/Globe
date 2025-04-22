@@ -41,6 +41,8 @@ import {
 import { interactionState } from "../state/interactionState";
 import { createStarMaterial } from "../materials/starMaterials";
 import { setupLocationSearch } from "../interactions/locationSearch";
+import { countryIdToIso } from "../data/countryIdToIso";
+import { showNewsPanel } from "../features/news/showNewsPanel";
 
 export async function startApp() {
   const selectedCountryIds = new Set<number>();
@@ -129,12 +131,26 @@ export async function startApp() {
 
       // Handle country selection
       if (clickedCountryId > 0 && clickedCountryId < selectedFlags.length) {
+        const panel = document.getElementById("news-panel");
+
         if (selectedCountryIds.has(clickedCountryId)) {
           selectedCountryIds.delete(clickedCountryId);
           selectedFlags[clickedCountryId] = 0;
+
+          // ✅ Hide the news panel when deselecting
+          if (panel) panel.classList.remove("open");
         } else {
           selectedCountryIds.add(clickedCountryId);
           selectedFlags[clickedCountryId] = 1;
+
+          const isoCode = countryIdToIso[clickedCountryId];
+          if (isoCode) {
+            showNewsPanel(isoCode);
+          } else {
+            console.warn(
+              `No ISO code found for country ID: ${clickedCountryId}`
+            );
+          }
         }
       }
 
