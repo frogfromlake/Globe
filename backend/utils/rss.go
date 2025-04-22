@@ -4,6 +4,7 @@ package utils
 import (
 	"encoding/json"
 	"errors"
+	"log"
 	"os"
 	"time"
 
@@ -34,6 +35,8 @@ func init() {
 	if err != nil {
 		panic("Invalid JSON in countryToFeeds.json: " + err.Error())
 	}
+
+	log.Printf("✅ Loaded feeds for %d countries", len(countryFeeds))
 }
 
 func GetNewsByCountry(code string) ([]NewsArticle, error) {

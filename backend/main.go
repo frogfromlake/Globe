@@ -17,8 +17,8 @@ func main() {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/api/news", handlers.NewsHandler)
 
-	log.Printf("✅ Server running on http://localhost:%s\n", port)
-	err := http.ListenAndServe(":"+port, mux)
+	log.Printf("✅ Server running on http://0.0.0.0:%s\n", port)
+	err := http.ListenAndServe("0.0.0.0:"+port, mux)
 	if err != nil {
 		log.Fatal(err)
 	}
