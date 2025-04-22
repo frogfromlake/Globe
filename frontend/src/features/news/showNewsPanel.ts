@@ -4,7 +4,8 @@ export async function showNewsPanel(isoCode: string) {
   if (isFetchingNews) return;
   isFetchingNews = true;
 
-  const API_BASE = import.meta.env.PUBLIC_API_URL || "http://localhost:8080";
+  const API_BASE =
+    import.meta.env.VITE_PUBLIC_API_URL || "http://localhost:8080";
   const panel = document.getElementById("news-panel")!;
   const title = document.getElementById("news-title")!;
   const content = document.getElementById("news-content")!;

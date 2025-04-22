@@ -1,5 +1,6 @@
 export async function fetchCountryNews(isoCode: string) {
-  const API_BASE = import.meta.env.PUBLIC_API_URL || "http://localhost:8080";
+  const API_BASE =
+    import.meta.env.VITE_PUBLIC_API_URL || "http://localhost:8080";
 
   try {
     const res = await fetch(`${API_BASE}/api/news?country=${isoCode}`);

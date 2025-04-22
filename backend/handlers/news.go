@@ -1,4 +1,3 @@
-// backend/handlers/news.go
 package handlers
 
 import (
@@ -12,12 +11,17 @@ import (
 
 func NewsHandler(w http.ResponseWriter, r *http.Request) {
 	origin := r.Header.Get("Origin")
-	if origin == "http://localhost:5173" || origin == "https://orbitalone.space" || origin == "https://orbitalone-frontend.vercel.app"{
+	if origin == "http://localhost:5173" || origin == "https://orbitalone.space" || origin == "https://orbitalone-frontend.vercel.app" {
 		w.Header().Set("Access-Control-Allow-Origin", origin)
 	}
-
-	w.Header().Set("Access-Control-Allow-Methods", "GET")
+	w.Header().Set("Access-Control-Allow-Methods", "GET, OPTIONS")
 	w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+
+	if r.Method == http.MethodOptions {
+		// Preflight request — return with headers only
+		w.WriteHeader(http.StatusNoContent)
+		return
+	}
 
 	countryCode := r.URL.Query().Get("country")
 	countryCode = strings.ToUpper(countryCode)
@@ -31,7 +35,6 @@ func NewsHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Printf("Error fetching news for %s: %v\n", countryCode, err)
 
-		// If it's a "no feeds" error, return 204 No Content
 		if strings.Contains(err.Error(), "No feeds found") {
 			w.WriteHeader(http.StatusNoContent)
 			return
