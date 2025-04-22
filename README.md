@@ -32,7 +32,27 @@ pnpm install      # or npm install
 pnpm dev          # start dev server (http://localhost:5173/)
 ```
 
-Backend news service lives in `/backend` and runs separately. Setup instructions coming soon.
+### 🮾 Backend (Go) Setup
+
+The backend serves country-specific news via RSS. It lives in `/backend` and must be started separately.
+
+```bash
+cd Orbitalone/backend
+
+# Run locally
+go run main.go
+
+# Or build binary
+go build -o orbitalone-news .
+./orbitalone-news
+```
+
+To deploy the backend, use e.g. [Fly.io](https://fly.io):
+
+```bash
+fly launch        # setup (first time)
+fly deploy        # deploy to Fly.io
+```
 
 ---
 
@@ -92,7 +112,7 @@ It's a separate service in `/backend`, deployable via Fly.io or locally:
 
 > `GET /api/news?country=DE` → returns JSON articles for Germany
 
-Check out the backend readme for deployment & dev setup.
+See [Installation](#-installation) above for setup.
 
 ---
 
