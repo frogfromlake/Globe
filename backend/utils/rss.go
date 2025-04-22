@@ -42,12 +42,18 @@ func init() {
 func GetNewsByCountry(code string) ([]NewsArticle, error) {
 	feeds, ok := countryFeeds[code]
 	if !ok {
+		log.Printf("🚫 No feeds found for %s", code)
 		return nil, errors.New("No feeds found for country " + code)
 	}
 
+	log.Printf("🔍 Fetching news for %s from %d feeds", code, len(feeds))
 	var all []NewsArticle
+
 	for _, url := range feeds {
+		log.Printf("🌐 Trying feed URL: %s", url)
+
 		if cached, found := feedCache.Get(url); found {
+			log.Printf("✅ Using cached feed: %s", url)
 			all = append(all, cached.([]NewsArticle)...)
 			continue
 		}
@@ -55,6 +61,7 @@ func GetNewsByCountry(code string) ([]NewsArticle, error) {
 		fp := gofeed.NewParser()
 		feed, err := fp.ParseURL(url)
 		if err != nil {
+			log.Printf("⚠️ Failed to fetch/parse %s: %v", url, err)
 			continue
 		}
 
@@ -72,9 +79,12 @@ func GetNewsByCountry(code string) ([]NewsArticle, error) {
 			}
 		}
 
+		log.Printf("📰 Found %d articles from %s", len(articles), feed.Title)
+
 		feedCache.Set(url, articles, cache.DefaultExpiration)
 		all = append(all, articles...)
 	}
 
+	log.Printf("📦 Total articles collected for %s: %d", code, len(all))
 	return all, nil
 }
