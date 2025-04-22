@@ -121,11 +121,24 @@ See: [https://orbitalone.space](https://orbitalone.space)
 
 ## 👨‍🚀 Author
 
-Created with passion by [@frogfromlake](https://github.com/frogfromlake)  
+Created with passion by Fabian Quist [@frogfromlake](https://github.com/frogfromlake)  
 Made for explorers, thinkers, dreamers — and for Earth.
 
 ---
 
-## 🪐 License
+## 🪐 License: **MIT**
 
-**MIT** — Free to use, extend, remix, and share.
+## ❕ Deployment Policy
+
+This project is open source for **learning, exploration, and extension** — but:
+
+> **Please do not deploy this project under the same name (`Orbitalone`) or branding.**  
+> The live instance at [https://orbitalone.space](https://orbitalone.space) is the official deployment.
+
+Feel free to:
+- Fork the repo
+- Run it locally or privately
+- Build upon it for your own unique project
+
+But **do not redeploy** it as a clone with the same identity or public URL.  
+If you're unsure, [open an issue](https://github.com/frogfromlake/Orbitalone/issues) or reach out!
