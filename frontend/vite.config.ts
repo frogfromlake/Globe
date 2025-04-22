@@ -8,4 +8,8 @@ export default defineConfig({
       include: ["**/*.vert", "**/*.frag"], // <– Enable these shader types
     }),
   ],
+  base: "./",
+  build: {
+    outDir: "dist",
+  },
 });
