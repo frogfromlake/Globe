@@ -138,7 +138,7 @@ void main() {
     if (isHovered) {
         float glow = fresnel * pulse;
         vec3 halo = highlightColor * glow * highlightFadeIn * 0.6;
-        finalColor = mix(finalColor, highlightColor, 0.15 * highlightFadeIn);
+        finalColor = mix(finalColor, highlightColor, 0.2 * highlightFadeIn);
         finalColor += halo;
     }
 
@@ -146,7 +146,7 @@ void main() {
     if (isOceanHovered) {
         float glow = fresnel * pulse;
         vec3 halo = oceanHighlight * glow * highlightFadeIn * 0.6;
-        finalColor = mix(finalColor, oceanHighlight, 0.1 * highlightFadeIn);
+        finalColor = mix(finalColor, oceanHighlight, 0.2 * highlightFadeIn);
         finalColor += halo;
     }
 
@@ -176,7 +176,7 @@ void main() {
     if (isSelected) {
         float glow = pow(1.0 - dot(viewDir, normal), 2.5);
         vec3 halo = highlightColor * glow * 0.6;
-        finalColor = mix(finalColor, highlightColor, 0.2);
+        finalColor = mix(finalColor, highlightColor, 0.3);
         finalColor += halo;
     }
 
@@ -189,7 +189,7 @@ void main() {
     if (isOceanSelected) {
         float glow = pow(1.0 - dot(viewDir, normal), 2.5);
         vec3 halo = oceanHighlight * glow * 0.6;
-        finalColor = mix(finalColor, oceanHighlight, 0.15);
+        finalColor = mix(finalColor, oceanHighlight, 0.2);
         finalColor += halo;
     }
 

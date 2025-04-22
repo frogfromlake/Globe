@@ -1,13 +1,16 @@
 // --- systems/countryLabels3D.ts ---
 
 import * as THREE from "three";
+import { Line2 } from "three/examples/jsm/lines/Line2";
+import { LineGeometry } from "three/examples/jsm/lines/LineGeometry";
+import { LineMaterial } from "three/examples/jsm/lines/LineMaterial";
 import { countryCenters } from "../data/countryCenters";
 import { latLonToSphericalCoordsGeographic } from "../utils/geo";
 import { CONFIG } from "../configs/config";
 
 type LabelObject = {
   sprite: THREE.Sprite;
-  line: THREE.Line;
+  line: Line2;
   group: THREE.Group;
 };
 
@@ -70,20 +73,24 @@ export async function update3DLabel(
   if (!labelObjects.has(countryId)) {
     const sprite = await createTextSprite(entry.name);
 
-    const material = new THREE.LineBasicMaterial({
+    const geometry = new LineGeometry();
+    geometry.setPositions([0, 0, 0, 0, 0, 0]);
+
+    const material = new LineMaterial({
       color: CONFIG.labels3D.lineColor,
-      transparent: true, // <-- support fade
+      linewidth: CONFIG.labels3D.lineWidth,
+      transparent: true,
+      opacity: 0,
+      depthWrite: false,
+      resolution: new THREE.Vector2(window.innerWidth, window.innerHeight),
     });
 
-    const geometry = new THREE.BufferGeometry().setFromPoints([
-      new THREE.Vector3(),
-      new THREE.Vector3(),
-    ]);
+    const line = new Line2(geometry, material);
+    line.computeLineDistances();
 
-    const line = new THREE.Line(geometry, material);
     const group = new THREE.Group();
     group.add(sprite);
-    group.add(line);
+    group.add(line as unknown as THREE.Object3D);
     labelGroup.add(group);
 
     // ensure sprite is transparent
@@ -145,8 +152,19 @@ export async function update3DLabel(
     line.material.opacity = fade;
   }
 
-  line.geometry.setFromPoints([center, labelPos]);
-  line.geometry.attributes.position.needsUpdate = true;
+  (line.geometry as LineGeometry).setPositions([
+    center.x,
+    center.y,
+    center.z,
+    labelPos.x,
+    labelPos.y,
+    labelPos.z,
+  ]);
+  line.computeLineDistances();
+
+  const mat = line.material as LineMaterial;
+  mat.opacity = fade;
+  mat.resolution.set(window.innerWidth, window.innerHeight);
 
   group.visible = fade > 0.01;
 }

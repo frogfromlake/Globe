@@ -284,7 +284,9 @@ export const CONFIG = {
     /** Canvas font size for text clarity (px) */
     canvasFontSize: 256,
     /** Line color connecting label to country */
-    lineColor: 0x3399ff,
+    lineColor: 0x9ed5ff,
+    /**Thickness of the label lines */
+    lineWidth: 1.5,
     /** Distance from globe center for label anchor point */
     markerRadius: 1.01,
     /** Zoom range used to calculate dynamic label offset */

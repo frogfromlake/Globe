@@ -1,11 +1,15 @@
 import * as THREE from "three";
+import { Line2 } from "three/examples/jsm/lines/Line2";
+import { LineGeometry } from "three/examples/jsm/lines/LineGeometry";
+import { LineMaterial } from "three/examples/jsm/lines/LineMaterial";
+
 import { createTextSprite } from "./countryLabels3D";
 import { CONFIG } from "../configs/config";
 import { latLonToSphericalCoordsGeographic } from "../utils/geo";
 
 type LabelObject = {
   sprite: THREE.Sprite;
-  line: THREE.Line;
+  line: Line2;
   group: THREE.Group;
 };
 
@@ -27,22 +31,27 @@ export async function update3DOceanLabel(
   if (!labelObjectsOcean.has(name)) {
     const sprite = await createTextSprite(name);
 
-    const material = new THREE.LineBasicMaterial({
+    const geometry = new LineGeometry();
+    geometry.setPositions([0, 0, 0, 0, 0, 0]);
+
+    const material = new LineMaterial({
       color: CONFIG.labels3D.lineColor,
-      transparent: true, // <-- allow opacity
+      linewidth: CONFIG.labels3D.lineWidth,
+      transparent: true,
+      opacity: 0,
+      depthWrite: false,
+      resolution: new THREE.Vector2(window.innerWidth, window.innerHeight),
     });
-    const geometry = new THREE.BufferGeometry().setFromPoints([
-      new THREE.Vector3(),
-      new THREE.Vector3(),
-    ]);
-    const line = new THREE.Line(geometry, material);
+
+    const line = new Line2(geometry, material);
+    line.computeLineDistances();
 
     const group = new THREE.Group();
     group.add(sprite);
-    group.add(line);
+    group.add(line as unknown as THREE.Object3D); // 👈 workaround for TS compatibility
     labelGroup.add(group);
 
-    // sprite material must be transparent too
+    // ensure sprite is transparent
     sprite.material.transparent = true;
     sprite.material.opacity = 0;
 
@@ -87,24 +96,30 @@ export async function update3DOceanLabel(
     5.0
   );
 
-  const scaleX = aspect * baseScale * scaleFactor;
-  const scaleY = baseScale * scaleFactor;
-
-  sprite.scale.set(scaleX, scaleY, 1);
+  sprite.scale.set(
+    aspect * baseScale * scaleFactor,
+    baseScale * scaleFactor,
+    1
+  );
   sprite.position.copy(labelPos);
 
-  // === Apply fade ===
+  // === Apply fade + resolution update ===
+  const mat = line.material as LineMaterial;
+  mat.opacity = fade;
+  mat.resolution.set(window.innerWidth, window.innerHeight);
+
+  // === Geometry update ===
+  (line.geometry as LineGeometry).setPositions([
+    center.x,
+    center.y,
+    center.z,
+    labelPos.x,
+    labelPos.y,
+    labelPos.z,
+  ]);
+  line.computeLineDistances();
+
   sprite.material.opacity = fade;
-  if (Array.isArray(line.material)) {
-    line.material.forEach((mat) => (mat.opacity = fade));
-  } else {
-    line.material.opacity = fade;
-  }
-
-  // === Geometry ===
-  line.geometry.setFromPoints([center, labelPos]);
-  line.geometry.attributes.position.needsUpdate = true;
-
   group.visible = fade > 0.01;
 }
 
