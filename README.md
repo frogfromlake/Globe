@@ -39,6 +39,9 @@ The backend serves country-specific news via RSS. It lives in `/backend` and mus
 ```bash
 cd Orbitalone/backend
 
+# Install Go dependencies
+go mod tidy
+
 # Run locally
 go run main.go
 
