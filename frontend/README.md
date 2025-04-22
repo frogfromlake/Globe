@@ -1,80 +1,131 @@
-# 🌍 Globe
+# 🌍 Orbitalone
 
 <p align="center">
   <img src="./assets/preview1.png" alt="Preview 1" width="49%"/>
   <img src="./assets/preview2.png" alt="Preview 2" width="49%"/>
 </p>
 
-**Globe** is a real-time 3D Earth visualization app built with **TypeScript** and **Three.js**, featuring dynamic country highlighting, smooth interactions, real-world lighting, and modular, configurable architecture. Custom **GLSL shaders** drive realistic visuals like day/night cycles and glow effects.  
-Designed for clarity and extensibility—ideal as a foundation for educational, geopolitical, or scientific visualizations.
+>
+> 🛰️ **Orbit Alone**  
+> *A quiet truth — this tiny blue marble is all we have. There is no backup.  
+> We are fragile, yet alive, against the infinite black.*
+>
+> 🌍 **Orbital One**  
+> *A bold vision — to see ourselves as one humanity, one biosphere,  
+> moving together, learning together, evolving together.*
+>
 
-## Features
+**Orbitalone** is a real-time 3D Earth visualization app powered by **TypeScript**, **Three.js**, and custom **GLSL shaders**. It blends beauty and function to deliver intuitive, extensible Earth-based data visualizations — including country borders, ocean overlays, news integration, and more.
 
-- Interactive 3D globe with real country borders
-- Dynamic lighting and real-time Earth rotation using custom shaders
-- Country hover + multi-select with smooth fade transitions
-- Geolocation marker support using the browser's location API
-- Clean architecture with centralized configuration (`config.ts`)
-- Fully modular TypeScript codebase
+🚀 Live at: [https://orbitalone.space](https://orbitalone.space)
 
-## Installation
+---
+
+## ✨ Features
+
+- 🧭 Interactive 3D globe with clickable country and ocean regions  
+- 🌞 Real-time Earth rotation, lighting, and day/night cycle via custom shaders  
+- 🌐 Country + ocean search bar (instantly zoom to any place on Earth)  
+- 📰 Daily news articles shown when selecting a country  
+- 📍 Geolocation marker using the browser’s location API  
+- 🎨 Smooth hover and selection transitions with animated 3D labels  
+- ⚙️ Modular TypeScript architecture, shader-driven materials, and centralized config
+
+---
+
+## 🛠 Installation
 
 ```bash
-git clone https://github.com/frogfromlake/Globe.git
-cd Globe
-pnpm install    # or npm install
-pnpm dev        # or npm run dev
+git clone https://github.com/frogfromlake/Orbitalone.git
+cd Orbitalone/frontend
+pnpm install      # or npm install
+pnpm dev          # start dev server (http://localhost:5173/)
 ```
 
-This runs a local development server (typically on `http://localhost:5173/` if using Vite).
+Backend news service lives in `/backend` and runs separately. Setup instructions coming soon.
 
-## Configuration
+---
 
-All core behavior is defined in one central file:  
-**`src/configs/config.ts`**
-
-Inside, you can configure:
-
-- `globe`: Geometry resolution and radius
-- `camera`: FOV, clipping planes, and initial position
-- `interaction`: Speed clamps for rotation/zoom
-- `fade`: Hover and selection transition speeds
-- `userLocation`: Geolocation marker appearance
-- `materials`: Shader material settings and appearance
-- `geo`: Astronomy and geographic constants (e.g., J2000, obliquity)
-- `textures`: Paths and filtering for globe maps and ID maps
-
-Every value is documented inline for clarity and maintainability.
-
-## Project Structure
+## 🧩 Project Structure
 
 ```
-src/
-├── configs/          # Central configuration
-├── data/             # Country centroids & ID maps
-├── init/             # Scene/camera/renderer setup
-├── interactions/     # User input and geolocation
-├── shaders/          # GLSL shader files (vertex & fragment)
-├── systems/          # Country hover, labels, selection logic
-├── types/            # TypeScript types/interfaces
-└── utils/            # Geospatial math and helpers
+frontend/
+├── configs/        # Central app configuration
+├── core/           # App bootstrap logic
+├── data/           # Centroids, borders, ID maps
+├── features/       # Feature modules like news panel
+├── init/           # Scene, camera, textures, uniforms
+├── interactions/   # User input, search, interactivity
+├── materials/      # Shader materials
+├── shaders/        # GLSL files
+├── state/          # Interaction state store
+├── systems/        # Hover, selection, label systems
+├── types/          # Custom TS types and extensions
+└── utils/          # Geo helpers, math, conversions
 ```
 
-## Development Notes
+---
 
-- Uses NASA’s **Blue Marble Next Generation** and **Black Marble** (night) textures at 8K resolution.
-- Utilizes **RGB-encoded country ID maps** generated from a GeoJSON file (`countries.json`) for pixel-perfect country selection.
-- Includes a centroid lookup table (`countryCenters.ts`) generated from `countries.json` for accurate label placement.
-- Custom data generation scripts live in `src/data`:
-  - `generateRgbMap.ts` for the country ID texture
-  - `generateCountryCenters.ts` for geographic centroids
-- You can replace the base maps with custom textures, provided the projection matches or is adjusted accordingly.
-- Built with **Three.js v0.175+**, **TypeScript**, **GLSL**, and **pnpm**.
+## 🧪 Config-Driven Design
 
-## Author
+All app behavior is configurable via `src/configs/config.ts`.
 
-Created by [@frogfromlake](https://github.com/frogfromlake)
+```ts
+export const CONFIG = {
+  globe: { radius: 1, widthSegments: 128, heightSegments: 64 },
+  camera: { initialPosition: { z: 3 }, ... },
+  fade: { highlight: 3.5, selection: 2.5 },
+  textures: {
+    day: "/textures/earth_day_8k.jpg",
+    night: "/textures/earth_night_8k.jpg",
+    idMap: "/textures/country_id_map_8k_rgb.png"
+  },
+  ...
+};
+```
 
-## License
+---
 
-MIT — free to use, modify, and share.
+## 🛰️ Under the Hood
+
+- Uses **NASA Blue Marble** (day) and **Black Marble** (night) textures (8K)
+- Pixel-perfect hover detection using **RGB-encoded country ID maps**
+- Accurate floating labels via **geographic centroids**
+- Custom shaders control **lighting**, **glow**, **night lights**, and **interactive outlines**
+
+---
+
+## 🌍 News Backend
+
+The backend is written in **Go** and serves country-specific news via RSS.  
+It's a separate service in `/backend`, deployable via Fly.io or locally:
+
+> `GET /api/news?country=DE` → returns JSON articles for Germany
+
+Check out the backend readme for deployment & dev setup.
+
+---
+
+## 📦 Build & Deploy
+
+```bash
+pnpm build      # builds production-ready app into /dist
+```
+
+Assets and textures live in `/public/textures`.
+
+Deploy via [Vercel](https://vercel.com) or your own static host.  
+See: [https://orbitalone.space](https://orbitalone.space)
+
+---
+
+## 👨‍🚀 Author
+
+Created with passion by [@frogfromlake](https://github.com/frogfromlake)  
+Made for explorers, thinkers, dreamers — and for Earth.
+
+---
+
+## 🪐 License
+
+**MIT** — Free to use, extend, remix, and share.

@@ -1,4 +1,4 @@
-module github.com/frogfromlake/globe-news-backend
+module github.com/frogfromlake/Orbitalone/backend
 
 go 1.24.2
 

@@ -4,6 +4,7 @@ export async function showNewsPanel(isoCode: string) {
   if (isFetchingNews) return;
   isFetchingNews = true;
 
+  const API_BASE = import.meta.env.PUBLIC_API_URL || "http://localhost:8080";
   const panel = document.getElementById("news-panel")!;
   const title = document.getElementById("news-title")!;
   const content = document.getElementById("news-content")!;
@@ -17,9 +18,7 @@ export async function showNewsPanel(isoCode: string) {
   content.innerHTML = `<strong style="opacity: 0.8;">Loading...</strong>`;
 
   try {
-    const res = await fetch(
-      `http://localhost:8080/api/news?country=${isoCode}`
-    );
+    const res = await fetch(`${API_BASE}/api/news?country=${isoCode}`);
     if (res.status === 204) {
       content.innerHTML = `<strong>No news found for ${isoCode}</strong>`;
       return;

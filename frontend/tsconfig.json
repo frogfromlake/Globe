@@ -9,10 +9,10 @@
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
     "skipLibCheck": true,
-    "allowJs": true, // Allows JS while migrating
     "resolveJsonModule": true,
     "isolatedModules": true,
     "jsx": "preserve",
+    "types": ["vite/client"]
   },
   "typeRoots": ["./node_modules/@types", "./src/types"],
   "types": ["node"],

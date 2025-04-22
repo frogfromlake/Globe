@@ -12,8 +12,8 @@ canvas {
 .sidebar {
   position: absolute;
   top: 0.5rem; /* fixed: same as toggle button */
-  left: -18rem;
-  width: 16rem;
+  left: -22rem;
+  width: 19.5rem;
   padding: 1rem 0.75rem;
   padding-top: 4.5rem; /* pushes content below the toggle */
   transition: left 0.35s ease;
@@ -23,6 +23,7 @@ canvas {
   gap: 0.75rem;
   backdrop-filter: blur(6px);
   background: rgba(0, 0, 0, 0.515);
+  border-radius: 8px;
 }
 
 .sidebar.open {

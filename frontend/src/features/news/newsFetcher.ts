@@ -1,8 +1,8 @@
 export async function fetchCountryNews(isoCode: string) {
+  const API_BASE = import.meta.env.PUBLIC_API_URL || "http://localhost:8080";
+
   try {
-    const res = await fetch(
-      `http://localhost:8080/api/news?country=${isoCode}`
-    );
+    const res = await fetch(`${API_BASE}/api/news?country=${isoCode}`);
 
     if (res.status === 204) {
       return []; // Gracefully handle no content
@@ -14,6 +14,6 @@ export async function fetchCountryNews(isoCode: string) {
     return data;
   } catch (err) {
     console.error("News fetch error:", err);
-    return []; // ✅ Safe fallback
+    return []; // Safe fallback
   }
 }
