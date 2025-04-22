@@ -11,21 +11,31 @@ import (
 
 func NewsHandler(w http.ResponseWriter, r *http.Request) {
 	origin := r.Header.Get("Origin")
-	if origin == "http://localhost:5173" || origin == "https://orbitalone.space" || origin == "https://orbitalone-frontend.vercel.app" {
-		w.Header().Set("Access-Control-Allow-Origin", origin)
+	allowedOrigins := map[string]bool{
+		"http://localhost:5173":                  true,
+		"https://orbitalone.space":               true,
+		"https://orbitalone-frontend.vercel.app": true,
 	}
-	w.Header().Set("Access-Control-Allow-Methods", "GET, OPTIONS")
+
+	// Always send headers first
+	if allowedOrigins[origin] {
+		w.Header().Set("Access-Control-Allow-Origin", origin)
+	} else {
+		// Optional: log unexpected origins
+		log.Printf("Blocked CORS origin: %s", origin)
+	}
+
+	w.Header().Set("Access-Control-Allow-Methods", "GET")
 	w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
 
+	// Handle preflight request
 	if r.Method == http.MethodOptions {
-		// Preflight request — return with headers only
 		w.WriteHeader(http.StatusNoContent)
 		return
 	}
 
-	countryCode := r.URL.Query().Get("country")
-	countryCode = strings.ToUpper(countryCode)
-
+	// === YOUR HANDLER LOGIC ===
+	countryCode := strings.ToUpper(r.URL.Query().Get("country"))
 	if countryCode == "" {
 		http.Error(w, "Missing country code", http.StatusBadRequest)
 		return
@@ -34,12 +44,10 @@ func NewsHandler(w http.ResponseWriter, r *http.Request) {
 	articles, err := utils.GetNewsByCountry(countryCode)
 	if err != nil {
 		log.Printf("Error fetching news for %s: %v\n", countryCode, err)
-
 		if strings.Contains(err.Error(), "No feeds found") {
 			w.WriteHeader(http.StatusNoContent)
 			return
 		}
-
 		http.Error(w, "Failed to fetch news", http.StatusInternalServerError)
 		return
 	}
