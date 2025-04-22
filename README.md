@@ -5,16 +5,6 @@
   <img src="./frontend/assets/preview2.png" alt="Preview 2" width="49%"/>
 </p>
 
->
-> 🛰️ **Orbit Alone**  
-> *A quiet truth — this tiny blue marble is all we have. There is no backup.  
-> We are fragile, yet alive, against the infinite black.*
->
-> 🌍 **Orbital One**  
-> *A bold vision — to see ourselves as one humanity, one biosphere,  
-> moving together, learning together, evolving together.*
->
-
 **Orbitalone** is a real-time 3D Earth visualization app powered by **TypeScript**, **Three.js**, and custom **GLSL shaders**. It blends beauty and function to deliver intuitive, extensible Earth-based data visualizations — including country borders, ocean overlays, news integration, and more.
 
 🚀 Live at: [https://orbitalone.space](https://orbitalone.space)
@@ -116,6 +106,18 @@ Assets and textures live in `/public/textures`.
 
 Deploy via [Vercel](https://vercel.com) or your own static host.  
 See: [https://orbitalone.space](https://orbitalone.space)
+
+---
+
+>
+> 🛰️ **Orbit Alone**  
+> *A quiet truth — this tiny blue marble is all we have. There is no backup.  
+> We are fragile, yet alive, against the infinite black.*
+>
+> 🌍 **Orbital One**  
+> *A bold vision — to see ourselves as one humanity, one biosphere,  
+> moving together, learning together, evolving together.*
+>
 
 ---
 
