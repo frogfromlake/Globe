@@ -486,6 +486,9 @@ export async function startApp() {
     sidebar.classList.toggle("open");
   });
 
+  hideAll3DLabelsExcept([]);
+  hideAll3DOceanLabels();
+
   animate();
 
   setupLocationSearch(
