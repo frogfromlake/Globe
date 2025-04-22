@@ -1,8 +1,8 @@
 # 🌍 Orbitalone
 
 <p align="center">
-  <img src="./assets/preview1.png" alt="Preview 1" width="49%"/>
-  <img src="./assets/preview2.png" alt="Preview 2" width="49%"/>
+  <img src="./frontend/assets/preview1.png" alt="Preview 1" width="49%"/>
+  <img src="./frontend/assets/preview2.png" alt="Preview 2" width="49%"/>
 </p>
 
 >
