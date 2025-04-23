@@ -1,11 +1,88 @@
-body {
+html, body {
   margin: 0;
-  overflow: hidden;
+  padding: 0;
+  background: #000;
+  color: white;
   font-family: 'Inter', sans-serif;
+  overflow: hidden;
 }
 
 canvas {
   display: block;
+}
+
+/* ====== LOADING SCREEN ====== */
+#loading-screen {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: black; /* changed from radial gradient */
+  z-index: 99999;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  opacity: 1;
+  transition: opacity 1s ease;
+  pointer-events: none;
+}
+
+/* Fade-out animation triggered by JS */
+#loading-screen.fade-out {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* Loader inner content */
+.loader-container {
+  text-align: center;
+  color: #cbe7ff;
+  font-family: 'Inter', sans-serif;
+  font-size: 2rem;
+  letter-spacing: 2px;
+  animation: fadeIn 2s ease forwards;
+}
+
+.loader-container .title {
+  margin-top: 1.5rem;
+  text-shadow: 0 0 12px rgba(135, 190, 255, 0.6);
+}
+
+/* Spinner style */
+.spinner {
+  width: 60px;
+  height: 60px;
+  border: 6px solid rgba(135, 190, 255, 0.1);
+  border-top-color: #4fd1c5;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin: 0 auto;
+}
+
+/* Spin animation */
+@keyframes spin {
+  0% { transform: rotate(0); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Text fade-in animation */
+@keyframes fadeIn {
+  0% { opacity: 0; transform: scale(0.95); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+/* ====== APP CONTAINER FADE-IN ====== */
+#app-container {
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 1.2s ease;
+  background: transparent;
+}
+
+#app-container.visible {
+  opacity: 1;
+  visibility: visible;
 }
 
 /* Sidebar panel */

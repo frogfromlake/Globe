@@ -1,4 +1,4 @@
-# 🌍 Orbitalone
+# 🌍 OrbitalOne
 
 <p align="center">
   <img src="./frontend/assets/preview1.png" alt="Preview 1" width="49%"/>

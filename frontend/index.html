@@ -4,63 +4,74 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <link rel="icon" href="/favicon.ico" />
-  <title>Orbitalone</title>
+  <title>OrbitalOne</title>
   <link rel="stylesheet" href="/src/style.css" />
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500&display=swap" rel="stylesheet" />
 </head>
 <body>
 
-  <!-- Country search input: now outside the sidebar -->
-  <input
-    id="country-search"
-    class="country-search"
-    type="search"
-    placeholder="Search location..."
-    autocomplete="off"
-  />
-
-  <!-- Sidebar toggle button (hamburger icon in a circle) -->
-  <div id="sidebar-toggle" class="sidebar-toggle">
-    <div class="bar"></div>
-    <div class="bar"></div>
-    <div class="bar"></div>
-  </div>
-
-  <!-- Sidebar menu -->
-  <div id="sidebar" class="sidebar">
-    <button id="show-location" class="globe-btn">Show My Location</button>
-    <button id="clear-selection" class="globe-btn">Clear All Selections</button>
-    <button id="toggle-country" class="globe-btn">Toggle Country Interactivity</button>
-    <button id="toggle-ocean" class="globe-btn">Toggle Ocean Interactivity</button>
-    <button id="toggle-flashlight" class="globe-btn">Disable Flashlight</button>
-    <button id="toggle-star-mode" class="globe-btn">Background: Realistic</button>
-  </div>
-
-  <!-- News Panel -->
-  <div id="news-panel" class="news-panel">
-    <div class="news-panel-header">
-      <strong id="news-title">Top News</strong>
-      <button class="reset-btn" id="news-reset">↺ Reset</button>
-      <button class="close-btn" id="news-close">×</button>
+  <!-- Loading screen -->
+  <div id="loading-screen">
+    <div class="loader-container">
+      <div class="spinner"></div>
+      <h1 class="title">OrbitalOne</h1>
+      <h3 class="title" style="text-align: center;">Preparing Globe</h3>
     </div>
-    <div id="news-content" class="news-content"></div>
-  </div>  
+  </div>
 
-  <!-- Toggle admin (hidden by default) -->
-  <button
-    id="toggle-admin"
-    style="display: none; position: fixed; bottom: 1rem; left: 1rem; z-index: 1000; padding: 0.5rem 1rem; background: #333; color: white; border: none; border-radius: 0.25rem; cursor: pointer;">
-    🛠 Admin
-  </button>
+  <div id="app-container" class="hidden">
+    <!-- Country search input: now outside the sidebar -->
+    <input
+      id="country-search"
+      class="country-search"
+      type="search"
+      placeholder="Search location..."
+      autocomplete="off"
+    />
 
-  <!-- Hide admin button -->
-  <button
-    id="hide-admin"
-    style="display: none; position: fixed; bottom: 1rem; left: 7rem; z-index: 1000; padding: 0.5rem 1rem; background: #444; color: white; border: none; border-radius: 0.25rem; cursor: pointer;">
-    ❌ Hide Admin
-  </button>
+    <!-- Sidebar toggle button (hamburger icon in a circle) -->
+    <div id="sidebar-toggle" class="sidebar-toggle">
+      <div class="bar"></div>
+      <div class="bar"></div>
+      <div class="bar"></div>
+    </div>
 
-  <canvas id="globe"></canvas>
+    <!-- Sidebar menu -->
+    <div id="sidebar" class="sidebar">
+      <button id="show-location" class="globe-btn">Show My Location</button>
+      <button id="clear-selection" class="globe-btn">Clear All Selections</button>
+      <button id="toggle-country" class="globe-btn">Toggle Country Interactivity</button>
+      <button id="toggle-ocean" class="globe-btn">Toggle Ocean Interactivity</button>
+      <button id="toggle-flashlight" class="globe-btn">Disable Flashlight</button>
+      <button id="toggle-star-mode" class="globe-btn">Background: Realistic</button>
+    </div>
+
+    <!-- News Panel -->
+    <div id="news-panel" class="news-panel">
+      <div class="news-panel-header">
+        <strong id="news-title">Top News</strong>
+        <button class="reset-btn" id="news-reset">↺ Reset</button>
+        <button class="close-btn" id="news-close">×</button>
+      </div>
+      <div id="news-content" class="news-content"></div>
+    </div>  
+
+    <!-- Toggle admin (hidden by default) -->
+    <button
+      id="toggle-admin"
+      style="display: none; position: fixed; bottom: 1rem; left: 1rem; z-index: 1000; padding: 0.5rem 1rem; background: #333; color: white; border: none; border-radius: 0.25rem; cursor: pointer;">
+      🛠 Admin
+    </button>
+
+    <!-- Hide admin button -->
+    <button
+      id="hide-admin"
+      style="display: none; position: fixed; bottom: 1rem; left: 7rem; z-index: 1000; padding: 0.5rem 1rem; background: #444; color: white; border: none; border-radius: 0.25rem; cursor: pointer;">
+      ❌ Hide Admin
+    </button>
+
+    <canvas id="globe"></canvas>
+  </div>
   <script type="module" src="/src/main.ts"></script>
 </body>
 

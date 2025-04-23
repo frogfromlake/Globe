@@ -541,8 +541,6 @@ export async function startApp() {
   hideAll3DLabelsExcept([]);
   hideAll3DOceanLabels();
 
-  animate();
-
   setupLocationSearch(
     locationSearchInput,
     camera,
@@ -552,6 +550,19 @@ export async function startApp() {
     selectedFlags,
     selectedOceanFlags
   );
+
+  const loadingScreen = document.getElementById("loading-screen");
+  const appContainer = document.getElementById("app-container");
+
+  if (loadingScreen && appContainer) {
+    // First: fade out loading screen
+    loadingScreen.classList.add("fade-out");
+
+    // Then: fade in app after delay
+    setTimeout(() => {
+      appContainer.classList.add("visible");
+    }, 1200); // match CSS transition
+  }
 
   const admin = createAdminFeedPanel();
   const toggleAdminBtn = document.getElementById("toggle-admin")!;
@@ -598,4 +609,6 @@ export async function startApp() {
       history.replaceState(null, "", window.location.pathname);
     }
   });
+
+  return { animate };
 }
