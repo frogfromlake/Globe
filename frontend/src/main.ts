@@ -1,16 +1,24 @@
 // src/main.ts
 import { startApp } from "./core/startApp";
 
-// Start app but delay animation and fade-in until loading screen fades
-startApp().then(({ animate }) => {
+// Function to update the loading subtitle text
+function setLoadingSubtitle(text: string) {
+  const subtitle = document.querySelector(".subtitle") as HTMLElement;
+  if (subtitle) subtitle.textContent = text;
+}
+
+// Start the app and handle fade-out and fade-in transitions
+startApp(setLoadingSubtitle).then(({ animate }) => {
   const loadingScreen = document.getElementById("loading-screen")!;
   const appContainer = document.getElementById("app-container")!;
 
-  loadingScreen.style.opacity = "0";
+  // Start fade-out
+  loadingScreen.classList.add("fade-out");
 
+  // When transition completes, remove loader and show app
   loadingScreen.addEventListener("transitionend", () => {
-    loadingScreen.remove(); // remove from DOM completely
-    appContainer.classList.add("visible"); // triggers fade-in
-    animate(); // start Three.js loop
+    loadingScreen.remove();
+    appContainer.classList.add("visible");
+    animate(); // Start render loop
   });
 });

@@ -47,7 +47,43 @@ import { countryIdToIso } from "../data/countryIdToIso";
 import { initNewsPanel, showNewsPanel } from "../features/news/showNewsPanel";
 import { createAdminFeedPanel } from "../features/news/adminFeedPanel";
 
-export async function startApp() {
+const loadingMessages = {
+  countryTextures: [
+    "Untangling international spaghetti lines...",
+    "Negotiating peace between polygons...",
+    "Locating all the microstates (again)...",
+  ],
+  oceanTextures: [
+    "Flooding the planet responsibly...",
+    "Tuning whale song frequencies...",
+    "Releasing krakens into containment...",
+  ],
+  labels: [
+    "Spelling 'Kyrgyzstan' correctly...",
+    "Polishing tiny country signs...",
+    "Giving each country a name tag (not sticky)...",
+  ],
+  atmosphere: [
+    "Airbrushing the stratosphere...",
+    "Ionizing upper fluff layers...",
+    "Brewing space tea in the thermosphere...",
+  ],
+  final: [
+    "Aligning orbital chakras...",
+    "Injecting humor into the launch codes...",
+    "Counting down with dramatic flair...",
+  ],
+};
+
+function delay(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function randomMessage(pool: string[]): string {
+  return pool[Math.floor(Math.random() * pool.length)];
+}
+
+export async function startApp(updateSubtitle: (text: string) => void) {
   const selectedCountryIds = new Set<number>();
   const selectedOceanIds = new Set<number>();
   const raycaster = new THREE.Raycaster();
@@ -81,11 +117,25 @@ export async function startApp() {
     oceanIdMapTexture
   );
 
+  updateSubtitle(randomMessage(loadingMessages.countryTextures));
+  await delay(1000);
   await loadCountryIdMapTexture();
+
+  updateSubtitle(randomMessage(loadingMessages.oceanTextures));
+  await delay(1000);
   await loadOceanIdMapTexture();
+
+  updateSubtitle(randomMessage(loadingMessages.labels));
+  await delay(1000);
   init3DLabels(scene);
   init3DOceanLabels(scene);
+
+  updateSubtitle(randomMessage(loadingMessages.atmosphere));
+  await delay(1000);
   initNewsPanel();
+
+  updateSubtitle(randomMessage(loadingMessages.final));
+  await delay(1000);
 
   // Globe creation
   const globe = new THREE.Mesh(
