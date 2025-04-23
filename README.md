@@ -5,9 +5,26 @@
   <img src="./frontend/assets/preview2.png" alt="Preview 2" width="49%"/>
 </p>
 
-**Orbitalone** is a real-time 3D Earth visualization app powered by **TypeScript**, **Three.js**, and custom **GLSL shaders**. It blends beauty and function to deliver intuitive, extensible Earth-based data visualizations — including country borders, ocean overlays, news integration, and more.
+**Orbitalone** is a real-time 3D Earth visualization app powered by **TypeScript**, **Three.js**, and custom **GLSL shaders**. It blends beauty and function to deliver intuitive, extensible Earth-based data visualizations — including country borders, ocean overlays, news integration, and more. The project is under active development. Beware of bugs and incomplete features! PR's or Issues welcome.
 
 🚀 Live at: [https://orbitalone.space](https://orbitalone.space)
+
+---
+
+> 🛰️ **Orbit Alone**  
+> We live on a rock, floating through a silent universe that offers no inherent meaning, no guarantees, and no rescue.  
+> Borders, ideologies, histories — from space, they vanish. What’s left is one fragile system, alive by chance and sustained by collaboration.
+
+> 🌍 **Orbital One**  
+> To orbit alone is to realize we are all in the same orbit.  
+> One species. One biosphere. One chance to make something of it.  
+> If nothing has meaning by default, then everything we choose to care for becomes meaningful — together.
+
+**Orbitalone** is a tool for global awareness.  
+It visualizes the planet’s political and environmental complexity,  
+not to emphasize division, but to clarify the stakes:  
+Only by seeing the whole can we navigate the parts.  
+Only by embracing our smallness can we act with purpose.
 
 ---
 
@@ -122,18 +139,6 @@ Assets and textures live in `/public/textures`.
 
 Frontend is deployed via [Vercel](https://vercel.com) and the backend is deployed using [Fly.io](https://fly.io).  
 See: [https://orbitalone.space](https://orbitalone.space)
-
----
-
->
-> 🛰️ **Orbit Alone**  
-> *A quiet truth — this tiny blue marble is all we have. There is no backup.  
-> We are fragile, yet alive, against the infinite black.*
->
-> 🌍 **Orbital One**  
-> *A bold vision — to see ourselves as one humanity, one biosphere,  
-> moving together, learning together, evolving together.*
->
 
 ---
 
