@@ -75,10 +75,6 @@ const loadingMessages = {
   ],
 };
 
-function delay(ms: number) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
 function randomMessage(pool: string[]): string {
   return pool[Math.floor(Math.random() * pool.length)];
 }
@@ -118,24 +114,19 @@ export async function startApp(updateSubtitle: (text: string) => void) {
   );
 
   updateSubtitle(randomMessage(loadingMessages.countryTextures));
-  await delay(1000);
   await loadCountryIdMapTexture();
 
   updateSubtitle(randomMessage(loadingMessages.oceanTextures));
-  await delay(1000);
   await loadOceanIdMapTexture();
 
   updateSubtitle(randomMessage(loadingMessages.labels));
-  await delay(1000);
   init3DLabels(scene);
   init3DOceanLabels(scene);
 
   updateSubtitle(randomMessage(loadingMessages.atmosphere));
-  await delay(1000);
   initNewsPanel();
 
   updateSubtitle(randomMessage(loadingMessages.final));
-  await delay(1000);
 
   // Globe creation
   const globe = new THREE.Mesh(
