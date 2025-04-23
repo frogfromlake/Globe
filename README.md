@@ -50,13 +50,6 @@ go build -o orbitalone-news .
 ./orbitalone-news
 ```
 
-To deploy the backend, use e.g. [Fly.io](https://fly.io):
-
-```bash
-fly launch        # setup (first time)
-fly deploy        # deploy to Fly.io
-```
-
 ---
 
 ## 🧩 Project Structure
@@ -111,7 +104,7 @@ export const CONFIG = {
 ## 🌍 News Backend
 
 The backend is written in **Go** and serves country-specific news via RSS.  
-It's a separate service in `/backend`, deployable via Fly.io or locally:
+It's a separate service in `/backend`:
 
 > `GET /api/news?country=DE` → returns JSON articles for Germany
 
@@ -119,7 +112,7 @@ See [Installation](#-installation) above for setup.
 
 ---
 
-## 📦 Build & Deploy
+## 📦 Build
 
 ```bash
 pnpm build      # builds production-ready app into /dist
@@ -127,7 +120,7 @@ pnpm build      # builds production-ready app into /dist
 
 Assets and textures live in `/public/textures`.
 
-Deploy via [Vercel](https://vercel.com) or your own static host.  
+Frontend is deployed via [Vercel](https://vercel.com) and the backend is deployed using [Fly.io](https://fly.io).  
 See: [https://orbitalone.space](https://orbitalone.space)
 
 ---
