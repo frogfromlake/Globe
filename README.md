@@ -5,7 +5,7 @@
   <img src="./frontend/assets/preview2.png" alt="Preview 2" width="49%"/>
 </p>
 
-**Orbitalone** is a real-time 3D Earth visualization app powered by **TypeScript**, **Three.js**, and custom **GLSL shaders**. It blends beauty and function to deliver intuitive, extensible Earth-based data visualizations — including country borders, ocean overlays, news integration, and more.
+**Orbitalone** is a real-time 3D Earth visualization app powered by **TypeScript**, **Three.js**, and custom **GLSL shaders**. It blends beauty and function to deliver intuitive, extensible Earth-based data visualizations — including country borders, ocean overlays, news integration, and more. The project is under active development. Beware of bugs and incomplete features! PR's or Issues welcome.
 
 🚀 Live at: [https://orbitalone.space](https://orbitalone.space)
 
