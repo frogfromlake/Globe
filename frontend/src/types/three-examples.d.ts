@@ -47,5 +47,8 @@ declare module "three/examples/jsm/controls/OrbitControls" {
     update(): void;
     reset(): void;
     dispose(): void;
+
+    rotateLeft(angle: number): void;
+    rotateUp(angle: number): void;
   }
 }

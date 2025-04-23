@@ -46,6 +46,7 @@ import { setupLocationSearch } from "../interactions/locationSearch";
 import { countryIdToIso } from "../data/countryIdToIso";
 import { initNewsPanel, showNewsPanel } from "../features/news/showNewsPanel";
 import { createAdminFeedPanel } from "../features/news/adminFeedPanel";
+import { setupKeyboardControls } from "../interactions/keyboardControls";
 
 const loadingMessages = {
   countryTextures: [
@@ -269,6 +270,8 @@ export async function startApp(updateSubtitle: (text: string) => void) {
     hasMovedPointer = true;
   });
 
+  const updateKeyboard = setupKeyboardControls(camera, controls);
+
   function animate(): void {
     requestAnimationFrame(animate);
 
@@ -315,6 +318,8 @@ export async function startApp(updateSubtitle: (text: string) => void) {
     atmosphere.material.uniforms.uLightDirection.value.copy(
       uniforms.lightDirection.value
     );
+
+    updateKeyboard(delta);
 
     controls.update();
 
