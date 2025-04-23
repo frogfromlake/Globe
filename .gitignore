@@ -7,8 +7,8 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
-node_modules
-dist
+frontend/node_modules
+frontend/dist
 dist-ssr
 *.local
 
@@ -23,4 +23,4 @@ dist-ssr
 *.sln
 *.sw?
 
-public/textures/backups/
+frontend/public/textures/backups/
