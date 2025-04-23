@@ -11,7 +11,11 @@ import (
 )
 
 func main() {
-	log.Println("🌍 Environment:", os.Getenv("ENV"))
+	if os.Getenv("ENV") == "" {
+		log.Println("🌍 Environment: Dev")
+	} else {
+		log.Println("🌍 Environment:", os.Getenv("ENV"))
+	}
 
 	// Load .env only in development
 	if os.Getenv("ENV") != "production" {

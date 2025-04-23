@@ -123,13 +123,20 @@ canvas {
   box-shadow: 0 0 0 2px rgba(135, 190, 255, 0.4);
 }
 
+.news-panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: grab;
+}
+
 .news-panel {
   position: absolute;
   top: 20px;
   right: -26rem; /* hidden by default */
   width: 24rem;
   padding: 1rem;
-  background: rgba(0, 0, 0, 0.6);
+  background: rgba(0, 0, 0, 0.515);
   backdrop-filter: blur(6px);
   color: white;
   font-family: sans-serif;
@@ -138,11 +145,23 @@ canvas {
   overflow-y: auto;
   max-height: 80vh;
   z-index: 15;
-  transition: right 0.35s ease;
+  cursor: grab;
+  user-select: none;
+  transition: right 0.35s ease, opacity 0.35s ease;
 }
 
 .news-panel.open {
   right: 20px;
+}
+
+.news-panel.closing {
+  right: -26rem;
+}
+
+.news-panel.fade-out {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.35s ease;
 }
 
 .news-header {
@@ -178,6 +197,19 @@ canvas {
   color: #4fd1c5;
   font-weight: bold;
   text-decoration: none;
+}
+
+.reset-btn {
+  background: none;
+  border: none;
+  font-size: 14px;
+  color: #4fd1c5;
+  cursor: pointer;
+  margin-left: auto;
+  margin-right: 0.5rem;
+}
+.reset-btn:hover {
+  color: #fff;
 }
 
 #admin-panel {

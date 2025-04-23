@@ -44,7 +44,7 @@ import { interactionState } from "../state/interactionState";
 import { createStarMaterial } from "../materials/starMaterials";
 import { setupLocationSearch } from "../interactions/locationSearch";
 import { countryIdToIso } from "../data/countryIdToIso";
-import { showNewsPanel } from "../features/news/showNewsPanel";
+import { initNewsPanel, showNewsPanel } from "../features/news/showNewsPanel";
 import { createAdminFeedPanel } from "../features/news/adminFeedPanel";
 
 export async function startApp() {
@@ -85,6 +85,7 @@ export async function startApp() {
   await loadOceanIdMapTexture();
   init3DLabels(scene);
   init3DOceanLabels(scene);
+  initNewsPanel();
 
   // Globe creation
   const globe = new THREE.Mesh(

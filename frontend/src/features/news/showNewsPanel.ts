@@ -1,4 +1,57 @@
 let isFetchingNews = false;
+let initialTop = 20;
+let initialRight = 20;
+
+export function initNewsPanel() {
+  const panel = document.getElementById("news-panel")!;
+  const closeBtn = document.getElementById("news-close")!;
+  const resetBtn = document.getElementById("news-reset")!;
+
+  closeBtn.onclick = () => {
+    const isAtDefault =
+      panel.style.top === `${initialTop}px` &&
+      panel.style.right === `${initialRight}px` &&
+      !panel.style.left;
+
+    panel.classList.remove("open");
+
+    if (isAtDefault) {
+      // Slide out
+      panel.style.left = "";
+      panel.style.right = "-26rem";
+      panel.classList.add("closing");
+
+      setTimeout(() => {
+        panel.classList.remove("closing");
+      }, 350);
+    } else {
+      // Fade out
+      panel.classList.add("fade-out");
+
+      setTimeout(() => {
+        panel.classList.remove("fade-out");
+        panel.style.display = "none"; // optional: hide completely
+      }, 350);
+    }
+  };
+
+  resetBtn.onclick = () => {
+    const currentTop = panel.style.top;
+    const currentRight = panel.style.right;
+    const isAlreadyDefault =
+      currentTop === `${initialTop}px` && currentRight === `${initialRight}px`;
+
+    if (isAlreadyDefault) return;
+
+    panel.style.top = `${initialTop}px`;
+    panel.style.right = `${initialRight}px`;
+    panel.style.left = "";
+    panel.style.bottom = "";
+    panel.style.transform = "none";
+  };
+
+  makeDraggable(panel);
+}
 
 export async function showNewsPanel(isoCode: string) {
   if (isFetchingNews) return;
@@ -9,10 +62,23 @@ export async function showNewsPanel(isoCode: string) {
   const panel = document.getElementById("news-panel")!;
   const title = document.getElementById("news-title")!;
   const content = document.getElementById("news-content")!;
-  const closeBtn = document.getElementById("news-close")!;
 
-  // Open panel if closed
+  panel.classList.remove("fade-out");
+  panel.style.display = ""; // show again if hidden
+
+  // Prevent re-opening during slide-out
+  if (panel.classList.contains("closing")) return;
+
+  // Reset closing state and open
+  panel.classList.remove("closing");
   panel.classList.add("open");
+
+  // Reset position if needed
+  panel.style.top = `${initialTop}px`;
+  panel.style.right = `${initialRight}px`;
+  panel.style.left = "";
+  panel.style.bottom = "";
+  panel.style.transform = "none";
 
   // Show loading state
   title.textContent = `Top News from ${isoCode}`;
@@ -34,9 +100,6 @@ export async function showNewsPanel(isoCode: string) {
   } finally {
     isFetchingNews = false;
   }
-
-  // Hook close button
-  closeBtn.onclick = () => panel.classList.remove("open");
 }
 
 function renderNewsItems(newsItems: any[]) {
@@ -53,4 +116,32 @@ function renderNewsItems(newsItems: any[]) {
         .join("")}
     </ul>
   `;
+}
+
+function makeDraggable(panel: HTMLElement) {
+  let isDragging = false;
+  let offsetX = 0;
+  let offsetY = 0;
+
+  const header = panel.querySelector(".news-panel-header") as HTMLElement;
+  if (!header) return;
+
+  header.onmousedown = (e) => {
+    isDragging = true;
+    offsetX = e.clientX - panel.getBoundingClientRect().left;
+    offsetY = e.clientY - panel.getBoundingClientRect().top;
+
+    document.onmousemove = (e) => {
+      if (!isDragging) return;
+      panel.style.top = `${e.clientY - offsetY}px`;
+      panel.style.left = `${e.clientX - offsetX}px`;
+      panel.style.right = ""; // clear right so left-based drag works
+    };
+
+    document.onmouseup = () => {
+      isDragging = false;
+      document.onmousemove = null;
+      document.onmouseup = null;
+    };
+  };
 }
