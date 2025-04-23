@@ -45,6 +45,7 @@ import { createStarMaterial } from "../materials/starMaterials";
 import { setupLocationSearch } from "../interactions/locationSearch";
 import { countryIdToIso } from "../data/countryIdToIso";
 import { showNewsPanel } from "../features/news/showNewsPanel";
+import { createAdminFeedPanel } from "../features/news/adminFeedPanel";
 
 export async function startApp() {
   const selectedCountryIds = new Set<number>();
@@ -529,4 +530,50 @@ export async function startApp() {
     selectedFlags,
     selectedOceanFlags
   );
+
+  const admin = createAdminFeedPanel();
+  const toggleAdminBtn = document.getElementById("toggle-admin")!;
+  const hideAdminBtn = document.getElementById("hide-admin")!;
+
+  // Handle toggle click
+  toggleAdminBtn.addEventListener("click", async () => {
+    const success = await admin.toggle();
+    if (!success) {
+      console.warn("❌ Admin toggle aborted due to auth failure");
+    }
+  });
+
+  // Handle hide click
+  hideAdminBtn.addEventListener("click", () => {
+    toggleAdminBtn.style.display = "none";
+    hideAdminBtn.style.display = "none";
+    sessionStorage.removeItem("adminVisible");
+  });
+
+  // Show admin buttons if session allows it
+  if (sessionStorage.getItem("adminVisible")) {
+    toggleAdminBtn.style.display = "block";
+    hideAdminBtn.style.display = "block";
+  }
+
+  // Detect #admin in URL on first load
+  if (
+    window.location.hash === "#admin" &&
+    !sessionStorage.getItem("adminVisible")
+  ) {
+    toggleAdminBtn.style.display = "block";
+    hideAdminBtn.style.display = "block";
+    sessionStorage.setItem("adminVisible", "true");
+    history.replaceState(null, "", window.location.pathname);
+  }
+
+  // Allow toggling via #admin at runtime
+  window.addEventListener("hashchange", () => {
+    if (window.location.hash === "#admin") {
+      toggleAdminBtn.style.display = "block";
+      hideAdminBtn.style.display = "block";
+      sessionStorage.setItem("adminVisible", "true");
+      history.replaceState(null, "", window.location.pathname);
+    }
+  });
 }

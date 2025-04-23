@@ -1,21 +1,35 @@
-// backend/utils/rss.go
 package utils
 
 import (
-	"encoding/json"
-	"errors"
 	"log"
-	"os"
+	"net/http"
 	"time"
 
+	"github.com/frogfromlake/Orbitalone/backend/feeds"
 	"github.com/mmcdole/gofeed"
 	"github.com/patrickmn/go-cache"
 )
 
-var (
-	feedCache    = cache.New(30*time.Minute, 10*time.Minute)
-	countryFeeds map[string][]string
-)
+var feedCache = cache.New(30*time.Minute, 10*time.Minute)
+
+// Transport that forces a User-Agent
+type userAgentTransport struct {
+	originalTransport http.RoundTripper
+}
+
+func (t *userAgentTransport) RoundTrip(req *http.Request) (*http.Response, error) {
+	req.Header.Set("User-Agent", "Mozilla/5.0 (compatible; OrbitalOneBot/1.0; +https://orbitalone.space)")
+	return t.originalTransport.RoundTrip(req)
+}
+
+var parser = &gofeed.Parser{
+	Client: &http.Client{
+		Timeout: 10 * time.Second,
+		Transport: &userAgentTransport{
+			originalTransport: http.DefaultTransport,
+		},
+	},
+}
 
 type NewsArticle struct {
 	Title       string `json:"title"`
@@ -25,41 +39,23 @@ type NewsArticle struct {
 	Source      string `json:"source"`
 }
 
-func init() {
-	file, err := os.ReadFile("feeds/countryToFeeds.json")
-	if err != nil {
-		panic("Could not load countryToFeeds.json: " + err.Error())
-	}
-
-	err = json.Unmarshal(file, &countryFeeds)
-	if err != nil {
-		panic("Invalid JSON in countryToFeeds.json: " + err.Error())
-	}
-
-	log.Printf("✅ Loaded feeds for %d countries", len(countryFeeds))
-}
-
 func GetNewsByCountry(code string) ([]NewsArticle, error) {
-	feeds, ok := countryFeeds[code]
-	if !ok {
+	feedURLs, err := feeds.GetFeeds(code)
+	if err != nil {
 		log.Printf("🚫 No feeds found for %s", code)
-		return nil, errors.New("No feeds found for country " + code)
+		return nil, err
 	}
 
-	log.Printf("🔍 Fetching news for %s from %d feeds", code, len(feeds))
 	var all []NewsArticle
 
-	for _, url := range feeds {
-		log.Printf("🌐 Trying feed URL: %s", url)
-
+	for _, url := range feedURLs {
 		if cached, found := feedCache.Get(url); found {
-			log.Printf("✅ Using cached feed: %s", url)
 			all = append(all, cached.([]NewsArticle)...)
 			continue
 		}
 
-		fp := gofeed.NewParser()
-		feed, err := fp.ParseURL(url)
+		feed, err := parser.ParseURL(url)
+
 		if err != nil {
 			log.Printf("⚠️ Failed to fetch/parse %s: %v", url, err)
 			continue
@@ -79,12 +75,14 @@ func GetNewsByCountry(code string) ([]NewsArticle, error) {
 			}
 		}
 
-		log.Printf("📰 Found %d articles from %s", len(articles), feed.Title)
-
 		feedCache.Set(url, articles, cache.DefaultExpiration)
 		all = append(all, articles...)
 	}
 
 	log.Printf("📦 Total articles collected for %s: %d", code, len(all))
 	return all, nil
+}
+
+func TestFeedURL(url string) (*gofeed.Feed, error) {
+	return parser.ParseURL(url)
 }

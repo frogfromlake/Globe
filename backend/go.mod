@@ -3,6 +3,7 @@ module github.com/frogfromlake/Orbitalone/backend
 go 1.24.2
 
 require (
+	github.com/joho/godotenv v1.5.1
 	github.com/mmcdole/gofeed v1.3.0
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 )

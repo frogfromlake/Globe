@@ -1,0 +1,281 @@
+[
+  {
+    "country": "US",
+    "feeds": [
+      "https://rss.cnn.com/rss/edition.rss",
+      "https://feeds.npr.org/1001/rss.xml"
+    ]
+  },
+  {
+    "country": "GB",
+    "feeds": [
+      "https://feeds.bbci.co.uk/news/rss.xml"
+    ]
+  },
+  {
+    "country": "DE",
+    "feeds": [
+      "https://www.tagesschau.de/xml/rss2",
+      "https://rss.dw.com/rdf/rss-de-all"
+    ]
+  },
+  {
+    "country": "FR",
+    "feeds": [
+      "https://www.lemonde.fr/rss/une.xml"
+    ]
+  },
+  {
+    "country": "ES",
+    "feeds": [
+      "https://elpais.com/rss/feed.html?feedId=1022"
+    ]
+  },
+  {
+    "country": "IT",
+    "feeds": [
+      "https://www.ansa.it/sito/ansait_rss.xml"
+    ]
+  },
+  {
+    "country": "RU",
+    "feeds": [
+      "https://tass.com/rss/v2.xml"
+    ]
+  },
+  {
+    "country": "CN",
+    "feeds": [
+      "https://www.scmp.com/rss/91/feed"
+    ]
+  },
+  {
+    "country": "JP",
+    "feeds": [
+      "https://www3.nhk.or.jp/rss/news/cat0.xml"
+    ]
+  },
+  {
+    "country": "KR",
+    "feeds": [
+      "https://www.koreatimes.co.kr/www/rss/rss.xml"
+    ]
+  },
+  {
+    "country": "IN",
+    "feeds": [
+      "https://timesofindia.indiatimes.com/rssfeeds/-2128936835.cms",
+      "https://www.thehindu.com/news/national/feeder/default.rss"
+    ]
+  },
+  {
+    "country": "BR",
+    "feeds": [
+      "https://g1.globo.com/rss/g1/"
+    ]
+  },
+  {
+    "country": "MX",
+    "feeds": [
+      "https://www.eluniversal.com.mx/rss"
+    ]
+  },
+  {
+    "country": "AR",
+    "feeds": [
+      "https://www.clarin.com/rss/lo-ultimo/"
+    ]
+  },
+  {
+    "country": "CA",
+    "feeds": [
+      "https://www.cbc.ca/cmlink/rss-world"
+    ]
+  },
+  {
+    "country": "AU",
+    "feeds": [
+      "https://www.abc.net.au/news/feed/51120/rss.xml"
+    ]
+  },
+  {
+    "country": "ZA",
+    "feeds": [
+      "https://www.news24.com/rss"
+    ]
+  },
+  {
+    "country": "NG",
+    "feeds": [
+      "https://www.premiumtimesng.com/feed"
+    ]
+  },
+  {
+    "country": "KE",
+    "feeds": [
+      "https://www.nation.africa/kenya/rss"
+    ]
+  },
+  {
+    "country": "EG",
+    "feeds": [
+      "https://english.ahram.org.eg/UI/Front/Inner.aspx?NewsContentID=0&RssContentID=0"
+    ]
+  },
+  {
+    "country": "TR",
+    "feeds": [
+      "https://www.hurriyetdailynews.com/rss.asp"
+    ]
+  },
+  {
+    "country": "IR",
+    "feeds": [
+      "https://en.irna.ir/rss"
+    ]
+  },
+  {
+    "country": "SA",
+    "feeds": [
+      "https://english.alarabiya.net/.mrss/en.xml"
+    ]
+  },
+  {
+    "country": "IL",
+    "feeds": [
+      "https://www.jpost.com/Rss/RssFeedsHeadlines.aspx"
+    ]
+  },
+  {
+    "country": "UA",
+    "feeds": [
+      "https://www.kyivpost.com/feed"
+    ]
+  },
+  {
+    "country": "PL",
+    "feeds": [
+      "https://www.tvn24.pl/najnowsze.xml"
+    ]
+  },
+  {
+    "country": "SE",
+    "feeds": [
+      "https://www.thelocal.se/rss"
+    ]
+  },
+  {
+    "country": "NO",
+    "feeds": [
+      "https://www.thelocal.no/rss"
+    ]
+  },
+  {
+    "country": "FI",
+    "feeds": [
+      "https://yle.fi/uutiset/rss/uutiset.rss"
+    ]
+  },
+  {
+    "country": "NL",
+    "feeds": [
+      "https://www.dutchnews.nl/feed/"
+    ]
+  },
+  {
+    "country": "BE",
+    "feeds": [
+      "https://www.brusselstimes.com/feed"
+    ]
+  },
+  {
+    "country": "CH",
+    "feeds": [
+      "https://www.swissinfo.ch/service/rss/rss_selectlist.html"
+    ]
+  },
+  {
+    "country": "GR",
+    "feeds": [
+      "https://www.ekathimerini.com/rss"
+    ]
+  },
+  {
+    "country": "PT",
+    "feeds": [
+      "https://www.portugalresident.com/feed/"
+    ]
+  },
+  {
+    "country": "AT",
+    "feeds": [
+      "https://www.derstandard.at/rss"
+    ]
+  },
+  {
+    "country": "CZ",
+    "feeds": [
+      "https://english.radio.cz/rss"
+    ]
+  },
+  {
+    "country": "HU",
+    "feeds": [
+      "https://hungarytoday.hu/feed/"
+    ]
+  },
+  {
+    "country": "RO",
+    "feeds": [
+      "https://www.romania-insider.com/feed"
+    ]
+  },
+  {
+    "country": "BG",
+    "feeds": [
+      "https://www.novinite.com/rss.php"
+    ]
+  },
+  {
+    "country": "SK",
+    "feeds": [
+      "https://spectator.sme.sk/rss"
+    ]
+  },
+  {
+    "country": "ID",
+    "feeds": [
+      "https://www.thejakartapost.com/rss"
+    ]
+  },
+  {
+    "country": "PH",
+    "feeds": [
+      "https://www.philstar.com/rss"
+    ]
+  },
+  {
+    "country": "PK",
+    "feeds": [
+      "https://www.dawn.com/feeds/home"
+    ]
+  },
+  {
+    "country": "TH",
+    "feeds": [
+      "https://www.bangkokpost.com/rss"
+    ]
+  },
+  {
+    "country": "VN",
+    "feeds": [
+      "https://vietnamnews.vn/rss.xml"
+    ]
+  },
+  {
+    "country": "MY",
+    "feeds": [
+      "https://www.malaymail.com/feed/rss"
+    ]
+  }
+]

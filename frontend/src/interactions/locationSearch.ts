@@ -74,7 +74,6 @@ export function setupLocationSearch(
         }
       } else {
         selectedOceanIds.add(id);
-        console.log("Added Ocean ID:", id);
         selectedFlags[id] = 1;
 
         const oceanIndex = CONFIG.oceanHover.oceanIdToIndex?.[id];
