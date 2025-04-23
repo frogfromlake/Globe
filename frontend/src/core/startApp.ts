@@ -21,6 +21,8 @@ import { initializeScene } from "../init/initializeScene";
 import {
   earthFragmentShader,
   earthVertexShader,
+  atmosphereVertexShader,
+  atmosphereFragmentShader,
 } from "../shaders/earthShaders";
 import {
   getOceanIdAtUV,
@@ -83,6 +85,7 @@ export async function startApp() {
   init3DLabels(scene);
   init3DOceanLabels(scene);
 
+  // Globe creation
   const globe = new THREE.Mesh(
     new THREE.SphereGeometry(
       CONFIG.globe.radius,
@@ -97,7 +100,27 @@ export async function startApp() {
   );
   scene.add(globe);
 
-  // === Background starsphere ===
+  // Globe atmosphere
+  const atmosphereRadius = CONFIG.globe.radius * 1.027;
+
+  const atmosphere = new THREE.Mesh(
+    new THREE.SphereGeometry(atmosphereRadius, 128, 128),
+    new THREE.ShaderMaterial({
+      vertexShader: atmosphereVertexShader,
+      fragmentShader: atmosphereFragmentShader,
+      transparent: true,
+      depthWrite: false,
+      side: THREE.BackSide,
+      blending: THREE.AdditiveBlending,
+      uniforms: {
+        uCameraDistance: { value: 5.0 },
+        uLightDirection: { value: new THREE.Vector3(1, 0, 0) },
+      },
+    })
+  );
+  scene.add(atmosphere);
+
+  // Background starsphere
   let useFixedBackground = false; // default to realistic
 
   // Add star sphere to scene
@@ -221,6 +244,8 @@ export async function startApp() {
 
     // === Camera distance based interaction ===
     const distance = camera.position.distanceTo(controls.target);
+    atmosphere.material.uniforms.uCameraDistance.value = distance;
+
     const normalized =
       (distance - CONFIG.zoom.min) / (CONFIG.zoom.max - CONFIG.zoom.min);
 
@@ -239,6 +264,10 @@ export async function startApp() {
     );
 
     uniforms.lightDirection.value.copy(getSunDirectionUTC());
+    atmosphere.material.uniforms.uLightDirection.value.copy(
+      uniforms.lightDirection.value
+    );
+
     controls.update();
 
     // === Hover detection ===

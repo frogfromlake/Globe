@@ -24,7 +24,9 @@ export function initializeUniforms(
   const selectedData = selectedCountryMask.image.data as Uint8Array;
   const selectedOceanData = selectedOceanMask.image.data as Uint8Array;
 
-  const maxCountryId = Math.max(...Object.keys(CONFIG.countryHover.countryCenters).map(Number));
+  const maxCountryId = Math.max(
+    ...Object.keys(CONFIG.countryHover.countryCenters).map(Number)
+  );
   const maxOceanId = Math.max(
     ...Object.keys(CONFIG.oceanHover.oceanCenters).map(Number)
   );
@@ -91,6 +93,7 @@ export function initializeUniforms(
     uFlashlightEnabled: { value: true },
     uCursorOnGlobe: { value: false },
     nightBrightness: { value: CONFIG.textures.nightBrightness },
+    uCameraDistance: { value: 0.0 },
   };
 
   return {
