@@ -162,7 +162,7 @@ export async function startApp() {
           selectedCountryIds.delete(clickedCountryId);
           selectedFlags[clickedCountryId] = 0;
 
-          // ✅ Hide the news panel when deselecting
+          // Hide the news panel when deselecting
           if (panel) panel.classList.remove("open");
         } else {
           selectedCountryIds.add(clickedCountryId);
@@ -223,6 +223,11 @@ export async function startApp() {
     texture.needsUpdate = true;
   }
 
+  let hasMovedPointer = false;
+  window.addEventListener("pointermove", () => {
+    hasMovedPointer = true;
+  });
+
   function animate(): void {
     requestAnimationFrame(animate);
 
@@ -273,13 +278,29 @@ export async function startApp() {
     controls.update();
 
     // === Hover detection ===
-    const countryResult = interactionState.countryEnabled
-      ? updateHoveredCountry(raycaster, pointer, camera, globe, globe.material)
-      : { id: -1, position: null };
+    type HoverResult = {
+      id: number;
+      position: THREE.Vector3 | null;
+    };
 
-    const oceanResult = interactionState.oceanEnabled
-      ? updateHoveredOcean(raycaster, pointer, camera, globe)
-      : { id: -1, position: null };
+    let countryResult: HoverResult = { id: -1, position: null };
+    let oceanResult: HoverResult = { id: -1, position: null };
+
+    if (hasMovedPointer) {
+      if (interactionState.countryEnabled) {
+        countryResult = updateHoveredCountry(
+          raycaster,
+          pointer,
+          camera,
+          globe,
+          globe.material
+        );
+      }
+
+      if (interactionState.oceanEnabled) {
+        oceanResult = updateHoveredOcean(raycaster, pointer, camera, globe);
+      }
+    }
 
     let newHoveredId = -1;
     let newHoverPosition: THREE.Vector3 | null = null;
