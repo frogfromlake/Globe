@@ -66,9 +66,17 @@ export async function showNewsPanel(isoCode: string): Promise<void> {
     const res = await fetch(`${API_BASE}/api/news?country=${isoCode}`);
     if (res.status === 204) {
       content.innerHTML = `<strong>No news found for ${isoCode}</strong>`;
+      isFetchingNews = false;
       return;
     }
-    if (!res.ok) throw new Error("Failed to fetch news");
+
+    if (!res.ok) {
+      // Log with details for debugging, but don't throw to avoid noisy console
+      console.warn(`[News API] Non-OK response: ${res.status} for ${isoCode}`);
+      content.innerHTML = `<strong style="color: red;">Failed to fetch news</strong>`;
+      isFetchingNews = false;
+      return;
+    }
 
     const data = await res.json();
     content.innerHTML = renderNewsItems(data);

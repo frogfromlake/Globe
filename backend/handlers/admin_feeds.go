@@ -9,6 +9,8 @@ import (
 	"github.com/frogfromlake/Orbitalone/backend/middleware"
 )
 
+// AdminFeedsHandler handles GET and POST requests to list or update feed configurations.
+// Requires admin authentication and handles CORS internally.
 func AdminFeedsHandler(w http.ResponseWriter, r *http.Request) {
 	middleware.SetCORSHeaders(w, r)
 
@@ -22,10 +24,11 @@ func AdminFeedsHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// handleListFeeds responds with the full list of country feed configurations in JSON format.
 func handleListFeeds(w http.ResponseWriter) {
 	allFeeds := feeds.ListAllFeeds()
 
-	var response []feeds.FeedConfig
+	response := make([]feeds.FeedConfig, 0, len(allFeeds))
 	for country, urls := range allFeeds {
 		response = append(response, feeds.FeedConfig{
 			CountryCode: country,
@@ -34,34 +37,42 @@ func handleListFeeds(w http.ResponseWriter) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(response)
+	if err := json.NewEncoder(w).Encode(response); err != nil {
+		log.Printf("❌ Failed to encode feed list: %v", err)
+		http.Error(w, "Failed to encode feed list", http.StatusInternalServerError)
+	}
 }
 
+// handleSetFeeds decodes a FeedConfig from the request body and saves it to the feeds store.
+// Returns a confirmation payload on success or an error on failure.
 func handleSetFeeds(w http.ResponseWriter, r *http.Request) {
 	var payload feeds.FeedConfig
+
 	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
-		log.Println("❌ Failed to decode JSON:", err)
+		log.Printf("❌ Failed to decode JSON body: %v", err)
 		http.Error(w, "Invalid JSON", http.StatusBadRequest)
 		return
 	}
 
 	if payload.CountryCode == "" || len(payload.Feeds) == 0 {
-		log.Println("❌ Missing country or feeds")
+		log.Println("❌ Missing country code or feed list in payload")
 		http.Error(w, "Missing country or feeds", http.StatusBadRequest)
 		return
 	}
 
 	if err := feeds.SetFeeds(payload.CountryCode, payload.Feeds); err != nil {
-		log.Printf("❌ Failed to save feeds: %v", err)
+		log.Printf("❌ Failed to save feeds for %s: %v", payload.CountryCode, err)
 		http.Error(w, "Failed to save feeds", http.StatusInternalServerError)
 		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]any{
+	if err := json.NewEncoder(w).Encode(map[string]any{
 		"status":  "ok",
 		"country": payload.CountryCode,
 		"feeds":   payload.Feeds,
-	})
-
+	}); err != nil {
+		log.Printf("❌ Failed to encode success response: %v", err)
+		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
+	}
 }

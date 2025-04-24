@@ -1,73 +1,57 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"net/http"
 	"os"
 
-	"github.com/frogfromlake/Orbitalone/backend/handlers"
-	"github.com/frogfromlake/Orbitalone/backend/middleware"
+	"github.com/frogfromlake/Orbitalone/backend/routes"
 	"github.com/joho/godotenv"
 )
 
 func main() {
-	// Normalize ENV
-	env := os.Getenv("ENV")
-	if env == "" {
-		env = "development"
-		log.Println("🌍 Environment: Dev (default)")
-	} else {
-		log.Println("🌍 Environment:", env)
-	}
+	env := getEnv("ENV", "development")
+	log.Printf("🌍 Environment: %s\n", env)
 
-	// Load .env only in development
+	// Load local .env in non-production environments
 	if env != "production" {
 		if err := godotenv.Load(); err != nil {
-			log.Println("⚠️ Could not load .env file")
+			log.Printf("⚠️  Failed to load .env: %v\n", err)
 		} else {
 			log.Println("✅ .env loaded")
 		}
 	}
 
+	// Ensure critical credentials are set
 	adminUser := os.Getenv("ADMIN_USER")
 	adminPass := os.Getenv("ADMIN_PASS")
-
 	if adminUser == "" || adminPass == "" {
-		log.Fatal("❌ ADMIN_USER or ADMIN_PASS is not set in environment")
+		log.Fatal("❌ Missing ADMIN_USER or ADMIN_PASS in environment")
 	}
 
-	port := os.Getenv("PORT")
-	if env == "production" && port == "" {
-		log.Fatal("❌ PORT must be set in production (Fly.io sets this automatically)")
-	}
-	if port == "" {
-		port = "8080"
+	// Normalize PORT, especially for Fly.io in production
+	port := getEnv("PORT", "8080")
+	if env == "production" && port == "8080" {
+		log.Fatal("❌ PORT must be explicitly set in production")
 	}
 
+	// Set up routes and start the server
 	mux := http.NewServeMux()
+	routes.Register(mux, env)
 
-	// Public API route
-	mux.Handle("/api/news", http.HandlerFunc(handlers.NewsHandler))
+	addr := fmt.Sprintf("0.0.0.0:%s", port)
+	log.Printf("✅ Server running at http://%s\n", addr)
 
-	// Dev-only admin routes
-	if env != "production" {
-		log.Println("🛠️  Admin endpoints enabled (DEV only)")
-
-		mux.Handle("/admin/feeds", middleware.CORSHandler(http.HandlerFunc(handlers.AdminFeedsHandler)))
-		mux.Handle("/admin/test-feed", middleware.CORSHandler(middleware.AdminAuth(http.HandlerFunc(handlers.AdminTestFeedHandler))))
-		mux.Handle("/admin/feeds/save", middleware.CORSHandler(middleware.AdminAuth(http.HandlerFunc(handlers.AdminFeedsHandler))))
-		mux.Handle("/admin/ping", middleware.CORSHandler(
-			middleware.AdminAuth(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				w.Header().Set("Content-Type", "application/json")
-				w.Write([]byte(`{"ok":true,"user":"admin"}`))
-			})),
-		))
-	} else {
-		log.Println("🚫 Admin endpoints are DISABLED in production")
+	if err := http.ListenAndServe(addr, mux); err != nil {
+		log.Fatalf("❌ ListenAndServe failed: %v", err)
 	}
+}
 
-	log.Printf("✅ Server running on http://0.0.0.0:%s\n", port)
-	if err := http.ListenAndServe("0.0.0.0:"+port, mux); err != nil {
-		log.Fatal(err)
+// getEnv returns an environment variable or a fallback if unset.
+func getEnv(key, fallback string) string {
+	if value := os.Getenv(key); value != "" {
+		return value
 	}
+	return fallback
 }

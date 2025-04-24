@@ -10,11 +10,9 @@ import {
 } from "../shaders/earthShaders";
 import type { GlobeUniforms } from "../shaders/uniforms";
 import { CONFIG } from "../configs/config";
-import {
-  LineMaterial,
-  Line2,
-  LineGeometry,
-} from "three/examples/jsm/Addons.js";
+import { Line2 } from "three/examples/jsm/lines/Line2.js";
+import { LineMaterial } from "three/examples/jsm/lines/LineMaterial.js";
+import { LineGeometry } from "three/examples/jsm/lines/LineGeometry.js";
 
 /**
  * Creates the custom Earth shader material with all globe uniforms.

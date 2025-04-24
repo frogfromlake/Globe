@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"errors"
 	"log"
 	"net/http"
 	"time"
@@ -41,7 +42,7 @@ type NewsArticle struct {
 
 func GetNewsByCountry(code string) ([]NewsArticle, error) {
 	feedURLs, err := feeds.GetFeeds(code)
-	if err != nil {
+	if errors.Is(err, feeds.ErrNoFeeds) {
 		log.Printf("🚫 No feeds found for %s", code)
 		return nil, err
 	}

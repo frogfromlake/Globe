@@ -292,21 +292,21 @@ export const CONFIG = {
     /** Configuration for country labels */
     country: {
       /** Line color connecting country label to country */
-      lineColor: "rgba(255, 255, 255, 0.49)",
+      lineColor: "rgb(255, 255, 255)",
       /** Line thickness for country labels */
       lineWidth: 1.5,
       /** Fill color for country label text */
-      labelColor: "rgba(215, 255, 232, 0.8)",
+      labelColor: "rgb(215, 255, 232)",
     },
 
     /** Configuration for ocean labels */
     ocean: {
       /** Line color connecting ocean label to ocean */
-      lineColor: "rgba(255, 255, 255, 0.58)",
+      lineColor: "rgb(255, 255, 255)",
       /** Line thickness for ocean labels */
       lineWidth: 1.5,
       /** Fill color for ocean label text */
-      labelColor: "rgba(203, 246, 255, 0.8)",
+      labelColor: "rgb(203, 246, 255)",
     },
 
     /** Glow effect for text labels */

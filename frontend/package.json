@@ -18,6 +18,7 @@
     "@types/geojson": "^7946.0.16",
     "@types/node": "^22.14.1",
     "@types/three": "^0.175.0",
+    "depcheck": "^1.4.7",
     "ts-node": "^10.9.2",
     "tsx": "^4.19.3",
     "typescript": "^5.8.3",
