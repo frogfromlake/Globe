@@ -122,16 +122,6 @@ Returns:
 
 ---
 
-## 📦 Build
-
-```bash
-pnpm build      # builds production-ready app into /dist
-```
-
-Frontend is deployed on **Vercel**, backend on **Fly.io**.
-
----
-
 ## 👨‍🚀 Author
 
 Created with passion by Fabian Quist [@frogfromlake](https://github.com/frogfromlake)  
