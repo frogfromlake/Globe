@@ -8,7 +8,7 @@ import { countryCenters } from "../data/countryCenters";
 import { oceanCenters } from "../data/oceanCenters";
 import { CONFIG } from "../configs/config";
 import { countryIdToIso } from "../data/countryIdToIso";
-import { showNewsPanel } from "../features/news/showNewsPanel";
+import { showNewsPanel } from "../features/news/handleNewsPanel";
 
 export function setupLocationSearch(
   inputLocation: HTMLInputElement,

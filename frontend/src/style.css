@@ -270,7 +270,6 @@ canvas {
   overflow-y: auto;
   max-height: 80vh;
   z-index: 15;
-  cursor: grab;
   user-select: none;
   transition: right 0.35s ease, opacity 0.35s ease;
 }

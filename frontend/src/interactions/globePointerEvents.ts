@@ -12,7 +12,7 @@ type InteractionOptions = {
   onClick?: (hit: Intersection) => void;
 };
 
-export function setupGlobeInteractions(
+export function setupGlobePointerEvents(
   renderer: WebGLRenderer,
   globe: Mesh,
   raycaster: Raycaster,
