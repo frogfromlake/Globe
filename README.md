@@ -5,7 +5,7 @@
   <img src="./frontend/assets/preview2.png" alt="Preview 2" width="49%"/>
 </p>
 
-**Orbitalone** is a real-time 3D Earth visualization app powered by **TypeScript**, **Three.js**, and custom **GLSL shaders**. It blends beauty and function to deliver intuitive, extensible Earth-based data visualizations — including country borders, ocean overlays, news integration, and more. The project is under active development. Beware of bugs and incomplete features! PR's or Issues welcome.
+**OrbitalOne** is a real-time 3D Earth visualization app powered by **TypeScript**, **Three.js**, and custom **GLSL shaders**. It blends beauty and function to deliver intuitive, extensible Earth-based data visualizations — including country borders, ocean overlays, live news, and more.
 
 🚀 Live at: [https://orbitalone.space](https://orbitalone.space)
 
@@ -20,7 +20,7 @@
 > One species. One biosphere. One chance to make something of it.  
 > If nothing has meaning by default, then everything we choose to care for becomes meaningful — together.
 
-**Orbitalone** is a tool for global awareness.  
+OrbitalOne is a tool for global awareness.  
 It visualizes the planet’s political and environmental complexity,  
 not to emphasize division, but to clarify the stakes:  
 Only by seeing the whole can we navigate the parts.  
@@ -31,12 +31,16 @@ Only by embracing our smallness can we act with purpose.
 ## ✨ Features
 
 - 🧭 Interactive 3D globe with clickable country and ocean regions  
-- 🌞 Real-time Earth rotation, lighting, and day/night cycle via custom shaders  
-- 🌐 Country + ocean search bar (instantly zoom to any place on Earth)  
-- 📰 Daily news articles shown when selecting a country  
-- 📍 Geolocation marker using the browser’s location API  
-- 🎨 Smooth hover and selection transitions with animated 3D labels  
-- ⚙️ Modular TypeScript architecture, shader-driven materials, and centralized config
+- 🌞 Real-time Earth rotation, lighting, and day/night shaders  
+- 🛰️ Floating 3D labels + connector lines for hover and selection  
+- 🌐 Search any country or ocean to jump directly to it  
+- 📍 Show your current location via geolocation marker  
+- 📰 Translated daily news articles when selecting a country  
+- 💬 Language toggle for original vs. translated text  
+- 🧠 DeepL-powered backend with smart caching to reduce API usage  
+- 🛠️ Admin panel for managing and testing country RSS feeds  
+- ⚙️ Clean, modular TypeScript architecture with centralized config  
+- 🪞 Fade transitions, label scaling, and dynamic lighting effects
 
 ---
 
@@ -51,7 +55,7 @@ pnpm dev          # start dev server (http://localhost:5173/)
 
 ### 🮾 Backend (Go) Setup
 
-The backend serves country-specific news via RSS. It lives in `/backend` and must be started separately.
+The backend serves country-specific news (with DeepL translation + caching) and runs separately:
 
 ```bash
 cd Orbitalone/backend
@@ -59,73 +63,56 @@ cd Orbitalone/backend
 # Install Go dependencies
 go mod tidy
 
+# Create a local .env file:
+echo "DEEPL_API_KEY=your-key-here" > .env
+
 # Run locally
 go run main.go
-
-# Or build binary
-go build -o orbitalone-news .
-./orbitalone-news
 ```
+
+The backend also supports a lightweight admin panel (for feed management) when run in non-production mode.
 
 ---
 
-## 🧩 Project Structure
+## 🔤 News Translation + Caching
 
-```
-frontend/
-├── configs/        # Central app configuration
-├── core/           # App bootstrap logic
-├── data/           # Centroids, borders, ID maps
-├── features/       # Feature modules like news panel
-├── init/           # Scene, camera, textures, uniforms
-├── interactions/   # User input, search, interactivity
-├── materials/      # Shader materials
-├── shaders/        # GLSL files
-├── state/          # Interaction state store
-├── systems/        # Hover, selection, label systems
-├── types/          # Custom TS types and extensions
-└── utils/          # Geo helpers, math, conversions
-```
+- News is fetched via curated **country-level RSS feeds**
+- Translations are powered by **DeepL** (free tier) with:
+  - Language detection from ISO-3166 codes
+  - Session-persistent user toggle (original vs. translated)
+  - Caching layer to reduce quota usage
+  - Skips translation for English-language content
+
+Admin panel available at `/#admin` (in dev) lets you:
+- View current feed mappings
+- Test RSS URLs
+- Add or remove feeds for any country
+
+> All translations are cached for 24 hours using `patrickmn/go-cache`.
 
 ---
 
-## 🧪 Config-Driven Design
+## 🛰️ Backend API
 
-All app behavior is configurable via `src/configs/config.ts`.
-
-```ts
-export const CONFIG = {
-  globe: { radius: 1, widthSegments: 128, heightSegments: 64 },
-  camera: { initialPosition: { z: 3 }, ... },
-  fade: { highlight: 3.5, selection: 2.5 },
-  textures: {
-    day: "/textures/earth_day_8k.jpg",
-    night: "/textures/earth_night_8k.jpg",
-    idMap: "/textures/country_id_map_8k_rgb.png"
-  },
-  ...
-};
+```http
+GET /api/news?country=JP
 ```
 
----
+Returns:
 
-## 🛰️ Under the Hood
-
-- Uses **NASA Blue Marble** (day) and **Black Marble** (night) textures (8K)
-- Pixel-perfect hover detection using **RGB-encoded country ID maps**
-- Accurate floating labels via **geographic centroids**
-- Custom shaders control **lighting**, **glow**, **night lights**, and **interactive outlines**
-
----
-
-## 🌍 News Backend
-
-The backend is written in **Go** and serves country-specific news via RSS.  
-It's a separate service in `/backend`:
-
-> `GET /api/news?country=DE` → returns JSON articles for Germany
-
-See [Installation](#-installation) above for setup.
+```json
+[
+  {
+    "title": "Translated title (if enabled)",
+    "originalTitle": "原文タイトル",
+    "link": "https://...",
+    "description": "...",
+    "originalDescription": "...",
+    "source": "NHK Japan",
+    "published": "2025-04-25T08:00:00Z"
+  }
+]
+```
 
 ---
 
@@ -135,10 +122,7 @@ See [Installation](#-installation) above for setup.
 pnpm build      # builds production-ready app into /dist
 ```
 
-Assets and textures live in `/public/textures`.
-
-Frontend is deployed via [Vercel](https://vercel.com) and the backend is deployed using [Fly.io](https://fly.io).  
-See: [https://orbitalone.space](https://orbitalone.space)
+Frontend is deployed on **Vercel**, backend on **Fly.io**.
 
 ---
 
@@ -149,19 +133,18 @@ Made for explorers, thinkers, dreamers — and for Earth.
 
 ---
 
-## 🪐 License: **MIT**
+## 🪐 License
 
-## ❕ Deployment Policy
+This project is **proprietary** — not open source.
 
-This project is open source for **learning, exploration, and extension** — but:
+The source code is provided for **viewing and learning only**.  
+Please see [LICENSE.txt](./LICENSE.txt) for full terms.
 
-> **Please do not deploy this project under the same name (`Orbitalone`) or branding.**  
-> The live instance at [https://orbitalone.space](https://orbitalone.space) is the official deployment.
+If you're interested in licensing, commercial use, or collaboration, contact:  
+📩 **fabianquist@posteo.de**
 
-Feel free to:
-- Fork the repo
-- Run it locally or privately
-- Build upon it for your own unique project
+---
 
-But **do not redeploy** it as a clone with the same identity or public URL.  
-If you're unsure, [open an issue](https://github.com/frogfromlake/Orbitalone/issues) or reach out!
+OrbitalOne is a quiet call to look at Earth differently.  
+To zoom out — not to detach, but to care more deeply.  
+Thanks for visiting 🌍

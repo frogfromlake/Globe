@@ -1,0 +1,13 @@
+Copyright © 2025 Fabian Quist  
+All rights reserved.
+
+This source code is provided for personal use, learning, and code exploration only.  
+You are **not permitted** to:
+
+- Copy, distribute, or publicly host this project or its contents
+- Use it for any commercial or revenue-generating purpose
+- Deploy clones or derivatives under the same branding or domain
+- Sell any product or service based on this code
+
+For licensing inquiries, commercial use, or collaboration proposals, contact:  
+fabianquist@posteo.de
