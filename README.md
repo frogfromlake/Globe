@@ -11,20 +11,26 @@
 
 ---
 
-> 🛰️ **Orbit Alone**  
-> We live on a rock, floating through a silent universe that offers no inherent meaning, no guarantees, and no rescue.  
-> Borders, ideologies, histories — from space, they vanish. What’s left is one fragile system, alive by chance and sustained by collaboration.
+## 🌐 Vision
 
-> 🌍 **Orbital One**  
-> To orbit alone is to realize we are all in the same orbit.  
-> One species. One biosphere. One chance to make something of it.  
-> If nothing has meaning by default, then everything we choose to care for becomes meaningful — together.
-
-OrbitalOne is a tool for global awareness.  
-It visualizes the planet’s political and environmental complexity,  
+**OrbitalOne** is a tool for global awareness.  
+It visualizes the planet’s political and environmental complexity —  
 not to emphasize division, but to clarify the stakes:  
 Only by seeing the whole can we navigate the parts.  
 Only by embracing our smallness can we act with purpose.
+
+---
+
+## 🛰️ Philosophy
+
+> **Orbit Alone**  
+> We live on a rock, floating through a silent universe that offers no inherent meaning, no guarantees, and no rescue.  
+> Borders, ideologies, histories — from space, they vanish. What’s left is one fragile system, alive by chance and sustained by collaboration.
+
+> **Orbital One**  
+> To orbit alone is to realize we are all in the same orbit.  
+> One species. One biosphere. One chance to make something of it.  
+> If nothing has meaning by default, then everything we choose to care for becomes meaningful — together.
 
 ---
 
