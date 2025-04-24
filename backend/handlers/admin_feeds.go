@@ -19,6 +19,8 @@ func AdminFeedsHandler(w http.ResponseWriter, r *http.Request) {
 		handleListFeeds(w)
 	case http.MethodPost:
 		handleSetFeeds(w, r)
+	case http.MethodDelete:
+		handleDeleteFeeds(w, r)
 	default:
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 	}
@@ -75,4 +77,22 @@ func handleSetFeeds(w http.ResponseWriter, r *http.Request) {
 		log.Printf("❌ Failed to encode success response: %v", err)
 		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
 	}
+}
+
+// handleDeleteFeeds deletes the feeds for a given country.
+// It responds with a confirmation payload or an error.
+func handleDeleteFeeds(w http.ResponseWriter, r *http.Request) {
+	country := r.URL.Query().Get("country")
+	if country == "" {
+		http.Error(w, "Missing country code", http.StatusBadRequest)
+		return
+	}
+
+	if err := feeds.DeleteFeeds(country); err != nil {
+		log.Printf("❌ Failed to delete feeds for %s: %v", country, err)
+		http.Error(w, "Failed to delete feeds", http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
 }

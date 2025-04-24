@@ -58,8 +58,15 @@ export async function showNewsPanel(isoCode: string): Promise<void> {
   panel.style.bottom = "";
   panel.style.transform = "none";
 
-  // Show loading text
+  // Center the title visually
   title.textContent = `Top News from ${isoCode}`;
+  title.style.display = "block";
+  title.style.width = "100%";
+  title.style.textAlign = "center";
+  title.style.fontSize = "1rem";
+  title.style.marginBottom = "0.25rem";
+
+  // Show loading text
   content.innerHTML = `<strong style="opacity: 0.8;">Loading...</strong>`;
 
   try {
@@ -71,7 +78,6 @@ export async function showNewsPanel(isoCode: string): Promise<void> {
     }
 
     if (!res.ok) {
-      // Log with details for debugging, but don't throw to avoid noisy console
       console.warn(`[News API] Non-OK response: ${res.status} for ${isoCode}`);
       content.innerHTML = `<strong style="color: red;">Failed to fetch news</strong>`;
       isFetchingNews = false;
@@ -79,7 +85,30 @@ export async function showNewsPanel(isoCode: string): Promise<void> {
     }
 
     const data = await res.json();
-    content.innerHTML = renderNewsItems(data);
+    let currentNews = data;
+    const toggleButton = document.getElementById(
+      "translate-toggle"
+    ) as HTMLButtonElement;
+
+    // Persisted translation toggle preference across sessions (default: true)
+    let useTranslation = sessionStorage.getItem("translatePref") !== "false";
+
+    const render = () => {
+      content.innerHTML = renderNewsItems(currentNews, useTranslation);
+      toggleButton.textContent = useTranslation
+        ? "🌐 Show Original Language"
+        : "🌐 Translate to English";
+    };
+
+    if (toggleButton) {
+      toggleButton.onclick = () => {
+        useTranslation = !useTranslation;
+        sessionStorage.setItem("translatePref", String(useTranslation));
+        render();
+      };
+    }
+
+    render();
   } catch (err) {
     console.error("[News Fetch Error]:", err);
     content.innerHTML = `<strong style="color: red;">Failed to fetch news</strong>`;
@@ -91,19 +120,28 @@ export async function showNewsPanel(isoCode: string): Promise<void> {
 /**
  * Renders a list of news items as HTML.
  * @param newsItems - Array of news objects.
+ * @param translate - Whether to use the translated text.
  * @returns Rendered HTML string.
  */
-function renderNewsItems(newsItems: any[]): string {
+function renderNewsItems(newsItems: any[], translate = true): string {
   return `
     <ul>
       ${newsItems
-        .map(
-          (item: any) => `
-        <li>
-          <a href="${item.link}" target="_blank">${item.title}</a><br/>
-          <small>${item.source} – ${item.published || ""}</small>
-        </li>`
-        )
+        .map((item: any) => {
+          const title = translate
+            ? item.title
+            : item.originalTitle || item.title;
+          const desc = translate
+            ? item.description
+            : item.originalDescription || item.description;
+
+          return `
+            <li>
+              <a href="${item.link}" target="_blank">${title}</a><br/>
+              <small>${item.source} – ${item.published || ""}</small><br/>
+              <em style="opacity: 0.7;">${desc || ""}</em>
+            </li>`;
+        })
         .join("")}
     </ul>
   `;
@@ -130,7 +168,7 @@ function makeDraggable(panel: HTMLElement): void {
       if (!isDragging) return;
       panel.style.top = `${e.clientY - offsetY}px`;
       panel.style.left = `${e.clientX - offsetX}px`;
-      panel.style.right = ""; // allow left-dragging
+      panel.style.right = "";
     };
 
     document.onmouseup = () => {

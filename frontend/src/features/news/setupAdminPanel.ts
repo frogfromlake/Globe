@@ -8,7 +8,7 @@ export function setupAdminPanel(): void {
   // Only activate in development mode
   if (import.meta.env.MODE !== "development") return;
 
-  import("./createAdminPanel").then(({ createAdminPanel }) => {
+  import("./handleAdminPanel").then(({ createAdminPanel }) => {
     const admin = createAdminPanel();
 
     // === Create Toggle Button ===

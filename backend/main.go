@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/frogfromlake/Orbitalone/backend/feeds"
 	"github.com/frogfromlake/Orbitalone/backend/routes"
 	"github.com/joho/godotenv"
 )
@@ -35,6 +36,12 @@ func main() {
 	if env == "production" && port == "8080" {
 		log.Fatal("❌ PORT must be explicitly set in production")
 	}
+
+	// Initialize the database connection
+	if err := feeds.InitDB(); err != nil {
+		log.Fatalf("❌ DB init failed: %v", err)
+	}
+	log.Printf("✅ Database sucessfully initialized")
 
 	// Set up routes and start the server
 	mux := http.NewServeMux()

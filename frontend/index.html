@@ -53,11 +53,17 @@
     <div id="news-panel" class="news-panel">
       <div class="news-panel-header">
         <strong id="news-title">Top News</strong>
-        <button class="reset-btn" id="news-reset">↺ Reset</button>
-        <button class="close-btn" id="news-close">×</button>
+        <div class="news-controls">
+          <button class="translate-btn" id="translate-toggle">🌐 Translate to English</button>
+          <div class="right-buttons">
+            <button class="reset-btn" id="news-reset">↺ Reset</button>
+            <button class="close-btn" id="news-close">×</button>
+          </div>
+        </div>
       </div>
+
       <div id="news-content" class="news-content"></div>
-    </div>  
+    </div>
 
     <canvas id="globe"></canvas>
   </div>

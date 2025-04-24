@@ -6,14 +6,18 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/frogfromlake/Orbitalone/backend/data"
 	"github.com/frogfromlake/Orbitalone/backend/feeds"
+	"github.com/frogfromlake/Orbitalone/backend/localization"
+
 	"github.com/mmcdole/gofeed"
 	"github.com/patrickmn/go-cache"
 )
 
+// Article cache
 var feedCache = cache.New(30*time.Minute, 10*time.Minute)
 
-// Transport that forces a User-Agent
+// Transport with user-agent
 type userAgentTransport struct {
 	originalTransport http.RoundTripper
 }
@@ -33,13 +37,16 @@ var parser = &gofeed.Parser{
 }
 
 type NewsArticle struct {
-	Title       string `json:"title"`
-	Link        string `json:"link"`
-	Description string `json:"description,omitempty"`
-	Published   string `json:"published,omitempty"`
-	Source      string `json:"source"`
+	Title               string `json:"title"`
+	OriginalTitle       string `json:"originalTitle,omitempty"`
+	Link                string `json:"link"`
+	Description         string `json:"description,omitempty"`
+	OriginalDescription string `json:"originalDescription,omitempty"`
+	Published           string `json:"published,omitempty"`
+	Source              string `json:"source"`
 }
 
+// GetNewsByCountry fetches RSS feeds for a country and optionally translates them.
 func GetNewsByCountry(code string) ([]NewsArticle, error) {
 	feedURLs, err := feeds.GetFeeds(code)
 	if errors.Is(err, feeds.ErrNoFeeds) {
@@ -47,8 +54,12 @@ func GetNewsByCountry(code string) ([]NewsArticle, error) {
 		return nil, err
 	}
 
-	var all []NewsArticle
+	lang, shouldTranslate := data.IsoToDeepLLang[code]
+	if !shouldTranslate {
+		log.Printf("⚠️ No DeepL mapping for %s – will serve original language only", code)
+	}
 
+	var all []NewsArticle
 	for _, url := range feedURLs {
 		if cached, found := feedCache.Get(url); found {
 			all = append(all, cached.([]NewsArticle)...)
@@ -56,21 +67,49 @@ func GetNewsByCountry(code string) ([]NewsArticle, error) {
 		}
 
 		feed, err := parser.ParseURL(url)
-
 		if err != nil {
-			log.Printf("⚠️ Failed to fetch/parse %s: %v", url, err)
+			log.Printf("⚠️ Failed to parse %s: %v", url, err)
 			continue
 		}
 
 		var articles []NewsArticle
 		for _, item := range feed.Items {
+			originalTitle := item.Title
+			originalDesc := item.Description
+
+			title := originalTitle
+			desc := originalDesc
+
+			if shouldTranslate && lang != "EN" {
+				if translated, err := localization.TranslateText(originalTitle, lang); err == nil {
+					title = translated
+				} else {
+					log.Printf("⚠️ Failed to translate title: %s (%s) – %v", originalTitle, lang, err)
+				}
+
+				if originalDesc != "" {
+					if translatedDesc, err := localization.TranslateText(originalDesc, lang); err == nil {
+						desc = translatedDesc
+					} else {
+						log.Printf("⚠️ Failed to translate description for: %s (%s) – %v", originalTitle, lang, err)
+					}
+				}
+			} else if !shouldTranslate {
+				if originalDesc != "" {
+					desc = originalDesc + " (Only in local language)"
+				}
+			}
+
 			articles = append(articles, NewsArticle{
-				Title:       item.Title,
-				Link:        item.Link,
-				Description: item.Description,
-				Published:   item.Published,
-				Source:      feed.Title,
+				Title:               title,
+				OriginalTitle:       originalTitle,
+				Link:                item.Link,
+				Description:         desc,
+				OriginalDescription: originalDesc,
+				Published:           item.Published,
+				Source:              feed.Title,
 			})
+
 			if len(articles) >= 5 {
 				break
 			}
@@ -84,6 +123,7 @@ func GetNewsByCountry(code string) ([]NewsArticle, error) {
 	return all, nil
 }
 
+// TestFeedURL returns the parsed feed data from a given URL.
 func TestFeedURL(url string) (*gofeed.Feed, error) {
 	return parser.ParseURL(url)
 }

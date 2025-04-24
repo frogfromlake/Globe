@@ -30,6 +30,18 @@ func Register(mux *http.ServeMux, env string) {
 			middleware.AdminAuth(http.HandlerFunc(handlers.AdminFeedsHandler)),
 		))
 
+		mux.Handle("/admin/feeds/import", middleware.CORSHandler(
+			middleware.AdminAuth(http.HandlerFunc(handlers.AdminImportFeedsHandler)),
+		))
+
+		mux.Handle("/admin/feeds/export", middleware.CORSHandler(
+			middleware.AdminAuth(http.HandlerFunc(handlers.AdminExportFeedsHandler)),
+		))
+
+		mux.Handle("/admin/deepl/usage", middleware.CORSHandler(
+			middleware.AdminAuth(http.HandlerFunc(handlers.GetDeepLUsage)),
+		))
+
 		mux.Handle("/admin/ping", middleware.CORSHandler(
 			middleware.AdminAuth(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				w.Header().Set("Content-Type", "application/json")
