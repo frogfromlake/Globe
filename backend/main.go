@@ -33,9 +33,6 @@ func main() {
 
 	// Normalize PORT, especially for Fly.io in production
 	port := getEnv("PORT", "8080")
-	if env == "production" && port == "8080" {
-		log.Fatal("❌ PORT must be explicitly set in production")
-	}
 
 	// Initialize the database connection
 	if err := feeds.InitDB(); err != nil {
