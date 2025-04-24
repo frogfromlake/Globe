@@ -11,14 +11,17 @@ import (
 )
 
 func main() {
-	if os.Getenv("ENV") == "" {
-		log.Println("🌍 Environment: Dev")
+	// Normalize ENV
+	env := os.Getenv("ENV")
+	if env == "" {
+		env = "development"
+		log.Println("🌍 Environment: Dev (default)")
 	} else {
-		log.Println("🌍 Environment:", os.Getenv("ENV"))
+		log.Println("🌍 Environment:", env)
 	}
 
 	// Load .env only in development
-	if os.Getenv("ENV") != "production" {
+	if env != "production" {
 		if err := godotenv.Load(); err != nil {
 			log.Println("⚠️ Could not load .env file")
 		} else {
@@ -34,7 +37,7 @@ func main() {
 	}
 
 	port := os.Getenv("PORT")
-	if os.Getenv("ENV") == "production" && port == "" {
+	if env == "production" && port == "" {
 		log.Fatal("❌ PORT must be set in production (Fly.io sets this automatically)")
 	}
 	if port == "" {
@@ -43,16 +46,25 @@ func main() {
 
 	mux := http.NewServeMux()
 
+	// Public API route
 	mux.Handle("/api/news", http.HandlerFunc(handlers.NewsHandler))
-	mux.Handle("/admin/feeds", middleware.CORSHandler(http.HandlerFunc(handlers.AdminFeedsHandler)))
-	mux.Handle("/admin/test-feed", middleware.CORSHandler(middleware.AdminAuth(http.HandlerFunc(handlers.AdminTestFeedHandler))))
-	mux.Handle("/admin/feeds/save", middleware.CORSHandler(middleware.AdminAuth(http.HandlerFunc(handlers.AdminFeedsHandler))))
-	mux.Handle("/admin/ping", middleware.CORSHandler(
-		middleware.AdminAuth(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			w.Header().Set("Content-Type", "application/json")
-			w.Write([]byte(`{"ok":true,"user":"admin"}`))
-		})),
-	))
+
+	// Dev-only admin routes
+	if env != "production" {
+		log.Println("🛠️  Admin endpoints enabled (DEV only)")
+
+		mux.Handle("/admin/feeds", middleware.CORSHandler(http.HandlerFunc(handlers.AdminFeedsHandler)))
+		mux.Handle("/admin/test-feed", middleware.CORSHandler(middleware.AdminAuth(http.HandlerFunc(handlers.AdminTestFeedHandler))))
+		mux.Handle("/admin/feeds/save", middleware.CORSHandler(middleware.AdminAuth(http.HandlerFunc(handlers.AdminFeedsHandler))))
+		mux.Handle("/admin/ping", middleware.CORSHandler(
+			middleware.AdminAuth(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.Header().Set("Content-Type", "application/json")
+				w.Write([]byte(`{"ok":true,"user":"admin"}`))
+			})),
+		))
+	} else {
+		log.Println("🚫 Admin endpoints are DISABLED in production")
+	}
 
 	log.Printf("✅ Server running on http://0.0.0.0:%s\n", port)
 	if err := http.ListenAndServe("0.0.0.0:"+port, mux); err != nil {

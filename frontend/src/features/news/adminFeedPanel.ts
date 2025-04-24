@@ -1,6 +1,10 @@
 const API_BASE = import.meta.env.VITE_PUBLIC_API_URL || "http://localhost:8080";
 
 export function createAdminFeedPanel() {
+  if (import.meta.env.MODE === "production") {
+    throw new Error("🚫 Admin panel is disabled in production.");
+  }
+
   const panel = document.createElement("div");
   panel.id = "admin-panel";
   panel.classList.add("hidden");
