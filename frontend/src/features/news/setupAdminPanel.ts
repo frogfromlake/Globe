@@ -1,9 +1,17 @@
-export function setupAdminPanel() {
+/**
+ * @file setupAdminPanel.ts
+ * @description Dynamically sets up the admin panel toggle buttons for local development.
+ * Displays toggle and hide buttons when visiting `/#admin` or if previously activated in sessionStorage.
+ */
+
+export function setupAdminPanel(): void {
+  // Only activate in development mode
   if (import.meta.env.MODE !== "development") return;
 
-  import("./adminFeedPanel").then(({ createAdminFeedPanel }) => {
-    const admin = createAdminFeedPanel();
+  import("./createAdminPanel").then(({ createAdminPanel }) => {
+    const admin = createAdminPanel();
 
+    // === Create Toggle Button ===
     const toggleAdminBtn = document.createElement("button");
     toggleAdminBtn.id = "toggle-admin";
     toggleAdminBtn.textContent = "🛠 Admin";
@@ -22,6 +30,7 @@ export function setupAdminPanel() {
     });
     document.body.appendChild(toggleAdminBtn);
 
+    // === Create Hide Button ===
     const hideAdminBtn = document.createElement("button");
     hideAdminBtn.id = "hide-admin";
     hideAdminBtn.textContent = "❌ Hide Admin";
@@ -40,6 +49,7 @@ export function setupAdminPanel() {
     });
     document.body.appendChild(hideAdminBtn);
 
+    // === Toggle Panel Visibility ===
     toggleAdminBtn.addEventListener("click", async () => {
       const success = await admin.toggle();
       if (!success) {
@@ -47,12 +57,14 @@ export function setupAdminPanel() {
       }
     });
 
+    // === Hide Panel Button Behavior ===
     hideAdminBtn.addEventListener("click", () => {
       toggleAdminBtn.style.display = "none";
       hideAdminBtn.style.display = "none";
       sessionStorage.removeItem("adminVisible");
     });
 
+    // === Restore Visibility from Session or Hash ===
     if (sessionStorage.getItem("adminVisible")) {
       toggleAdminBtn.style.display = "block";
       hideAdminBtn.style.display = "block";
@@ -68,6 +80,7 @@ export function setupAdminPanel() {
       history.replaceState(null, "", window.location.pathname);
     }
 
+    // === Listen for hash-based toggle requests ===
     window.addEventListener("hashchange", () => {
       if (window.location.hash === "#admin") {
         toggleAdminBtn.style.display = "block";

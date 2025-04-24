@@ -1,18 +1,36 @@
+/**
+ * initializeCamera.ts
+ * Initializes and returns a PerspectiveCamera based on global configuration.
+ * Handles camera FOV, aspect ratio, clipping planes, and starting position.
+ */
+
 import * as THREE from "three";
 import { CONFIG } from "../configs/config";
 
+/**
+ * Creates and configures the main perspective camera for the scene.
+ *
+ * @returns {THREE.PerspectiveCamera} A configured Three.js PerspectiveCamera instance.
+ */
 export function initializeCamera(): THREE.PerspectiveCamera {
-  const fov = CONFIG.camera.fov;
+  const {
+    fov,
+    near,
+    far,
+    initialPosition,
+    fovDistanceMultiplier = 1,
+  } = CONFIG.camera;
+
   const aspect = window.innerWidth / window.innerHeight;
-  const near = CONFIG.camera.near;
-  const far = CONFIG.camera.far;
 
   const camera = new THREE.PerspectiveCamera(fov, aspect, near, far);
 
-  // Adjust camera position based on fov scaling multiplier if defined
-  const multiplier = CONFIG.camera.fovDistanceMultiplier || 1;
-  const { x, y, z } = CONFIG.camera.initialPosition;
-  camera.position.set(x * multiplier, y * multiplier, z * multiplier);
+  // Apply initial camera position with optional FOV-based distance scaling
+  camera.position.set(
+    initialPosition.x * fovDistanceMultiplier,
+    initialPosition.y * fovDistanceMultiplier,
+    initialPosition.z * fovDistanceMultiplier
+  );
 
   camera.updateProjectionMatrix();
 

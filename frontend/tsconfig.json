@@ -1,24 +1,23 @@
 {
   "compilerOptions": {
-    "target": "ES2020",
-    "module": "ESNext",
-    "moduleResolution": "Bundler",
-    "outDir": "./dist",
-    "rootDir": "./src",
-    "strict": true,
-    "esModuleInterop": true,
-    "forceConsistentCasingInFileNames": true,
-    "skipLibCheck": true,
-    "resolveJsonModule": true,
-    "isolatedModules": true,
-    "jsx": "preserve",
-    "types": ["vite/client"]
+    "target": "ESNext",                // Use the latest JavaScript features
+    "module": "ESNext",                // Enable ES modules
+    "moduleResolution": "node",        // Resolve modules like Node.js would (CommonJS/ESM)
+    "esModuleInterop": true,           // Enable interoperability with CommonJS
+    "resolveJsonModule": true,         // Allow importing JSON files directly
+    "outDir": "./dist",                // Output directory for compiled files
+    "rootDir": "./src",                // Input directory for TypeScript files
+    "strict": true,                    // Enable strict type checking
+    "skipLibCheck": true,              // Skip checking library files
+    "forceConsistentCasingInFileNames": true, // Ensure consistent casing in imports
+    "types": ["vite/client", "node"],  // Include types for Vite and Node.js
+    "isolatedModules": true,           // Ensure isolated modules for better error checking
+    "jsx": "preserve"                  // Preserve JSX syntax if you're working with React
   },
-  "typeRoots": ["./node_modules/@types", "./src/types"],
-  "types": ["node"],
-  "include": ["src", "src/types"],
-  "exclude": ["node_modules", "data", "./dist/data"],
+  "typeRoots": ["./node_modules/@types", "./src/types"], // Custom types location
+  "include": ["src", "src/types"], // Include the source and custom types
+  "exclude": ["node_modules", "data", "./dist/data"], // Exclude unnecessary directories
   "ts-node": {
-  "esm": true
+    "esm": true // Ensure ESM support for ts-node
   }
 }

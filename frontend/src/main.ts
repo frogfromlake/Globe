@@ -1,24 +1,45 @@
-// src/main.ts
+/**
+ * Entry point of the OrbitalOne application.
+ *
+ * Responsibilities:
+ * - Initialize and start the core 3D Earth visualization.
+ * - Manage loading screen transitions.
+ * - Set the loading subtitle text dynamically during the app boot sequence.
+ */
+
 import { startApp } from "./core/startApp";
 
-// Function to update the loading subtitle text
-function setLoadingSubtitle(text: string) {
-  const subtitle = document.querySelector(".subtitle") as HTMLElement;
-  if (subtitle) subtitle.textContent = text;
+/**
+ * Updates the loading subtitle displayed during application initialization.
+ *
+ * @param text - The message to display in the subtitle element.
+ */
+function setLoadingSubtitle(text: string): void {
+  const subtitle = document.querySelector(".subtitle") as HTMLElement | null;
+  if (subtitle) {
+    subtitle.textContent = text;
+  }
 }
 
-// Start the app and handle fade-out and fade-in transitions
+// Initialize and start the application
 startApp(setLoadingSubtitle).then(({ animate }) => {
-  const loadingScreen = document.getElementById("loading-screen")!;
-  const appContainer = document.getElementById("app-container")!;
+  const loadingScreen = document.getElementById("loading-screen");
+  const appContainer = document.getElementById("app-container");
 
-  // Start fade-out
+  if (!loadingScreen || !appContainer) {
+    console.error("[main.ts] Critical DOM elements missing.");
+    return;
+  }
+
+  // Trigger fade-out transition of the loading screen
   loadingScreen.classList.add("fade-out");
 
-  // When transition completes, remove loader and show app
+  // Wait for transition to complete before removing loading screen and showing the app
   loadingScreen.addEventListener("transitionend", () => {
     loadingScreen.remove();
     appContainer.classList.add("visible");
-    animate(); // Start render loop
+
+    // Start the main rendering loop
+    animate();
   });
 });

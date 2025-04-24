@@ -1,22 +1,39 @@
+/**
+ * @file handleGlobeClick.ts
+ * @description Handles click interactions on the globe, determining whether a country or ocean was clicked
+ * and updating selection states and the news panel accordingly.
+ */
+
 import { Intersection } from "three";
 import { interactionState } from "../state/interactionState";
-import { getCountryIdAtUV } from "../systems/countryHover";
-import { getOceanIdAtUV } from "../systems/oceanHover";
-import { oceanIdToIndex } from "../data/oceanIdToIndex";
+import { getCountryIdAtUV } from "../hoverLabel/countryHover";
+import { getOceanIdAtUV } from "../hoverLabel/oceanHover";
+import { oceanIdToIndex } from "../utils/oceanIdToIndex";
 import { countryIdToIso } from "../data/countryIdToIso";
 import { showNewsPanel, hideNewsPanel } from "../features/news/handleNewsPanel";
 
 let lastOpenedCountryId: number | null = null;
 
+/**
+ * Handles a click event on the globe, determining whether a country or ocean was selected.
+ * Toggles selection state and updates the news panel accordingly.
+ *
+ * @param hit - The intersection result from a globe click raycast.
+ * @param selectedCountryIds - A set of currently selected country IDs.
+ * @param selectedFlags - Selection flag array for countries (used by shader).
+ * @param selectedOceanIds - A set of currently selected ocean IDs.
+ * @param selectedOceanFlags - Selection flag array for oceans (used by shader).
+ */
 export function handleGlobeClick(
   hit: Intersection,
   selectedCountryIds: Set<number>,
   selectedFlags: Uint8Array,
   selectedOceanIds: Set<number>,
   selectedOceanFlags: Uint8Array
-) {
+): void {
   if (!hit.uv) return;
 
+  // Determine clicked country and ocean IDs (if interactivity is enabled)
   const clickedCountryId = interactionState.countryEnabled
     ? getCountryIdAtUV(hit.uv)
     : -1;
@@ -25,7 +42,7 @@ export function handleGlobeClick(
     ? getOceanIdAtUV(hit.uv)
     : -1;
 
-  // === Country click logic ===
+  // === Country selection logic ===
   if (clickedCountryId > 0 && clickedCountryId < selectedFlags.length) {
     const isAlreadySelected = selectedCountryIds.has(clickedCountryId);
 
@@ -37,10 +54,11 @@ export function handleGlobeClick(
         hideNewsPanel();
         lastOpenedCountryId = null;
       }
-      return; // ✅ prevent re-showing on deselect
+
+      return; // Prevent re-showing on deselect
     }
 
-    // New selection
+    // New country selection
     selectedCountryIds.add(clickedCountryId);
     selectedFlags[clickedCountryId] = 1;
 
@@ -53,7 +71,7 @@ export function handleGlobeClick(
     }
   }
 
-  // === Ocean click logic ===
+  // === Ocean selection logic ===
   const oceanIndex = oceanIdToIndex[clickedOceanId];
   if (oceanIndex === undefined) return;
 

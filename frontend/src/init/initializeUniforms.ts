@@ -1,23 +1,31 @@
+/**
+ * initializeUniforms.ts
+ * Initializes all GLSL shader uniforms and selection buffers for country and ocean highlighting.
+ */
+
 import * as THREE from "three";
-import type { GlobeUniforms } from "../types/uniforms";
-import { createSelectionTexture } from "../systems/countryHover";
-import { createSelectionOceanTexture } from "../systems/oceanHover";
+import type { GlobeUniforms } from "../shaders/uniforms";
+import { createSelectionTexture } from "../hoverLabel/countryHover";
+import { createSelectionOceanTexture } from "../hoverLabel/oceanHover";
 import { CONFIG } from "../configs/config";
 
+/**
+ * Initializes the complete uniform structure and all required selection buffers
+ * for the country and ocean interaction systems.
+ *
+ * @param dayTexture - Diffuse Earth daytime texture
+ * @param nightTexture - Emissive nighttime texture with city lights
+ * @param countryIdMapTexture - RGB map where each country's ID is encoded in pixel color
+ * @param oceanIdMapTexture - RGB map for ocean region IDs
+ * @returns Uniforms and selection state arrays for countries and oceans
+ */
 export function initializeUniforms(
   dayTexture: THREE.Texture,
   nightTexture: THREE.Texture,
   countryIdMapTexture: THREE.Texture,
   oceanIdMapTexture: THREE.Texture
-): {
-  uniforms: GlobeUniforms;
-  selectedData: Uint8Array;
-  selectedFadeIn: Float32Array;
-  selectedFlags: Uint8Array;
-  selectedOceanData: Uint8Array;
-  selectedOceanFadeIn: Float32Array;
-  selectedOceanFlags: Uint8Array;
-} {
+) {
+  // === Selection Textures and Buffers ===
   const selectedCountryMask = createSelectionTexture();
   const selectedOceanMask = createSelectionOceanTexture();
 
@@ -32,17 +40,21 @@ export function initializeUniforms(
   );
   const maxId = Math.max(maxCountryId, maxOceanId);
 
-  // Ensure all selection arrays are large enough
+  /**
+   * Ensures a selection array has the correct size.
+   * Expands and preserves values if needed.
+   */
   const ensureSize = <T extends Uint8Array | Float32Array>(
     arr: T,
     length: number
   ): T => {
     if (arr.length >= length) return arr;
-    const newArr = new (arr.constructor as any)(length);
-    newArr.set(arr);
-    return newArr;
+    const resized = new (arr.constructor as any)(length);
+    resized.set(arr);
+    return resized;
   };
 
+  // === Country Selection State ===
   const selectedFadeIn = ensureSize(
     new Float32Array(selectedData.length).fill(0),
     maxId + 1
@@ -52,6 +64,7 @@ export function initializeUniforms(
     maxId + 1
   );
 
+  // === Ocean Selection State ===
   const selectedOceanFadeIn = ensureSize(
     new Float32Array(selectedOceanData.length).fill(0),
     maxId + 1
@@ -61,6 +74,7 @@ export function initializeUniforms(
     maxId + 1
   );
 
+  // === Shader Uniforms ===
   const {
     defaultHoveredId,
     cityLightStrength,
@@ -86,7 +100,7 @@ export function initializeUniforms(
     lightDirection: { value: new THREE.Vector3() },
     cameraDirection: { value: new THREE.Vector3() },
     cityLightStrength: { value: cityLightStrength },
-    cursorWorldPos: { value: new THREE.Vector3(0, 0, 0) },
+    cursorWorldPos: { value: new THREE.Vector3() },
     cursorGlowStrength: { value: cursorGlowStrength },
     cursorGlowRadius: { value: cursorGlowRadius },
     cursorUV: { value: new THREE.Vector2(...initialCursorUV) },

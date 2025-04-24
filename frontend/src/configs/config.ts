@@ -2,7 +2,7 @@
 import * as THREE from "three";
 import { oceanCenters } from "../data/oceanCenters";
 import { countryCenters } from "../data/countryCenters";
-import { oceanIdToIndex } from "../data/oceanIdToIndex";
+import { oceanIdToIndex } from "../utils/oceanIdToIndex";
 
 export const CONFIG = {
   /** Camera settings for perspective projection */
@@ -129,7 +129,7 @@ export const CONFIG = {
     /** Speed at which hover highlights fade in and out */
     highlight: 2.5,
     /** Speed at which selected countries fade in and out */
-    selection: 3.5,
+    selection: 2.5,
   },
 
   /** Texture settings for selection highlight */
@@ -275,24 +275,40 @@ export const CONFIG = {
     },
   },
 
-  /** Configuration for 3D country labels */
+  /** Configuration for 3D country and ocean labels */
   labels3D: {
     /** Font type for both country and ocean labels */
     fontFamily: "Inter",
     /** Base scale for the text sprite relative to canvas size (actual fontsize) */
-    spriteScale: 0.2,
+    spriteScale: 0.18,
     /** Canvas font size for text clarity (px) */
-    canvasFontSize: 256,
-    /** Line color connecting label to country */
-    lineColor: 0x9ed5ff,
-    /**Thickness of the label lines */
-    lineWidth: 1.5,
+    canvasFontSize: 512,
     /** Distance from globe center for label anchor point */
     markerRadius: 1.01,
     /** Zoom range used to calculate dynamic label offset */
     zoomRange: { min: 1.1, max: 10 },
     /** Label offset range (minimum and maximum label distance from anchor) */
     offsetRange: { min: 0.0, max: 1.0 },
+    /** Configuration for country labels */
+    country: {
+      /** Line color connecting country label to country */
+      lineColor: "rgba(255, 255, 255, 0.49)",
+      /** Line thickness for country labels */
+      lineWidth: 1.5,
+      /** Fill color for country label text */
+      labelColor: "rgba(215, 255, 232, 0.8)",
+    },
+
+    /** Configuration for ocean labels */
+    ocean: {
+      /** Line color connecting ocean label to ocean */
+      lineColor: "rgba(255, 255, 255, 0.58)",
+      /** Line thickness for ocean labels */
+      lineWidth: 1.5,
+      /** Fill color for ocean label text */
+      labelColor: "rgba(203, 246, 255, 0.8)",
+    },
+
     /** Glow effect for text labels */
     glow: {
       /** Shadow color for glow effect */
@@ -303,6 +319,35 @@ export const CONFIG = {
       fillStyle: "#BFE1FF",
     },
   },
+
+  // /** Configuration for 3D country labels */
+  // labels3D: {
+  //   /** Font type for both country and ocean labels */
+  //   fontFamily: "Inter",
+  //   /** Base scale for the text sprite relative to canvas size (actual fontsize) */
+  //   spriteScale: 0.2,
+  //   /** Canvas font size for text clarity (px) */
+  //   canvasFontSize: 256,
+  //   /** Line color connecting label to country */
+  //   lineColor: 0x9ed5ff,
+  //   /**Thickness of the label lines */
+  //   lineWidth: 1.5,
+  //   /** Distance from globe center for label anchor point */
+  //   markerRadius: 1.01,
+  //   /** Zoom range used to calculate dynamic label offset */
+  //   zoomRange: { min: 1.1, max: 10 },
+  //   /** Label offset range (minimum and maximum label distance from anchor) */
+  //   offsetRange: { min: 0.0, max: 1.0 },
+  //   /** Glow effect for text labels */
+  //   glow: {
+  //     /** Shadow color for glow effect */
+  //     shadowColor: "rgba(0, 140, 255, 0.2)",
+  //     /** Shadow blur radius in pixels */
+  //     shadowBlur: 20,
+  //     /** Fill color for label text */
+  //     fillStyle: "#BFE1FF",
+  //   },
+  // },
 
   /** Geographic and astronomy-related constants */
   geo: {

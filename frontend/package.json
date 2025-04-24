@@ -7,11 +7,11 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "generate:rgbmap": "tsx src/data/generateRgbMap.ts",
-    "generate:oceanrgbmap": "tsx src/data/generateOceanRgbMap.ts",
-    "generate:centroids": "tsx src/data/generateCountryCenters.ts",
-    "generate:oceancentroids": "tsx src/data/generateOceanCenters.ts",
-    "generate:iso": "tsx src/data/generateCountryIdToIso.ts"
+    "generate:rgbmap": "tsx src/dev/generateRgbMap.ts",
+    "generate:oceanrgbmap": "tsx src/dev/generateOceanRgbMap.ts",
+    "generate:centroids": "tsx src/dev/generateCountryCenters.ts",
+    "generate:oceancentroids": "tsx src/dev/generateOceanCenters.ts",
+    "generate:iso": "tsx src/dev/generateCountryIdToIso.ts"
   },
   "devDependencies": {
     "@types/d3-geo": "^3.1.0",

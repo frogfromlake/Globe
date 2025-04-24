@@ -1,15 +1,34 @@
+/**
+ * @file locationSearch.ts
+ * @description Handles country and ocean name search functionality.
+ * Highlights and centers the selected region on the globe and optionally shows related news.
+ */
+
 import * as THREE from "three";
 import gsap from "gsap";
+
 import {
-  getEarthRotationAngle,
   latLonToSphericalCoordsGeographic,
-} from "../utils/geo";
+  getEarthRotationAngle,
+} from "../globe/geo";
 import { countryCenters } from "../data/countryCenters";
 import { oceanCenters } from "../data/oceanCenters";
 import { CONFIG } from "../configs/config";
 import { countryIdToIso } from "../data/countryIdToIso";
 import { showNewsPanel } from "../features/news/handleNewsPanel";
 
+/**
+ * Initializes the location search input field.
+ * Allows the user to search by country or ocean name and rotates the globe to center that region.
+ *
+ * @param inputLocation - The HTML input element for user location queries.
+ * @param camera - The active Three.js camera used to orbit the globe.
+ * @param controls - OrbitControls instance to handle camera interaction.
+ * @param selectedCountryIds - Set to track currently selected country IDs.
+ * @param selectedOceanIds - Set to track currently selected ocean IDs.
+ * @param selectedFlags - Uint8Array to track selection states for countries.
+ * @param selectedOceanFlags - Uint8Array to track selection states for oceans.
+ */
 export function setupLocationSearch(
   inputLocation: HTMLInputElement,
   camera: THREE.Camera,
@@ -23,8 +42,10 @@ export function setupLocationSearch(
     string,
     { id: number; type: "country" | "ocean" }
   >();
+
   const transitionDuration = CONFIG.camera.autoTransitionDuration;
 
+  // Populate name lookup map
   for (const [id, data] of Object.entries(countryCenters)) {
     nameToIdMap.set(data.name.toLowerCase(), {
       id: Number(id),
@@ -33,7 +54,10 @@ export function setupLocationSearch(
   }
 
   for (const [id, data] of Object.entries(oceanCenters)) {
-    nameToIdMap.set(data.name.toLowerCase(), { id: Number(id), type: "ocean" });
+    nameToIdMap.set(data.name.toLowerCase(), {
+      id: Number(id),
+      type: "ocean",
+    });
   }
 
   inputLocation?.addEventListener("change", () => {
@@ -42,7 +66,7 @@ export function setupLocationSearch(
 
     const result = nameToIdMap.get(query);
     if (!result) {
-      console.warn("Country or ocean not found:", query);
+      console.warn("Location not found:", query);
       return;
     }
 
@@ -50,17 +74,14 @@ export function setupLocationSearch(
     const centerData =
       type === "country" ? countryCenters[id] : oceanCenters[id];
 
-    // Clear previous selections
+    // === Clear previous selections ===
     for (const cid of selectedCountryIds) selectedFlags[cid] = 0;
     for (const oid of selectedOceanIds) selectedFlags[oid] = 0;
     selectedCountryIds.clear();
     selectedOceanIds.clear();
+    selectedOceanFlags.fill(0);
 
-    for (let i = 0; i < selectedOceanFlags.length; i++) {
-      selectedOceanFlags[i] = 0;
-    }
-
-    // Set new selection
+    // === Apply new selection ===
     if (id < selectedFlags.length) {
       if (type === "country") {
         selectedCountryIds.add(id);
@@ -70,7 +91,7 @@ export function setupLocationSearch(
         if (isoCode) {
           showNewsPanel(isoCode);
         } else {
-          console.warn(`No ISO code found for searched country ID: ${id}`);
+          console.warn(`Missing ISO code for selected country ID: ${id}`);
         }
       } else {
         selectedOceanIds.add(id);
@@ -86,6 +107,7 @@ export function setupLocationSearch(
       }
     }
 
+    // === Calculate target rotation ===
     const { lat, lon } = centerData;
     const { phi, theta, radius } = latLonToSphericalCoordsGeographic(
       lat,
@@ -104,10 +126,12 @@ export function setupLocationSearch(
       .clone()
       .sub(controls.target)
       .normalize();
+
     const originalDistance = camera.position.distanceTo(controls.target);
     const defaultDistance = CONFIG.camera.initialPosition.z ?? originalDistance;
     const shouldZoom = originalDistance < defaultDistance * 0.98;
 
+    // === Animate camera rotation and zoom ===
     const tmp = { t: 0 };
     gsap.to(tmp, {
       t: 1,
@@ -128,12 +152,14 @@ export function setupLocationSearch(
           .clone()
           .lerp(targetDirection, tmp.t)
           .normalize();
+
         const newPos = interpolatedDirection.multiplyScalar(zoomFactor);
         camera.position.copy(newPos);
         controls.update();
       },
     });
 
+    // === Keep orbiting around globe center ===
     gsap.to(controls.target, {
       x: 0,
       y: 0,

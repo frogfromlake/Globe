@@ -1,8 +1,21 @@
+/**
+ * @file showUserLocation.ts
+ * @description Adds a toggle button that displays the user's geolocation as a marker on the globe using the Geolocation API.
+ */
+
 import * as THREE from "three";
-import { latLonToSphericalCoordsGeographic } from "../utils/geo";
+import { latLonToSphericalCoordsGeographic } from "../globe/geo";
 import { CONFIG } from "../configs/config";
 
-export function setupUserLocation(scene: THREE.Scene, globe: THREE.Mesh) {
+/**
+ * Sets up the user location button and marker system.
+ * When activated, requests geolocation and places a marker on the globe.
+ * The same button can be used to remove the marker and reset state.
+ *
+ * @param scene - The main Three.js scene (not used directly here, but reserved for future use).
+ * @param globe - The globe mesh onto which the user marker will be added or removed.
+ */
+export function setupUserLocation(scene: THREE.Scene, globe: THREE.Mesh): void {
   const locationBtn = document.getElementById(
     "show-location"
   ) as HTMLButtonElement;
@@ -10,6 +23,7 @@ export function setupUserLocation(scene: THREE.Scene, globe: THREE.Mesh) {
   let userMarker: THREE.Mesh | null = null;
   let locationVisible = false;
 
+  // Hide button if geolocation is not supported
   if (!navigator.geolocation) {
     locationBtn.style.display = "none";
     return;
@@ -17,6 +31,7 @@ export function setupUserLocation(scene: THREE.Scene, globe: THREE.Mesh) {
 
   locationBtn.addEventListener("click", () => {
     if (locationVisible) {
+      // === Hide marker ===
       if (userMarker) {
         globe.remove(userMarker);
         userMarker.geometry.dispose();
@@ -25,12 +40,14 @@ export function setupUserLocation(scene: THREE.Scene, globe: THREE.Mesh) {
           : [userMarker.material]
         ).forEach((m) => m.dispose());
       }
+
       userMarker = null;
       locationVisible = false;
       locationBtn.textContent = "Show My Location";
       return;
     }
 
+    // === Show marker ===
     locationBtn.disabled = true;
     locationBtn.textContent = "Locating...";
 

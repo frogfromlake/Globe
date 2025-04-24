@@ -1,23 +1,34 @@
+/**
+ * @file createAnimateLoop.ts
+ * @description Provides the animation loop for the 3D Earth scene. This includes handling camera movement, hover effects,
+ * label updates, and selection fading based on user interactions (hover and click). Also manages dynamic adjustments to globe rotation,
+ * atmosphere, and star background based on camera position and interaction states.
+ */
+
 import * as THREE from "three";
 import { CONFIG } from "../configs/config";
-import { getEarthRotationAngle, getSunDirectionUTC } from "../utils/geo";
+import { getEarthRotationAngle, getSunDirectionUTC } from "../globe/geo";
 import {
   updateHoveredCountry,
   getCountryIdAtUV,
-} from "../systems/countryHover";
-import { updateHoveredOcean, getOceanIdAtUV } from "../systems/oceanHover";
+} from "../hoverLabel/countryHover";
+import { updateHoveredOcean, getOceanIdAtUV } from "../hoverLabel/oceanHover";
 import {
   update3DLabel,
   hideAll3DLabelsExcept,
-} from "../systems/countryLabels3D";
+} from "../hoverLabel/countryLabels3D";
 import {
   update3DOceanLabel,
   hideAll3DOceanLabels,
-} from "../systems/oceanLabel3D";
-import { oceanIdToIndex } from "../data/oceanIdToIndex";
+} from "../hoverLabel/oceanLabel3D";
+import { oceanIdToIndex } from "../utils/oceanIdToIndex";
 import { interactionState } from "../state/interactionState";
 import { userHasMovedPointer } from "../interactions/pointerTracker";
 
+/**
+ * Parameters required to initialize the animation loop.
+ * @interface AnimateParams
+ */
 interface AnimateParams {
   globe: THREE.Mesh;
   atmosphere: THREE.Mesh;
@@ -41,6 +52,13 @@ interface AnimateParams {
   selectedOceanIds: Set<number>;
 }
 
+/**
+ * Creates and returns the animation loop that updates the scene, handles hover and selection, and controls dynamic properties
+ * like the globe's rotation and camera adjustments.
+ *
+ * @param {AnimateParams} params - Parameters used for the animation loop.
+ * @returns {Function} A function that repeatedly calls `animate` for rendering the scene and handling updates.
+ */
 export function createAnimateLoop({
   globe,
   atmosphere,
@@ -73,6 +91,14 @@ export function createAnimateLoop({
     previousHoveredOceanId = -1;
   let lastFrameTime = performance.now();
 
+  /**
+   * Updates the selection texture based on the selected flags and fading values.
+   * @param {Float32Array} fadeInArray - Array containing fade-in values for selections.
+   * @param {Uint8Array} flagsArray - Array of flags indicating selected items.
+   * @param {Uint8Array} dataArray - Array of data used for generating selection textures.
+   * @param {THREE.DataTexture} texture - The texture that holds the selection data.
+   * @param {number} delta - Time delta used for fading calculations.
+   */
   function updateSelectionTexture(
     fadeInArray: Float32Array,
     flagsArray: Uint8Array,
@@ -91,6 +117,10 @@ export function createAnimateLoop({
     texture.needsUpdate = true;
   }
 
+  /**
+   * The main animation loop function that is called repeatedly to update the scene.
+   * Handles camera movement, hover effects, fade-in/out, and selection updates.
+   */
   return function animate(): void {
     requestAnimationFrame(animate);
     const now = performance.now();

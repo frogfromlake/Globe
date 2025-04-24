@@ -1,35 +1,44 @@
-let isFetchingNews = false;
-let initialTop = 20;
-let initialRight = 20;
+/**
+ * @file handleNewsPanel.ts
+ * @description Controls the draggable, interactive country news panel. Handles UI state, data fetching, and dynamic rendering.
+ */
 
-export function initNewsPanel() {
+let isFetchingNews = false;
+const initialTop = 20;
+const initialRight = 20;
+
+/**
+ * Initializes the news panel by binding close/reset behavior and enabling drag functionality.
+ */
+export function initNewsPanel(): void {
   const panel = document.getElementById("news-panel")!;
   const closeBtn = document.getElementById("news-close")!;
   const resetBtn = document.getElementById("news-reset")!;
 
-  closeBtn.onclick = () => {
-    performPanelClose(panel);
-  };
+  closeBtn.onclick = () => performPanelClose(panel);
 
   resetBtn.onclick = () => {
-    const currentTop = panel.style.top;
-    const currentRight = panel.style.right;
     const isAlreadyDefault =
-      currentTop === `${initialTop}px` && currentRight === `${initialRight}px`;
+      panel.style.top === `${initialTop}px` &&
+      panel.style.right === `${initialRight}px`;
 
-    if (isAlreadyDefault) return;
-
-    panel.style.top = `${initialTop}px`;
-    panel.style.right = `${initialRight}px`;
-    panel.style.left = "";
-    panel.style.bottom = "";
-    panel.style.transform = "none";
+    if (!isAlreadyDefault) {
+      panel.style.top = `${initialTop}px`;
+      panel.style.right = `${initialRight}px`;
+      panel.style.left = "";
+      panel.style.bottom = "";
+      panel.style.transform = "none";
+    }
   };
 
   makeDraggable(panel);
 }
 
-export async function showNewsPanel(isoCode: string) {
+/**
+ * Fetches and displays top news for a given ISO country code.
+ * @param isoCode - The ISO country code to fetch news for.
+ */
+export async function showNewsPanel(isoCode: string): Promise<void> {
   if (isFetchingNews) return;
   isFetchingNews = true;
 
@@ -39,24 +48,17 @@ export async function showNewsPanel(isoCode: string) {
   const title = document.getElementById("news-title")!;
   const content = document.getElementById("news-content")!;
 
-  panel.classList.remove("fade-out");
-  panel.style.display = ""; // show again if hidden
-
-  // Prevent re-opening during slide-out
-  if (panel.classList.contains("closing")) return;
-
-  // Reset closing state and open
-  panel.classList.remove("closing");
+  // Reset and display the panel
+  panel.classList.remove("fade-out", "closing");
   panel.classList.add("open");
-
-  // Reset position if needed
+  panel.style.display = "";
   panel.style.top = `${initialTop}px`;
   panel.style.right = `${initialRight}px`;
   panel.style.left = "";
   panel.style.bottom = "";
   panel.style.transform = "none";
 
-  // Show loading state
+  // Show loading text
   title.textContent = `Top News from ${isoCode}`;
   content.innerHTML = `<strong style="opacity: 0.8;">Loading...</strong>`;
 
@@ -71,14 +73,19 @@ export async function showNewsPanel(isoCode: string) {
     const data = await res.json();
     content.innerHTML = renderNewsItems(data);
   } catch (err) {
-    console.error("News fetch error:", err);
+    console.error("[News Fetch Error]:", err);
     content.innerHTML = `<strong style="color: red;">Failed to fetch news</strong>`;
   } finally {
     isFetchingNews = false;
   }
 }
 
-function renderNewsItems(newsItems: any[]) {
+/**
+ * Renders a list of news items as HTML.
+ * @param newsItems - Array of news objects.
+ * @returns Rendered HTML string.
+ */
+function renderNewsItems(newsItems: any[]): string {
   return `
     <ul>
       ${newsItems
@@ -94,13 +101,17 @@ function renderNewsItems(newsItems: any[]) {
   `;
 }
 
-function makeDraggable(panel: HTMLElement) {
+/**
+ * Makes the news panel draggable via its header.
+ * @param panel - The news panel element.
+ */
+function makeDraggable(panel: HTMLElement): void {
+  const header = panel.querySelector(".news-panel-header") as HTMLElement;
+  if (!header) return;
+
   let isDragging = false;
   let offsetX = 0;
   let offsetY = 0;
-
-  const header = panel.querySelector(".news-panel-header") as HTMLElement;
-  if (!header) return;
 
   header.onmousedown = (e) => {
     isDragging = true;
@@ -111,7 +122,7 @@ function makeDraggable(panel: HTMLElement) {
       if (!isDragging) return;
       panel.style.top = `${e.clientY - offsetY}px`;
       panel.style.left = `${e.clientX - offsetX}px`;
-      panel.style.right = ""; // clear right so left-based drag works
+      panel.style.right = ""; // allow left-dragging
     };
 
     document.onmouseup = () => {
@@ -122,20 +133,23 @@ function makeDraggable(panel: HTMLElement) {
   };
 }
 
-export function hideNewsPanel() {
+/**
+ * Hides the currently open news panel with fade-out or slide-out animation.
+ */
+export function hideNewsPanel(): void {
   const panel = document.getElementById("news-panel");
   if (panel) {
-    console.log("[hideNewsPanel] Hiding panel");
     performPanelClose(panel);
   } else {
-    console.warn("[hideNewsPanel] Panel not found");
+    console.warn("[hideNewsPanel] Panel element not found");
   }
 }
 
-function performPanelClose(panel: HTMLElement) {
-  const initialTop = 20;
-  const initialRight = 20;
-
+/**
+ * Closes the news panel with appropriate animation based on its current position.
+ * @param panel - The panel element to close.
+ */
+function performPanelClose(panel: HTMLElement): void {
   const isAtDefault =
     panel.style.top === `${initialTop}px` &&
     panel.style.right === `${initialRight}px` &&
@@ -144,16 +158,11 @@ function performPanelClose(panel: HTMLElement) {
   panel.classList.remove("open");
 
   if (isAtDefault) {
-    panel.style.left = "";
     panel.style.right = "-26rem";
     panel.classList.add("closing");
-
-    setTimeout(() => {
-      panel.classList.remove("closing");
-    }, 350);
+    setTimeout(() => panel.classList.remove("closing"), 350);
   } else {
     panel.classList.add("fade-out");
-
     setTimeout(() => {
       panel.classList.remove("fade-out");
       panel.style.display = "none";
