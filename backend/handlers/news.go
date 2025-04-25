@@ -32,7 +32,10 @@ func NewsHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Retrieve news articles for the specified country
-	articles, err := utils.GetNewsByCountry(countryCode)
+	translateParam := r.URL.Query().Get("translate")
+	shouldTranslate := translateParam == "true"
+
+	articles, err := utils.GetNewsByCountry(countryCode, shouldTranslate)
 	if err != nil {
 		// Specific case: No feeds available for this country
 		if errors.Is(err, feeds.ErrNoFeeds) {

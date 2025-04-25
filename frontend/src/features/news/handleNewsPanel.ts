@@ -49,6 +49,12 @@ export async function showNewsPanel(isoCode: string): Promise<void> {
   const panel = document.getElementById("news-panel")!;
   const title = document.getElementById("news-title")!;
   const content = document.getElementById("news-content")!;
+  const toggleButton = document.getElementById(
+    "translate-toggle"
+  ) as HTMLButtonElement;
+
+  // Tooltip
+  toggleButton.title = "Toggle between original and translated news";
 
   // Get the country name from countryMeta using ISO
   const entry = Object.values(countryMeta).find((c) => c.iso === isoCode);
@@ -72,51 +78,60 @@ export async function showNewsPanel(isoCode: string): Promise<void> {
   title.style.fontSize = "1rem";
   title.style.marginBottom = "0.25rem";
 
-  content.innerHTML = `<strong style="opacity: 0.8;">Loading...</strong>`;
+  let currentNews: any[] = [];
+  let useTranslation = sessionStorage.getItem("translatePref") === "true"; // default OFF
 
-  try {
-    const res = await fetch(`${API_BASE}/api/news?country=${isoCode}`);
+  const render = () => {
+    content.innerHTML = renderNewsItems(currentNews, useTranslation);
+    toggleButton.textContent = useTranslation
+      ? "🌐 Show Original Language"
+      : "🌐 Translate to English";
+    toggleButton.disabled = false;
+    toggleButton.classList.remove("disabled");
+  };
+
+  const loadNews = async () => {
+    content.innerHTML = `
+    <div class="news-loading-wrapper">
+      <span class="news-loading-text">Loading</span>
+      <span class="news-dots">
+        <span class="dot"></span>
+        <span class="dot"></span>
+        <span class="dot"></span>
+      </span>
+    </div>`;
+    toggleButton.disabled = true;
+    toggleButton.classList.add("disabled");
+
+    const url = `${API_BASE}/api/news?country=${isoCode}${
+      useTranslation ? "&translate=true" : ""
+    }`;
+
+    const res = await fetch(url);
     if (res.status === 204) {
       content.innerHTML = `<strong>No news found for ${displayName}</strong>`;
       return;
     }
-
     if (!res.ok) {
       console.warn(`[News API] Non-OK response: ${res.status} for ${isoCode}`);
       content.innerHTML = `<strong style="color: red;">Failed to fetch news</strong>`;
       return;
     }
 
-    const data = await res.json();
-    let currentNews = data;
-    const toggleButton = document.getElementById(
-      "translate-toggle"
-    ) as HTMLButtonElement;
-
-    let useTranslation = sessionStorage.getItem("translatePref") !== "false";
-
-    const render = () => {
-      content.innerHTML = renderNewsItems(currentNews, useTranslation);
-      toggleButton.textContent = useTranslation
-        ? "🌐 Show Original Language"
-        : "🌐 Translate to English";
-    };
-
-    if (toggleButton) {
-      toggleButton.onclick = () => {
-        useTranslation = !useTranslation;
-        sessionStorage.setItem("translatePref", String(useTranslation));
-        render();
-      };
-    }
-
+    currentNews = await res.json();
     render();
-  } catch (err) {
-    console.error("[News Fetch Error]:", err);
-    content.innerHTML = `<strong style="color: red;">Failed to fetch news</strong>`;
-  } finally {
-    isFetchingNews = false;
+  };
+
+  if (toggleButton) {
+    toggleButton.onclick = async () => {
+      useTranslation = !useTranslation;
+      sessionStorage.setItem("translatePref", String(useTranslation));
+      await loadNews();
+    };
   }
+
+  await loadNews();
+  isFetchingNews = false;
 }
 
 /**

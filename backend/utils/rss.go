@@ -46,76 +46,87 @@ type NewsArticle struct {
 }
 
 // GetNewsByCountry fetches RSS feeds for a country and optionally translates them.
-func GetNewsByCountry(code string) ([]NewsArticle, error) {
+func GetNewsByCountry(code string, translate bool) ([]NewsArticle, error) {
 	feedURLs, err := feeds.GetFeeds(code)
 	if errors.Is(err, feeds.ErrNoFeeds) {
 		log.Printf("🚫 No feeds found for %s", code)
 		return nil, err
 	}
 
-	lang, shouldTranslate := IsoToDeepLLang[code]
-	if !shouldTranslate {
-		log.Printf("⚠️ No DeepL mapping for %s – will serve original language only", code)
+	lang, hasMapping := IsoToDeepLLang[code]
+	if !translate {
+		log.Printf("🌐 Translation disabled for %s – serving original language", code)
+	} else if !hasMapping {
+		log.Printf("⚠️ No DeepL mapping for %s – falling back to original", code)
 	}
 
 	var all []NewsArticle
 	for _, url := range feedURLs {
-		if cached, found := feedCache.Get(url); found {
-			all = append(all, cached.([]NewsArticle)...)
-			continue
-		}
-
-		feed, err := parser.ParseURL(url)
-		if err != nil {
-			log.Printf("⚠️ Failed to parse %s: %v", url, err)
-			continue
+		if len(all) >= 10 {
+			break
 		}
 
 		var articles []NewsArticle
-		for _, item := range feed.Items {
-			originalTitle := item.Title
-			originalDesc := item.Description
 
-			title := originalTitle
-			desc := originalDesc
-
-			if shouldTranslate && lang != "EN" {
-				if translated, err := localization.TranslateText(originalTitle, lang); err == nil {
-					title = translated
-				} else {
-					log.Printf("⚠️ Failed to translate title: %s (%s) – %v", originalTitle, lang, err)
-				}
-
-				if originalDesc != "" {
-					if translatedDesc, err := localization.TranslateText(originalDesc, lang); err == nil {
-						desc = translatedDesc
-					} else {
-						log.Printf("⚠️ Failed to translate description for: %s (%s) – %v", originalTitle, lang, err)
-					}
-				}
-			} else if !shouldTranslate {
-				if originalDesc != "" {
-					desc = originalDesc + " (Only in local language)"
-				}
-			}
-
-			articles = append(articles, NewsArticle{
-				Title:               title,
-				OriginalTitle:       originalTitle,
-				Link:                item.Link,
-				Description:         desc,
-				OriginalDescription: originalDesc,
-				Published:           item.Published,
-				Source:              feed.Title,
-			})
-
-			if len(articles) >= 5 {
-				break
-			}
+		cacheKey := url
+		if translate {
+			cacheKey += "|translated"
 		}
 
-		feedCache.Set(url, articles, cache.DefaultExpiration)
-		all = append(all, articles...)
+		log.Printf("🧪 Checking cache: %s (translate=%v)", cacheKey, translate)
+
+		if cached, found := feedCache.Get(cacheKey); found {
+			articles = cached.([]NewsArticle)
+		} else {
+			feed, err := parser.ParseURL(url)
+			if err != nil {
+				log.Printf("⚠️ Failed to parse %s: %v", url, err)
+				continue
+			}
+
+			for _, item := range feed.Items {
+				if len(articles) >= 5 || len(all)+len(articles) >= 10 {
+					break
+				}
+
+				originalTitle := item.Title
+				originalDesc := item.Description
+				title := originalTitle
+				desc := originalDesc
+
+				if translate && hasMapping && lang != "EN" {
+					log.Printf("🌍 Translating %s (%s)", originalTitle, lang)
+					if translated, err := localization.TranslateText(originalTitle, lang); err == nil {
+						title = translated
+					}
+					if originalDesc != "" {
+						if translatedDesc, err := localization.TranslateText(originalDesc, lang); err == nil {
+							desc = translatedDesc
+						}
+					}
+				}
+
+				articles = append(articles, NewsArticle{
+					Title:               title,
+					OriginalTitle:       originalTitle,
+					Link:                item.Link,
+					Description:         desc,
+					OriginalDescription: originalDesc,
+					Published:           item.Published,
+					Source:              feed.Title,
+				})
+			}
+
+			//
+			feedCache.Set(cacheKey, articles, cache.DefaultExpiration)
+		}
+
+		remaining := 10 - len(all)
+		if len(articles) > remaining {
+			all = append(all, articles[:remaining]...)
+		} else {
+			all = append(all, articles...)
+		}
 	}
 
 	log.Printf("📦 Total articles collected for %s: %d", code, len(all))

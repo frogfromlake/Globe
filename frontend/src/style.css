@@ -359,6 +359,50 @@ canvas {
   text-decoration: none;
 }
 
+.news-loading-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 1rem;
+  font-weight: bold;
+  font-size: 1.1rem;
+  opacity: 0.85;
+  font-family: system-ui, sans-serif;
+}
+
+.news-dots {
+  display: flex;
+  gap: 0.2rem;
+}
+
+.news-dots .dot {
+  width: 0.5em;
+  height: 0.5em;
+  border-radius: 50%;
+  background-color: #999;
+  animation: bounce 0.8s infinite ease-in-out;
+}
+
+.news-dots .dot:nth-child(2) {
+  animation-delay: 0.1s;
+}
+
+.news-dots .dot:nth-child(3) {
+  animation-delay: 0.2s;
+}
+
+@keyframes bounce {
+  0%, 80%, 100% {
+    transform: scale(0.8);
+    opacity: 0.4;
+  }
+  40% {
+    transform: scale(1.2);
+    opacity: 1;
+  }
+}
+
 .reset-btn {
   background: none;
   border: none;
