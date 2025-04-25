@@ -5,7 +5,16 @@
  * for setting up the Earth visualization.
  */
 
-import * as THREE from "three";
+import {
+  DataTexture,
+  RGBAFormat,
+  NearestFilter,
+  Raycaster,
+  Vector2,
+  Texture,
+  ShaderMaterial,
+} from "three";
+
 import { initializeCamera } from "../init/initializeCamera";
 import { initializeRenderer } from "../init/initializeRenderer";
 import { initializeScene } from "../init/initializeScene";
@@ -24,29 +33,28 @@ import { handleGlobeClick } from "../interactions/handleGlobeClick";
 import { setupSceneObjects } from "../scene/setupScene";
 import { createAnimateLoop } from "../scene/createAnimateLoop";
 import {
-  fadeOutLoadingScreen,
   loadingMessages,
   runWithLoadingMessage,
 } from "../scene/showLoadingScreen";
 
-import { setupSettingsPanel } from "../settings/setupSettings";
-import { initNewsPanel } from "../features/news/handleNewsPanel";
-import { setupAdminPanel } from "../features/news/setupAdminPanel";
+// import { setupSettingsPanel } from "../settings/setupSettings";
+// import { initNewsPanel } from "../features/news/handleNewsPanel";
+// import { setupAdminPanel } from "../features/news/setupAdminPanel";
 import {
   loadCoreTextures,
   loadVisualTextures,
 } from "../init/initializeTextures";
 
 // === Fallback texture: flat gray ===
-const fallbackTexture = new THREE.DataTexture(
+const fallbackTexture = new DataTexture(
   new Uint8Array([0, 0, 0, 255]),
   1,
   1,
-  THREE.RGBAFormat
+  RGBAFormat
 );
 fallbackTexture.generateMipmaps = false;
-fallbackTexture.minFilter = THREE.NearestFilter;
-fallbackTexture.magFilter = THREE.NearestFilter;
+fallbackTexture.minFilter = NearestFilter;
+fallbackTexture.magFilter = NearestFilter;
 fallbackTexture.needsUpdate = true;
 
 // Hover interactivity is disabled until RGB ID maps are ready
@@ -73,8 +81,8 @@ export async function startApp(updateSubtitle: (text: string) => void) {
   };
 
   // === Pointer & Raycasting ===
-  const raycaster = new THREE.Raycaster();
-  const pointer = new THREE.Vector2();
+  const raycaster = new Raycaster();
+  const pointer = new Vector2();
   setupPointerMoveTracking();
 
   // === Core Three.js Setup ===
@@ -123,20 +131,26 @@ export async function startApp(updateSubtitle: (text: string) => void) {
   await runWithLoadingMessage(
     loadingMessages.atmosphere,
     updateSubtitle,
-    initNewsPanel
+    async () =>
+      (
+        await import("../features/news/handleNewsPanel")
+      ).initNewsPanel(selection.countryIds, selection.countryFlags)
   );
+
   runWithLoadingMessage(loadingMessages.final, updateSubtitle, () => {});
 
   // === Populate Scene with Core Meshes (temporary placeholder sky texture) ===
   const { globe, atmosphere, starSphere } = setupSceneObjects(
     scene,
     uniforms,
-    new THREE.Texture() // Placeholder texture
+    new Texture() // Placeholder texture
   );
   starSphere.visible = false; // Hidden until esoSkyMap is ready
 
   // === Set Up UI & Interactions ===
-  const { getBackgroundMode } = setupSettingsPanel(
+  const { getBackgroundMode } = await (
+    await import("../settings/setupSettings")
+  ).setupSettingsPanel(
     uniforms,
     selectedFlags,
     selectedOceanFlags,
@@ -169,7 +183,7 @@ export async function startApp(updateSubtitle: (text: string) => void) {
   });
 
   // === Boot Other Features ===
-  setupAdminPanel();
+  (await import("../features/news/setupAdminPanel")).setupAdminPanel();
 
   // === Defer loading of heavy textures and assign to uniforms ===
   loadVisualTextures(renderer).then(
@@ -190,14 +204,14 @@ export async function startApp(updateSubtitle: (text: string) => void) {
       // Update the star sphere material with the sky texture
       if (
         starSphere.material &&
-        starSphere.material instanceof THREE.ShaderMaterial
+        starSphere.material instanceof ShaderMaterial
       ) {
         const starMaterial = starSphere.material;
         starMaterial.uniforms.uStarMap.value = esoSkyMapTexture;
         starMaterial.needsUpdate = true;
       }
 
-      const starMaterial = starSphere.material as THREE.ShaderMaterial;
+      const starMaterial = starSphere.material as ShaderMaterial;
       if (starMaterial) {
         let starFade = 0;
         let lastStarTime = performance.now();

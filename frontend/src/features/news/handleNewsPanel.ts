@@ -1,9 +1,11 @@
+// src/features/news/handleNewsPanel.ts
 /**
  * @file handleNewsPanel.ts
  * @description Controls the draggable, interactive country news panel. Handles UI state, data fetching, and dynamic rendering.
  */
 
 import { countryMeta } from "../../data/countryMeta";
+import { interactionState } from "../../state/interactionState";
 
 let isFetchingNews = false;
 const initialTop = 20;
@@ -12,12 +14,24 @@ const initialRight = 20;
 /**
  * Initializes the news panel by binding close/reset behavior and enabling drag functionality.
  */
-export function initNewsPanel(): void {
+export function initNewsPanel(
+  selectedCountryIds: Set<number>,
+  selectedFlags: Uint8Array
+): void {
   const panel = document.getElementById("news-panel")!;
   const closeBtn = document.getElementById("news-close")!;
   const resetBtn = document.getElementById("news-reset")!;
 
-  closeBtn.onclick = () => performPanelClose(panel);
+  closeBtn.onclick = () => {
+    performPanelClose(panel);
+
+    const lastId = interactionState.lastOpenedCountryId;
+    if (lastId !== null) {
+      selectedCountryIds.delete(lastId);
+      selectedFlags[lastId] = 0;
+      interactionState.lastOpenedCountryId = null;
+    }
+  };
 
   resetBtn.onclick = () => {
     const isAlreadyDefault =
@@ -25,11 +39,7 @@ export function initNewsPanel(): void {
       panel.style.right === `${initialRight}px`;
 
     if (!isAlreadyDefault) {
-      panel.style.top = `${initialTop}px`;
-      panel.style.right = `${initialRight}px`;
-      panel.style.left = "";
-      panel.style.bottom = "";
-      panel.style.transform = "none";
+      resetPanelPosition(panel);
     }
   };
 
@@ -37,8 +47,7 @@ export function initNewsPanel(): void {
 }
 
 /**
- * Fetches and displays top news for a given ISO country code.
- * @param isoCode - The ISO country code to fetch news for.
+ * Shows the news panel with top articles for a given country ISO code.
  */
 export async function showNewsPanel(isoCode: string): Promise<void> {
   if (isFetchingNews) return;
@@ -46,6 +55,7 @@ export async function showNewsPanel(isoCode: string): Promise<void> {
 
   const API_BASE =
     import.meta.env.VITE_PUBLIC_API_URL || "http://localhost:8080";
+
   const panel = document.getElementById("news-panel")!;
   const title = document.getElementById("news-title")!;
   const content = document.getElementById("news-content")!;
@@ -53,33 +63,21 @@ export async function showNewsPanel(isoCode: string): Promise<void> {
     "translate-toggle"
   ) as HTMLButtonElement;
 
-  // Tooltip
-  toggleButton.title = "Toggle between original and translated news";
-
-  // Get the country name from countryMeta using ISO
   const entry = Object.values(countryMeta).find((c) => c.iso === isoCode);
   const displayName = entry?.name || isoCode;
 
-  // Reset and display the panel
+  resetPanelPosition(panel);
   panel.classList.remove("fade-out", "closing");
   panel.classList.add("open");
   panel.style.display = "";
-  panel.style.top = `${initialTop}px`;
-  panel.style.right = `${initialRight}px`;
-  panel.style.left = "";
-  panel.style.bottom = "";
-  panel.style.transform = "none";
 
-  // Center the title visually with full country name
   title.textContent = `Top News from ${displayName}`;
-  title.style.display = "block";
-  title.style.width = "100%";
   title.style.textAlign = "center";
   title.style.fontSize = "1rem";
   title.style.marginBottom = "0.25rem";
 
   let currentNews: any[] = [];
-  let useTranslation = sessionStorage.getItem("translatePref") === "true"; // default OFF
+  let useTranslation = sessionStorage.getItem("translatePref") === "true";
 
   const render = () => {
     content.innerHTML = renderNewsItems(currentNews, useTranslation);
@@ -92,60 +90,61 @@ export async function showNewsPanel(isoCode: string): Promise<void> {
 
   const loadNews = async () => {
     content.innerHTML = `
-    <div class="news-loading-wrapper">
-      <span class="news-loading-text">Loading</span>
-      <span class="news-dots">
-        <span class="dot"></span>
-        <span class="dot"></span>
-        <span class="dot"></span>
-      </span>
-    </div>`;
+      <div class="news-loading-wrapper">
+        <span class="news-loading-text">Loading</span>
+        <span class="news-dots">
+          <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+        </span>
+      </div>`;
     toggleButton.disabled = true;
     toggleButton.classList.add("disabled");
 
-    const url = `${API_BASE}/api/news?country=${isoCode}${
-      useTranslation ? "&translate=true" : ""
-    }`;
+    try {
+      const res = await fetch(
+        `${API_BASE}/api/news?country=${isoCode}${
+          useTranslation ? "&translate=true" : ""
+        }`
+      );
 
-    const res = await fetch(url);
-    if (res.status === 204) {
-      content.innerHTML = `<strong>No news found for ${displayName}</strong>`;
-      return;
-    }
-    if (!res.ok) {
-      console.warn(`[News API] Non-OK response: ${res.status} for ${isoCode}`);
+      if (res.status === 204) {
+        content.innerHTML = `<strong>No news found for ${displayName}</strong>`;
+        return;
+      }
+      if (!res.ok) {
+        console.warn(
+          `[News API] Non-OK response: ${res.status} for ${isoCode}`
+        );
+        content.innerHTML = `<strong style="color: red;">Failed to fetch news</strong>`;
+        return;
+      }
+
+      currentNews = await res.json();
+      render();
+    } catch (err) {
+      console.error("[News API] Fetch failed:", err);
       content.innerHTML = `<strong style="color: red;">Failed to fetch news</strong>`;
-      return;
     }
-
-    currentNews = await res.json();
-    render();
   };
 
-  if (toggleButton) {
-    toggleButton.onclick = async () => {
-      useTranslation = !useTranslation;
-      sessionStorage.setItem("translatePref", String(useTranslation));
-      await loadNews();
-    };
-  }
+  toggleButton.onclick = async () => {
+    useTranslation = !useTranslation;
+    sessionStorage.setItem("translatePref", String(useTranslation));
+    await loadNews();
+  };
 
   await loadNews();
   isFetchingNews = false;
 }
 
 /**
- * Renders a list of news items as HTML.
- * @param newsItems - Array of news objects.
- * @param translate - Whether to use the translated text.
- * @returns Rendered HTML string.
+ * Renders the fetched news items into HTML list.
  */
 function renderNewsItems(newsItems: any[], translate = true): string {
   return `
     <div id="news-list" class="fade-in">
       <ul>
         ${newsItems
-          .map((item: any) => {
+          .map((item) => {
             const title = translate
               ? item.title
               : item.originalTitle || item.title;
@@ -162,13 +161,11 @@ function renderNewsItems(newsItems: any[], translate = true): string {
           })
           .join("")}
       </ul>
-    </div>
-  `;
+    </div>`;
 }
 
 /**
- * Makes the news panel draggable via its header.
- * @param panel - The news panel element.
+ * Makes the news panel draggable.
  */
 function makeDraggable(panel: HTMLElement): void {
   const header = panel.querySelector(".news-panel-header") as HTMLElement;
@@ -178,41 +175,54 @@ function makeDraggable(panel: HTMLElement): void {
   let offsetX = 0;
   let offsetY = 0;
 
+  const onMouseMove = (e: MouseEvent) => {
+    if (!isDragging) return;
+    panel.style.top = `${e.clientY - offsetY}px`;
+    panel.style.left = `${e.clientX - offsetX}px`;
+    panel.style.right = "";
+  };
+
+  const onMouseUp = () => {
+    isDragging = false;
+    document.removeEventListener("mousemove", onMouseMove);
+    document.removeEventListener("mouseup", onMouseUp);
+  };
+
   header.onmousedown = (e) => {
     isDragging = true;
     offsetX = e.clientX - panel.getBoundingClientRect().left;
     offsetY = e.clientY - panel.getBoundingClientRect().top;
 
-    document.onmousemove = (e) => {
-      if (!isDragging) return;
-      panel.style.top = `${e.clientY - offsetY}px`;
-      panel.style.left = `${e.clientX - offsetX}px`;
-      panel.style.right = "";
-    };
-
-    document.onmouseup = () => {
-      isDragging = false;
-      document.onmousemove = null;
-      document.onmouseup = null;
-    };
+    document.addEventListener("mousemove", onMouseMove);
+    document.addEventListener("mouseup", onMouseUp);
   };
 }
 
 /**
- * Hides the currently open news panel with fade-out or slide-out animation.
+ * Resets the panel position to its default top-right location.
+ */
+function resetPanelPosition(panel: HTMLElement): void {
+  panel.style.top = `${initialTop}px`;
+  panel.style.right = `${initialRight}px`;
+  panel.style.left = "";
+  panel.style.bottom = "";
+  panel.style.transform = "none";
+}
+
+/**
+ * Hides the news panel with fade-out or slide-out animation.
  */
 export function hideNewsPanel(): void {
   const panel = document.getElementById("news-panel");
   if (panel) {
     performPanelClose(panel);
   } else {
-    console.warn("[hideNewsPanel] Panel element not found");
+    console.warn("[hideNewsPanel] Panel not found");
   }
 }
 
 /**
- * Closes the news panel with appropriate animation based on its current position.
- * @param panel - The panel element to close.
+ * Animates panel closure depending on its position.
  */
 function performPanelClose(panel: HTMLElement): void {
   const isAtDefault =

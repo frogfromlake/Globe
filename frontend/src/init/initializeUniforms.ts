@@ -3,7 +3,7 @@
  * Initializes all GLSL shader uniforms and selection buffers for country and ocean highlighting.
  */
 
-import * as THREE from "three";
+import { Texture, Vector2, Vector3 } from "three";
 import type { GlobeUniforms } from "../shaders/uniforms";
 import { createSelectionTexture } from "../hoverLabel/countryHover";
 import { createSelectionOceanTexture } from "../hoverLabel/oceanHover";
@@ -20,10 +20,10 @@ import { CONFIG } from "../configs/config";
  * @returns Uniforms and selection state arrays for countries and oceans
  */
 export function initializeUniforms(
-  dayTexture: THREE.Texture,
-  nightTexture: THREE.Texture,
-  countryIdMapTexture: THREE.Texture,
-  oceanIdMapTexture: THREE.Texture
+  dayTexture: Texture,
+  nightTexture: Texture,
+  countryIdMapTexture: Texture,
+  oceanIdMapTexture: Texture
 ) {
   // === Selection Textures and Buffers ===
   const selectedCountryMask = createSelectionTexture();
@@ -97,13 +97,13 @@ export function initializeUniforms(
     highlightFadeIn: { value: 0 },
     highlightFadeOut: { value: 0 },
     uTime: { value: 0 },
-    lightDirection: { value: new THREE.Vector3() },
-    cameraDirection: { value: new THREE.Vector3() },
+    lightDirection: { value: new Vector3() },
+    cameraDirection: { value: new Vector3() },
     cityLightStrength: { value: cityLightStrength },
-    cursorWorldPos: { value: new THREE.Vector3() },
+    cursorWorldPos: { value: new Vector3() },
     cursorGlowStrength: { value: cursorGlowStrength },
     cursorGlowRadius: { value: cursorGlowRadius },
-    cursorUV: { value: new THREE.Vector2(...initialCursorUV) },
+    cursorUV: { value: new Vector2(...initialCursorUV) },
     uFlashlightEnabled: { value: true },
     uCursorOnGlobe: { value: false },
     nightBrightness: { value: CONFIG.textures.nightBrightness },

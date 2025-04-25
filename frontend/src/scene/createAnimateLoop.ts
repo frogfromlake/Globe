@@ -5,14 +5,23 @@
  * atmosphere, and star background based on camera position and interaction states.
  */
 
-import * as THREE from "three";
+import {
+  Mesh,
+  ShaderMaterial,
+  Scene,
+  PerspectiveCamera,
+  WebGLRenderer,
+  Raycaster,
+  Vector2,
+  Vector3,
+  MathUtils,
+  DataTexture,
+} from "three";
+
 import { CONFIG } from "../configs/config";
 import { getEarthRotationAngle, getSunDirectionUTC } from "../globe/geo";
-import {
-  updateHoveredCountry,
-  getCountryIdAtUV,
-} from "../hoverLabel/countryHover";
-import { updateHoveredOcean, getOceanIdAtUV } from "../hoverLabel/oceanHover";
+import { updateHoveredCountry } from "../hoverLabel/countryHover";
+import { updateHoveredOcean } from "../hoverLabel/oceanHover";
 import {
   update3DLabel,
   hideAll3DLabelsExcept,
@@ -30,16 +39,16 @@ import { userHasMovedPointer } from "../interactions/pointerTracker";
  * @interface AnimateParams
  */
 interface AnimateParams {
-  globe: THREE.Mesh;
-  atmosphere: THREE.Mesh;
-  starSphere: THREE.Mesh;
+  globe: Mesh;
+  atmosphere: Mesh;
+  starSphere: Mesh;
   uniforms: { [key: string]: any };
-  camera: THREE.PerspectiveCamera;
+  camera: PerspectiveCamera;
   controls: any;
-  renderer: THREE.WebGLRenderer;
-  scene: THREE.Scene;
-  raycaster: THREE.Raycaster;
-  pointer: THREE.Vector2;
+  renderer: WebGLRenderer;
+  scene: Scene;
+  raycaster: Raycaster;
+  pointer: Vector2;
   selectedFlags: Uint8Array;
   selectedOceanFlags: Uint8Array;
   selectedFadeIn: Float32Array;
@@ -96,20 +105,20 @@ export function createAnimateLoop({
    * @param {Float32Array} fadeInArray - Array containing fade-in values for selections.
    * @param {Uint8Array} flagsArray - Array of flags indicating selected items.
    * @param {Uint8Array} dataArray - Array of data used for generating selection textures.
-   * @param {THREE.DataTexture} texture - The texture that holds the selection data.
+   * @param {DataTexture} texture - The texture that holds the selection data.
    * @param {number} delta - Time delta used for fading calculations.
    */
   function updateSelectionTexture(
     fadeInArray: Float32Array,
     flagsArray: Uint8Array,
     dataArray: Uint8Array,
-    texture: THREE.DataTexture,
+    texture: DataTexture,
     delta: number
   ) {
     for (let i = 0; i < dataArray.length; i++) {
       const isSelected = flagsArray[i] === 1;
       fadeInArray[i] += delta * CONFIG.fade.selection * (isSelected ? 1 : -1);
-      fadeInArray[i] = THREE.MathUtils.clamp(fadeInArray[i], 0, 1);
+      fadeInArray[i] = MathUtils.clamp(fadeInArray[i], 0, 1);
       dataArray[i] = Math.floor(
         fadeInArray[i] * CONFIG.selectionTexture.fadeMaxValue
       );
@@ -128,7 +137,7 @@ export function createAnimateLoop({
     lastFrameTime = now;
     uniforms.uTime.value = now / 1000;
     uniforms.uTimeStars.value = uniforms.uTime.value;
-    
+
     // Hover detection
     raycaster.setFromCamera(pointer, camera);
     const globeIntersection = raycaster.intersectObject(globe);
@@ -141,7 +150,7 @@ export function createAnimateLoop({
       uniforms.uCursorOnGlobe.value = false;
     }
 
-    const atmosphereMaterial = atmosphere.material as THREE.ShaderMaterial;
+    const atmosphereMaterial = atmosphere.material as ShaderMaterial;
 
     const distance = camera.position.distanceTo(controls.target);
     atmosphereMaterial.uniforms.uCameraDistance.value = distance;
@@ -149,14 +158,14 @@ export function createAnimateLoop({
     const normalized =
       (distance - CONFIG.zoom.min) / (CONFIG.zoom.max - CONFIG.zoom.min);
 
-    controls.rotateSpeed = THREE.MathUtils.clamp(
+    controls.rotateSpeed = MathUtils.clamp(
       CONFIG.interaction.rotateSpeed.base +
         normalized * CONFIG.interaction.rotateSpeed.scale,
       CONFIG.interaction.rotateSpeed.min,
       CONFIG.interaction.rotateSpeed.max
     );
 
-    controls.zoomSpeed = THREE.MathUtils.clamp(
+    controls.zoomSpeed = MathUtils.clamp(
       CONFIG.interaction.zoomSpeed.base +
         normalized * CONFIG.interaction.zoomSpeed.scale,
       CONFIG.interaction.zoomSpeed.min,
@@ -175,7 +184,7 @@ export function createAnimateLoop({
     let newHoveredId = -1;
     type HoverResult = {
       id: number;
-      position: THREE.Vector3 | null;
+      position: Vector3 | null;
     };
 
     let countryResult: HoverResult = { id: -1, position: null };
@@ -188,7 +197,7 @@ export function createAnimateLoop({
           pointer,
           camera,
           globe,
-          globe.material as THREE.ShaderMaterial
+          globe.material as ShaderMaterial
         );
       }
       if (interactionState.oceanEnabled) {
@@ -284,7 +293,7 @@ export function createAnimateLoop({
       selectedFadeIn,
       selectedFlags,
       selectedData,
-      uniforms.selectedMask.value as THREE.DataTexture,
+      uniforms.selectedMask.value as DataTexture,
       delta
     );
 
@@ -292,7 +301,7 @@ export function createAnimateLoop({
       selectedOceanFadeIn,
       selectedOceanFlags,
       selectedOceanData,
-      uniforms.selectedOceanMask.value as THREE.DataTexture,
+      uniforms.selectedOceanMask.value as DataTexture,
       delta
     );
 

@@ -4,7 +4,14 @@
  * Split into two phases: core (ID maps) and visual (day/night/sky maps).
  */
 
-import * as THREE from "three";
+import {
+  Texture,
+  WebGLRenderer,
+  TextureLoader,
+  LinearSRGBColorSpace,
+  SRGBColorSpace,
+} from "three";
+
 import { CONFIG } from "../configs/config";
 
 /**
@@ -12,8 +19,8 @@ import { CONFIG } from "../configs/config";
  * Used for visuals like day and night Earth textures.
  */
 const applyBaseMapSettings = (
-  texture: THREE.Texture,
-  renderer: THREE.WebGLRenderer
+  texture: Texture,
+  renderer: WebGLRenderer
 ) => {
   texture.minFilter = CONFIG.textures.minFilter;
   texture.magFilter = CONFIG.textures.magFilter;
@@ -27,8 +34,8 @@ const applyBaseMapSettings = (
  * Apply configuration for linear color-space ID maps.
  * Used for selection masks like country and ocean ID maps.
  */
-const applyIdMapSettings = (texture: THREE.Texture, flipY: boolean = false) => {
-  texture.colorSpace = THREE.LinearSRGBColorSpace;
+const applyIdMapSettings = (texture: Texture, flipY: boolean = false) => {
+  texture.colorSpace = LinearSRGBColorSpace;
   texture.magFilter = CONFIG.textures.idMagFilter;
   texture.minFilter = CONFIG.textures.idMinFilter;
   texture.generateMipmaps = CONFIG.textures.generateMipmaps;
@@ -41,7 +48,7 @@ const applyIdMapSettings = (texture: THREE.Texture, flipY: boolean = false) => {
  * These should be ready before the first render.
  */
 export async function loadCoreTextures() {
-  const loader = new THREE.TextureLoader();
+  const loader = new TextureLoader();
   const startTime = performance.now();
 
   const countryIdMapTexture = await loader
@@ -68,8 +75,8 @@ export async function loadCoreTextures() {
  * Loads high-resolution visual textures (day, night, sky) in the background.
  * Should be called after first frame to avoid blocking FCP and TBT.
  */
-export async function loadVisualTextures(renderer: THREE.WebGLRenderer) {
-  const loader = new THREE.TextureLoader();
+export async function loadVisualTextures(renderer: WebGLRenderer) {
+  const loader = new TextureLoader();
   const startTime = performance.now();
 
   const [dayTexture, nightTexture, esoSkyMapTexture] = await Promise.all([
@@ -82,7 +89,7 @@ export async function loadVisualTextures(renderer: THREE.WebGLRenderer) {
       return t;
     }),
     loader.loadAsync(CONFIG.textures.esoSkyMapPath).then((t) => {
-      t.colorSpace = THREE.SRGBColorSpace;
+      t.colorSpace = SRGBColorSpace;
       return t;
     }),
   ]);

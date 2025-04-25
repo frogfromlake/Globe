@@ -1,15 +1,13 @@
 /**
- * pointerTracker.ts
- * Tracks whether the user has interacted with the globe using pointer or touch.
- * Useful for delaying hover/interaction effects until active input is detected.
+ * @file pointerTracker.ts
+ * @description Tracks whether the user has interacted with the globe via pointer or touch.
  */
 
 let hasMovedPointer = false;
 
 /**
- * Sets up global event listeners to track when the user first moves the pointer
- * or touches the screen. This flag can be used to prevent automatic interactions
- * until the user has demonstrated intent.
+ * Initializes global event listeners to detect user interaction.
+ * Sets a flag when the user moves the pointer or touches the screen.
  */
 export function setupPointerMoveTracking(): void {
   hasMovedPointer = false;
@@ -24,8 +22,9 @@ export function setupPointerMoveTracking(): void {
 }
 
 /**
- * Returns whether the user has moved their pointer or touched the screen.
- * Typically used to gate initial hover/interaction logic.
+ * Returns whether the user has interacted with the globe.
+ *
+ * @returns True if user moved the pointer or touched the screen.
  */
 export function userHasMovedPointer(): boolean {
   return hasMovedPointer;

@@ -1,9 +1,14 @@
 /**
  * initializeScene.ts
- * Configures and returns the main THREE.Scene and OrbitControls for the 3D globe application.
+ * Configures and returns the main Scene and OrbitControls for the 3D globe application.
  */
 
-import * as THREE from "three";
+import {
+  Scene,
+  DirectionalLight,
+  PerspectiveCamera,
+  WebGLRenderer,
+} from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
 import { CONFIG } from "../configs/config";
 
@@ -15,14 +20,14 @@ import { CONFIG } from "../configs/config";
  * @returns An object containing the configured scene and OrbitControls.
  */
 export function initializeScene(
-  camera: THREE.PerspectiveCamera,
-  renderer: THREE.WebGLRenderer
+  camera: PerspectiveCamera,
+  renderer: WebGLRenderer
 ) {
   // Create the main scene
-  const scene = new THREE.Scene();
+  const scene = new Scene();
 
   // Add directional lighting to the scene
-  const light = new THREE.DirectionalLight(
+  const light = new DirectionalLight(
     CONFIG.lighting.directionalLight.color,
     CONFIG.lighting.directionalLight.intensity
   );

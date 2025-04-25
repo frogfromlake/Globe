@@ -4,7 +4,7 @@
  * Highlights and centers the selected region on the globe and optionally shows related news.
  */
 
-import * as THREE from "three";
+import { Vector3, MathUtils, Camera } from "three";
 import gsap from "gsap";
 
 import {
@@ -14,7 +14,11 @@ import {
 import { countryMeta } from "../data/countryMeta";
 import { oceanCenters } from "../data/oceanCenters";
 import { CONFIG } from "../configs/config";
-import { showNewsPanel } from "../features/news/handleNewsPanel";
+
+async function showNewsLazy(isoCode: string) {
+  const { showNewsPanel } = await import("../features/news/handleNewsPanel");
+  await showNewsPanel(isoCode);
+}
 
 /**
  * Initializes the location search input field.
@@ -30,7 +34,7 @@ import { showNewsPanel } from "../features/news/handleNewsPanel";
  */
 export function setupLocationSearch(
   inputLocation: HTMLInputElement,
-  camera: THREE.Camera,
+  camera: Camera,
   controls: any,
   selectedCountryIds: Set<number>,
   selectedOceanIds: Set<number>,
@@ -74,10 +78,9 @@ export function setupLocationSearch(
 
     // === Clear previous selections ===
     for (const cid of selectedCountryIds) selectedFlags[cid] = 0;
-    for (const oid of selectedOceanIds) selectedFlags[oid] = 0;
+    for (const oid of selectedOceanIds) selectedOceanFlags[oid] = 0;
     selectedCountryIds.clear();
     selectedOceanIds.clear();
-    selectedOceanFlags.fill(0);
 
     // === Apply new selection ===
     if (id < selectedFlags.length) {
@@ -87,13 +90,12 @@ export function setupLocationSearch(
 
         const isoCode = countryMeta[id]?.iso;
         if (isoCode) {
-          showNewsPanel(isoCode);
+          showNewsLazy(isoCode);
         } else {
           console.warn(`Missing ISO code for selected country ID: ${id}`);
         }
       } else {
         selectedOceanIds.add(id);
-        selectedFlags[id] = 1;
 
         const oceanIndex = CONFIG.oceanHover.oceanIdToIndex?.[id];
         if (
@@ -115,9 +117,9 @@ export function setupLocationSearch(
 
     const rotationY = getEarthRotationAngle();
 
-    const targetDirection = new THREE.Vector3()
+    const targetDirection = new Vector3()
       .setFromSphericalCoords(radius, phi, theta)
-      .applyAxisAngle(new THREE.Vector3(0, 1, 0), rotationY)
+      .applyAxisAngle(new Vector3(0, 1, 0), rotationY)
       .normalize();
 
     const currentDirection = camera.position
@@ -138,8 +140,8 @@ export function setupLocationSearch(
       onUpdate: () => {
         const zoomFactor = shouldZoom
           ? tmp.t < 0.5
-            ? THREE.MathUtils.lerp(originalDistance, defaultDistance, tmp.t * 2)
-            : THREE.MathUtils.lerp(
+            ? MathUtils.lerp(originalDistance, defaultDistance, tmp.t * 2)
+            : MathUtils.lerp(
                 defaultDistance,
                 originalDistance,
                 (tmp.t - 0.5) * 2

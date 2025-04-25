@@ -1,4 +1,4 @@
-import * as THREE from "three";
+import { Vector3 } from "three";
 import { CONFIG } from "../configs/config";
 
 /**
@@ -9,12 +9,12 @@ import { CONFIG } from "../configs/config";
  * @param lon - Longitude in degrees (-180 to 180), where 0 is the prime meridian.
  * @returns A normalized THREE.Vector3 pointing to the location on the globe.
  */
-export function latLonToUnitVector(lat: number, lon: number): THREE.Vector3 {
+export function latLonToUnitVector(lat: number, lon: number): Vector3 {
   // Convert latitude and longitude to spherical coordinates
   const phi = (90 - lat) * CONFIG.geo.degToRad; // phi is latitude (colatitude), mapped from 90° to 0° for north to south pole
   const theta = (lon + 90) * CONFIG.geo.degToRad; // theta is longitude, adjusted by +90 to match texture rotation
   // Set the vector from spherical coordinates (radius=1) and normalize it
-  return new THREE.Vector3().setFromSphericalCoords(1, phi, theta).normalize();
+  return new Vector3().setFromSphericalCoords(1, phi, theta).normalize();
 }
 
 /**
@@ -65,7 +65,7 @@ export function getEarthRotationAngle(date: Date = new Date()): number {
  * @param date - The date for which to calculate the sun's direction. Defaults to the current date/time.
  * @returns A THREE.Vector3 representing the direction of the Sun (unit vector).
  */
-export function getSunDirectionUTC(date: Date = new Date()): THREE.Vector3 {
+export function getSunDirectionUTC(date: Date = new Date()): Vector3 {
   // Calculate days since J2000 epoch
   const daysSinceJ2000 =
     (date.getTime() - CONFIG.geo.j2000UTC) / CONFIG.geo.msPerDay;
@@ -96,5 +96,5 @@ export function getSunDirectionUTC(date: Date = new Date()): THREE.Vector3 {
   const z = Math.sin(obliquity) * Math.sin(λ * CONFIG.geo.degToRad);
 
   // The direction of sunlight (opposite of the calculated coordinates)
-  return new THREE.Vector3(-x, -z, y).normalize();
+  return new Vector3(-x, -z, y).normalize();
 }

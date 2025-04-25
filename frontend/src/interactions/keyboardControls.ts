@@ -4,7 +4,7 @@
  * Uses smooth damping for inertial movement. Call the returned update function inside your animation loop.
  */
 
-import * as THREE from "three";
+import { MathUtils, Spherical, Vector3, PerspectiveCamera } from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
 
 /**
@@ -16,7 +16,7 @@ import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
  * @returns An update function to call within the render loop.
  */
 export function setupKeyboardControls(
-  camera: THREE.PerspectiveCamera,
+  camera: PerspectiveCamera,
   controls: OrbitControls
 ) {
   const pressed: Record<string, boolean> = {};
@@ -24,8 +24,8 @@ export function setupKeyboardControls(
   const dampingFactor = 2.0;
 
   const velocity = { azimuth: 0, polar: 0 };
-  const spherical = new THREE.Spherical();
-  const offset = new THREE.Vector3();
+  const spherical = new Spherical();
+  const offset = new Vector3();
 
   // Track key press state
   window.addEventListener("keydown", (e) => {
@@ -54,13 +54,13 @@ export function setupKeyboardControls(
     if (pressed["arrowdown"] || pressed["s"]) targetPolar += step;
 
     // Apply smooth damping to movement
-    velocity.azimuth = THREE.MathUtils.damp(
+    velocity.azimuth = MathUtils.damp(
       velocity.azimuth,
       targetAzimuth,
       dampingFactor,
       delta
     );
-    velocity.polar = THREE.MathUtils.damp(
+    velocity.polar = MathUtils.damp(
       velocity.polar,
       targetPolar,
       dampingFactor,
@@ -80,7 +80,7 @@ export function setupKeyboardControls(
 
     // Clamp polar angle to avoid poles
     const EPS = 0.0001;
-    spherical.phi = THREE.MathUtils.clamp(spherical.phi, EPS, Math.PI - EPS);
+    spherical.phi = MathUtils.clamp(spherical.phi, EPS, Math.PI - EPS);
 
     // Recalculate camera position
     offset.setFromSpherical(spherical);

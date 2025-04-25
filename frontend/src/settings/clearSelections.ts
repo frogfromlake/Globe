@@ -21,12 +21,7 @@ export function clearAllSelections(
   selectedCountryIds.clear();
   selectedOceanIds.clear();
 
-  // Reset flag arrays
-  for (let i = 0; i < selectedFlags.length; i++) {
-    selectedFlags[i] = 0;
-  }
-
-  for (let i = 0; i < selectedOceanFlags.length; i++) {
-    selectedOceanFlags[i] = 0;
-  }
+  // Reset flags efficiently
+  selectedFlags.fill(0);
+  selectedOceanFlags.fill(0);
 }

@@ -4,7 +4,19 @@
  * Labels are rendered as glowing sprites with dynamically scaled lines based on camera distance.
  */
 
-import * as THREE from "three";
+import {
+  Sprite,
+  Group,
+  SpriteMaterial,
+  CanvasTexture,
+  Scene,
+  Vector3,
+  Camera,
+  MathUtils,
+  Color,
+  LinearFilter,
+  Object3D,
+} from "three";
 import { countryMeta } from "../data/countryMeta";
 import { latLonToSphericalCoordsGeographic } from "../globe/geo";
 import { CONFIG } from "../configs/config";
@@ -13,12 +25,12 @@ import { Line2 } from "three/examples/jsm/lines/Line2.js";
 import { LineGeometry } from "three/examples/jsm/lines/LineGeometry.js";
 
 type LabelObject = {
-  sprite: THREE.Sprite;
+  sprite: Sprite;
   line: Line2;
-  group: THREE.Group;
+  group: Group;
 };
 
-const labelGroup = new THREE.Group();
+const labelGroup = new Group();
 const labelObjects = new Map<number, LabelObject>();
 
 /**
@@ -27,7 +39,7 @@ const labelObjects = new Map<number, LabelObject>();
  *
  * @param scene - The Three.js scene to add label objects into.
  */
-export function init3DLabels(scene: THREE.Scene): void {
+export function init3DLabels(scene: Scene): void {
   scene.add(labelGroup);
 }
 
@@ -42,7 +54,7 @@ export function init3DLabels(scene: THREE.Scene): void {
 export async function createTextSprite(
   message: string,
   isOcean: boolean
-): Promise<THREE.Sprite> {
+): Promise<Sprite> {
   await document.fonts.ready;
 
   const canvas = document.createElement("canvas");
@@ -61,8 +73,8 @@ export async function createTextSprite(
   ctx.fillStyle = glow.fillStyle;
   ctx.fillText(message, 0, 0);
 
-  const texture = new THREE.CanvasTexture(canvas);
-  texture.minFilter = THREE.LinearFilter;
+  const texture = new CanvasTexture(canvas);
+  texture.minFilter = LinearFilter;
   texture.needsUpdate = true;
 
   // Use labelColor from configuration (ocean or country)
@@ -70,17 +82,17 @@ export async function createTextSprite(
     ? CONFIG.labels3D.ocean.labelColor
     : CONFIG.labels3D.country.labelColor;
 
-  const material = new THREE.SpriteMaterial({
+  const material = new SpriteMaterial({
     map: texture,
     transparent: true,
     opacity: 0,
     depthWrite: true,
     depthTest: true,
     alphaTest: 0.5,
-    color: new THREE.Color(labelColor),
+    color: new Color(labelColor),
   });
 
-  const sprite = new THREE.Sprite(material);
+  const sprite = new Sprite(material);
   const aspect = canvas.width / canvas.height;
   sprite.scale.set(aspect * spriteScale, spriteScale, 1);
 
@@ -99,7 +111,7 @@ export async function createTextSprite(
 export async function update3DLabel(
   countryId: number,
   rotationY: number,
-  camera: THREE.Camera,
+  camera: Camera,
   fade: number
 ): Promise<void> {
   const entry = countryMeta[countryId];
@@ -115,9 +127,9 @@ export async function update3DLabel(
     const line = new Line2(geometry, lineMaterial);
     line.computeLineDistances();
 
-    const group = new THREE.Group();
+    const group = new Group();
     group.add(sprite);
-    group.add(line as unknown as THREE.Object3D);
+    group.add(line as unknown as Object3D);
 
     // Enforce correct render order
     line.renderOrder = 0;
@@ -135,12 +147,12 @@ export async function update3DLabel(
     entry.lon,
     CONFIG.labels3D.markerRadius
   );
-  const center = new THREE.Vector3().setFromSphericalCoords(radius, phi, theta);
-  center.applyAxisAngle(new THREE.Vector3(0, 1, 0), rotationY);
+  const center = new Vector3().setFromSphericalCoords(radius, phi, theta);
+  center.applyAxisAngle(new Vector3(0, 1, 0), rotationY);
 
   // Compute zoom-dependent offset and final label position
   const cameraDistance = camera.position.length();
-  const offset = THREE.MathUtils.mapLinear(
+  const offset = MathUtils.mapLinear(
     cameraDistance,
     CONFIG.labels3D.zoomRange.min,
     CONFIG.labels3D.zoomRange.max,
@@ -159,7 +171,7 @@ export async function update3DLabel(
   const baseScale = CONFIG.labels3D.spriteScale;
   const canvas = sprite.material.map?.image as HTMLCanvasElement;
   const aspect = canvas.width / canvas.height || 2.5;
-  const scaleFactor = THREE.MathUtils.mapLinear(
+  const scaleFactor = MathUtils.mapLinear(
     cameraDistance,
     CONFIG.labels3D.zoomRange.min,
     CONFIG.labels3D.zoomRange.max,

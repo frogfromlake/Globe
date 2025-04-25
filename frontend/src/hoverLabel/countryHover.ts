@@ -4,7 +4,17 @@
  * Also provides initialization and creation of the selection texture used in GLSL highlighting.
  */
 
-import * as THREE from "three";
+import {
+  Vector2,
+  Raycaster,
+  Camera,
+  Mesh,
+  ShaderMaterial,
+  Vector3,
+  DataTexture,
+  RedFormat,
+  UnsignedByteType,
+} from "three";
 import { CONFIG } from "../configs/config";
 
 // Internal state for the RGB country ID map loaded into a canvas
@@ -19,7 +29,7 @@ let imageLoaded = false;
  * @param uv - The UV coordinates of the pointer
  * @returns A 24-bit country ID derived from the RGB pixel
  */
-export function getCountryIdAtUV(uv: THREE.Vector2): number {
+export function getCountryIdAtUV(uv: Vector2): number {
   if (!imageLoaded || !countryIdMapCanvas || !countryIdCtx) return -1;
 
   const x = Math.floor(uv.x * countryIdMapCanvas.width);
@@ -60,12 +70,12 @@ export async function loadCountryIdMapTexture(): Promise<void> {
  * @returns The hovered country ID and the intersection point in world space
  */
 export function updateHoveredCountry(
-  raycaster: THREE.Raycaster,
-  pointer: THREE.Vector2,
-  camera: THREE.Camera,
-  globe: THREE.Mesh,
-  globeMaterial: THREE.ShaderMaterial
-): { id: number; position: THREE.Vector3 | null } {
+  raycaster: Raycaster,
+  pointer: Vector2,
+  camera: Camera,
+  globe: Mesh,
+  globeMaterial: ShaderMaterial
+): { id: number; position: Vector3 | null } {
   if (!imageLoaded || !countryIdMapCanvas || !countryIdCtx) {
     return { id: -1, position: null };
   }
@@ -86,14 +96,14 @@ export function updateHoveredCountry(
  *
  * @returns The initialized DataTexture for selected country IDs
  */
-export function createSelectionTexture(): THREE.DataTexture {
+export function createSelectionTexture(): DataTexture {
   const data = new Uint8Array(CONFIG.countryHover.maxCountryCount);
-  const texture = new THREE.DataTexture(
+  const texture = new DataTexture(
     data,
     CONFIG.countryHover.maxCountryCount,
     1,
-    THREE.RedFormat,
-    THREE.UnsignedByteType
+    RedFormat,
+    UnsignedByteType
   );
 
   texture.minFilter = CONFIG.countryHover.selectionTexture.minFilter;

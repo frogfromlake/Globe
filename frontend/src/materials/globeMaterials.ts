@@ -3,7 +3,7 @@
  * @description Provides reusable factory functions for all materials used in the 3D globe rendering system.
  */
 
-import * as THREE from "three";
+import { ShaderMaterial, SpriteMaterial, Texture, Color, Vector2 } from "three";
 import {
   earthVertexShader,
   earthFragmentShader,
@@ -17,10 +17,8 @@ import { LineGeometry } from "three/examples/jsm/lines/LineGeometry.js";
 /**
  * Creates the custom Earth shader material with all globe uniforms.
  */
-export function createGlobeMaterial(
-  uniforms: GlobeUniforms
-): THREE.ShaderMaterial {
-  return new THREE.ShaderMaterial({
+export function createGlobeMaterial(uniforms: GlobeUniforms): ShaderMaterial {
+  return new ShaderMaterial({
     uniforms,
     vertexShader: earthVertexShader,
     fragmentShader: earthFragmentShader,
@@ -36,19 +34,19 @@ export function createGlobeMaterial(
  * @param isOcean - Boolean flag to distinguish between ocean and country labels for color adjustment.
  */
 export function createLabelSpriteMaterial(
-  texture: THREE.Texture,
+  texture: Texture,
   isOcean: boolean
-): THREE.SpriteMaterial {
+): SpriteMaterial {
   const labelColor = isOcean
     ? CONFIG.labels3D.ocean.labelColor
     : CONFIG.labels3D.country.labelColor; // Use the correct label color based on the type
 
-  return new THREE.SpriteMaterial({
+  return new SpriteMaterial({
     map: texture,
     transparent: true,
     opacity: 0,
     depthWrite: false,
-    color: new THREE.Color(labelColor), // Set the label color here
+    color: new Color(labelColor), // Set the label color here
   });
 }
 
@@ -68,7 +66,7 @@ export function createLabelLineMaterial(isOcean: boolean): LineMaterial {
     transparent: true,
     opacity: 0,
     depthWrite: false,
-    resolution: new THREE.Vector2(window.innerWidth, window.innerHeight),
+    resolution: new Vector2(window.innerWidth, window.innerHeight),
   });
 }
 

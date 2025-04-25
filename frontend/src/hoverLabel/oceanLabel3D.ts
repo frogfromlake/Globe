@@ -4,7 +4,15 @@
  * Labels appear as glowing sprites with connectors, dynamically positioned and scaled based on camera distance.
  */
 
-import * as THREE from "three";
+import {
+  Sprite,
+  Group,
+  Vector3,
+  Camera,
+  MathUtils,
+  Object3D,
+  Scene,
+} from "three";
 import { createTextSprite } from "./countryLabels3D";
 import { CONFIG } from "../configs/config";
 import { latLonToSphericalCoordsGeographic } from "../globe/geo";
@@ -13,19 +21,19 @@ import { LineGeometry } from "three/examples/jsm/lines/LineGeometry.js";
 import { Line2 } from "three/examples/jsm/lines/Line2.js";
 
 type LabelObject = {
-  sprite: THREE.Sprite;
+  sprite: Sprite;
   line: Line2;
-  group: THREE.Group;
+  group: Group;
 };
 
 const labelObjectsOcean = new Map<string, LabelObject>();
-const labelGroup = new THREE.Group();
+const labelGroup = new Group();
 
 /**
  * Initializes the 3D ocean label system by adding the internal label group to the main scene.
  * @param scene - The Three.js scene to attach ocean labels to.
  */
-export function init3DOceanLabels(scene: THREE.Scene): void {
+export function init3DOceanLabels(scene: Scene): void {
   scene.add(labelGroup);
 }
 
@@ -45,7 +53,7 @@ export async function update3DOceanLabel(
   lat: number,
   lon: number,
   rotationY: number,
-  camera: THREE.Camera,
+  camera: Camera,
   fade: number
 ): Promise<void> {
   if (!labelObjectsOcean.has(name)) {
@@ -58,9 +66,9 @@ export async function update3DOceanLabel(
     const line = new Line2(geometry, lineMaterial);
     line.computeLineDistances();
 
-    const group = new THREE.Group();
+    const group = new Group();
     group.add(sprite);
-    group.add(line as unknown as THREE.Object3D);
+    group.add(line as unknown as Object3D);
 
     // ✅ Enforce render order for correct depth sorting
     line.renderOrder = 0;
@@ -78,11 +86,11 @@ export async function update3DOceanLabel(
     CONFIG.labels3D.markerRadius
   );
 
-  const center = new THREE.Vector3().setFromSphericalCoords(radius, phi, theta);
-  center.applyAxisAngle(new THREE.Vector3(0, 1, 0), rotationY);
+  const center = new Vector3().setFromSphericalCoords(radius, phi, theta);
+  center.applyAxisAngle(new Vector3(0, 1, 0), rotationY);
 
   const cameraDistance = camera.position.length();
-  const offset = THREE.MathUtils.mapLinear(
+  const offset = MathUtils.mapLinear(
     cameraDistance,
     CONFIG.labels3D.zoomRange.min,
     CONFIG.labels3D.zoomRange.max,
@@ -101,7 +109,7 @@ export async function update3DOceanLabel(
   const baseScale = CONFIG.labels3D.spriteScale;
   const canvas = sprite.material.map?.image as HTMLCanvasElement;
   const aspect = canvas.width / canvas.height || 2.5;
-  const scaleFactor = THREE.MathUtils.mapLinear(
+  const scaleFactor = MathUtils.mapLinear(
     cameraDistance,
     CONFIG.labels3D.zoomRange.min,
     CONFIG.labels3D.zoomRange.max,

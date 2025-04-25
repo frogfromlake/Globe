@@ -3,7 +3,13 @@
  * @description Provides the material used for rendering the background star sphere around the Earth.
  */
 
-import * as THREE from "three";
+import {
+  Texture,
+  ShaderMaterial,
+  BackSide,
+  SRGBColorSpace,
+  IUniform,
+} from "three";
 import { CONFIG } from "../configs/config";
 import {
   starsVertexShader,
@@ -17,12 +23,12 @@ import {
  * @returns A Three.js material for rendering the star background.
  */
 export function createStarMaterial(
-  esoSkyMapTexture: THREE.Texture,
-  sharedUniforms: Record<string, THREE.IUniform>
-): THREE.ShaderMaterial {
-  esoSkyMapTexture.colorSpace = THREE.SRGBColorSpace;
+  esoSkyMapTexture: Texture,
+  sharedUniforms: Record<string, IUniform>
+): ShaderMaterial {
+  esoSkyMapTexture.colorSpace = SRGBColorSpace;
 
-  return new THREE.ShaderMaterial({
+  return new ShaderMaterial({
     vertexShader: starsVertexShader,
     fragmentShader: starsFragmentShader,
     uniforms: {
@@ -31,8 +37,8 @@ export function createStarMaterial(
       uTimeStars: sharedUniforms.uTime,
       uStarOpacity: { value: CONFIG.stars.opacity },
     },
-    side: THREE.BackSide,
+    side: BackSide,
     transparent: true,
     depthWrite: false,
   });
-}  
+}

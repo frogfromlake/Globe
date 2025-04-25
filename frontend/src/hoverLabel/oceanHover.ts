@@ -4,7 +4,16 @@
  * and setup for GLSL-compatible selection texture used in ocean highlighting.
  */
 
-import * as THREE from "three";
+import {
+  Vector2,
+  Raycaster,
+  Camera,
+  Mesh,
+  Vector3,
+  DataTexture,
+  RedFormat,
+  UnsignedByteType,
+} from "three";
 import { CONFIG } from "../configs/config";
 
 // Internal state for ocean ID map decoding via canvas
@@ -38,7 +47,7 @@ export async function loadOceanIdMapTexture(): Promise<void> {
  * @param uv - UV coordinates of the pointer on the globe
  * @returns The 24-bit ocean ID derived from RGB values
  */
-export function getOceanIdAtUV(uv: THREE.Vector2): number {
+export function getOceanIdAtUV(uv: Vector2): number {
   if (!oceanImageLoaded || !oceanIdMapCanvas || !oceanIdCtx) return -1;
 
   const x = Math.floor(uv.x * oceanIdMapCanvas.width);
@@ -58,11 +67,11 @@ export function getOceanIdAtUV(uv: THREE.Vector2): number {
  * @returns Object containing the hovered ocean ID and hit point
  */
 export function updateHoveredOcean(
-  raycaster: THREE.Raycaster,
-  pointer: THREE.Vector2,
-  camera: THREE.Camera,
-  globe: THREE.Mesh
-): { id: number; position: THREE.Vector3 | null } {
+  raycaster: Raycaster,
+  pointer: Vector2,
+  camera: Camera,
+  globe: Mesh
+): { id: number; position: Vector3 | null } {
   if (!oceanImageLoaded || !oceanIdMapCanvas || !oceanIdCtx) {
     return { id: -1, position: null };
   }
@@ -81,14 +90,14 @@ export function updateHoveredOcean(
  *
  * @returns A configured DataTexture for GLSL use
  */
-export function createSelectionOceanTexture(): THREE.DataTexture {
+export function createSelectionOceanTexture(): DataTexture {
   const data = new Uint8Array(CONFIG.oceanHover.maxOceanCount);
-  const texture = new THREE.DataTexture(
+  const texture = new DataTexture(
     data,
     CONFIG.oceanHover.maxOceanCount,
     1,
-    THREE.RedFormat,
-    THREE.UnsignedByteType
+    RedFormat,
+    UnsignedByteType
   );
 
   texture.minFilter = CONFIG.oceanHover.selectionTexture.minFilter;

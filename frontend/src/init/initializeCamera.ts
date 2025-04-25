@@ -4,7 +4,7 @@
  * Handles camera FOV, aspect ratio, clipping planes, and starting position.
  */
 
-import * as THREE from "three";
+import { PerspectiveCamera } from "three";
 import { CONFIG } from "../configs/config";
 
 /**
@@ -12,7 +12,7 @@ import { CONFIG } from "../configs/config";
  *
  * @returns {THREE.PerspectiveCamera} A configured Three.js PerspectiveCamera instance.
  */
-export function initializeCamera(): THREE.PerspectiveCamera {
+export function initializeCamera(): PerspectiveCamera {
   const {
     fov,
     near,
@@ -23,7 +23,7 @@ export function initializeCamera(): THREE.PerspectiveCamera {
 
   const aspect = window.innerWidth / window.innerHeight;
 
-  const camera = new THREE.PerspectiveCamera(fov, aspect, near, far);
+  const camera = new PerspectiveCamera(fov, aspect, near, far);
 
   // Apply initial camera position with optional FOV-based distance scaling
   camera.position.set(

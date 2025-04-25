@@ -4,23 +4,21 @@
  * Binds to the target canvas, sets resolution, color space, and handles resizing.
  */
 
-import * as THREE from "three";
+import { WebGLRenderer, PerspectiveCamera } from "three";
 import { CONFIG } from "../configs/config";
 
 /**
  * Initializes the WebGL renderer for the 3D globe scene.
  *
  * @param camera - The perspective camera, used to update aspect ratio on resize.
- * @returns {THREE.WebGLRenderer} The configured WebGLRenderer instance.
+ * @returns {WebGLRenderer} The configured WebGLRenderer instance.
  */
-export function initializeRenderer(
-  camera: THREE.PerspectiveCamera
-): THREE.WebGLRenderer {
+export function initializeRenderer(camera: PerspectiveCamera): WebGLRenderer {
   const canvas = document.getElementById(
     CONFIG.renderer.canvasId
   ) as HTMLCanvasElement;
 
-  const renderer = new THREE.WebGLRenderer({
+  const renderer = new WebGLRenderer({
     canvas,
     antialias: CONFIG.renderer.antialias,
   });

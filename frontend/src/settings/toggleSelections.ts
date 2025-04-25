@@ -20,9 +20,7 @@ export function toggleCountrySelection(
 ): void {
   if (countryId <= 0 || countryId >= selectedFlags.length) return;
 
-  const isSelected = selectedCountryIds.has(countryId);
-
-  if (isSelected) {
+  if (selectedCountryIds.has(countryId)) {
     selectedCountryIds.delete(countryId);
     selectedFlags[countryId] = 0;
   } else {
@@ -46,9 +44,7 @@ export function toggleOceanSelection(
   const index = oceanIdToIndex[oceanId];
   if (index === undefined) return;
 
-  const isSelected = selectedOceanIds.has(oceanId);
-
-  if (isSelected) {
+  if (selectedOceanIds.has(oceanId)) {
     selectedOceanIds.delete(oceanId);
     selectedOceanFlags[index] = 0;
   } else {

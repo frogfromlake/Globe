@@ -24,4 +24,6 @@ export const interactionState = {
    * that the user is focused on.
    */
   flashlightEnabled: true,
+
+  lastOpenedCountryId: null as number | null,
 };

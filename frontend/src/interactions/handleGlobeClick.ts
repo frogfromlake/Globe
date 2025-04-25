@@ -10,7 +10,20 @@ import { getCountryIdAtUV } from "../hoverLabel/countryHover";
 import { getOceanIdAtUV } from "../hoverLabel/oceanHover";
 import { oceanIdToIndex } from "../utils/oceanIdToIndex";
 import { countryMeta } from "../data/countryMeta";
-import { showNewsPanel, hideNewsPanel } from "../features/news/handleNewsPanel";
+
+/**
+ * Dynamically loads and shows news for a country by ISO code.
+ */
+async function showNewsForCountry(isoCode: string) {
+  (await import("../features/news/handleNewsPanel")).showNewsPanel(isoCode);
+}
+
+/**
+ * Dynamically loads and hides the news panel.
+ */
+async function hideNews() {
+  (await import("../features/news/handleNewsPanel")).hideNewsPanel();
+}
 
 let lastOpenedCountryId: number | null = null;
 
@@ -51,7 +64,7 @@ export function handleGlobeClick(
       selectedFlags[clickedCountryId] = 0;
 
       if (lastOpenedCountryId === clickedCountryId) {
-        hideNewsPanel();
+        hideNews();
         lastOpenedCountryId = null;
       }
 
@@ -61,10 +74,11 @@ export function handleGlobeClick(
     // New country selection
     selectedCountryIds.add(clickedCountryId);
     selectedFlags[clickedCountryId] = 1;
+    interactionState.lastOpenedCountryId = clickedCountryId;
 
     const isoCode = countryMeta[clickedCountryId]?.iso;
     if (isoCode) {
-      showNewsPanel(isoCode);
+      showNewsForCountry(isoCode);
       lastOpenedCountryId = clickedCountryId;
     } else {
       console.warn(`No ISO code found for country ID: ${clickedCountryId}`);

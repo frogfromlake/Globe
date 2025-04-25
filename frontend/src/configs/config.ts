@@ -1,5 +1,11 @@
 // src/configs/config.ts
-import * as THREE from "three";
+import {
+  SRGBColorSpace,
+  LinearFilter,
+  NearestFilter,
+  NormalBlending,
+  ClampToEdgeWrapping,
+} from "three";
 import { oceanCenters } from "../data/oceanCenters";
 import { countryMeta } from "../data/countryMeta";
 import { oceanIdToIndex } from "../utils/oceanIdToIndex";
@@ -147,7 +153,7 @@ export const CONFIG = {
     /** Whether to check for shader compile errors */
     checkShaderErrors: true,
     /** Output color space setting (e.g., THREE.SRGBColorSpace) */
-    outputColorSpace: THREE.SRGBColorSpace,
+    outputColorSpace: SRGBColorSpace,
     /** Pixel ratio to use for rendering; set to 'device' to auto-detect */
     pixelRatio: "device" as "device" | number,
   },
@@ -165,13 +171,13 @@ export const CONFIG = {
     /** Path to the eso sky map */
     esoSkyMapPath: "/textures/eso_sky.jpg",
     /** Min filter for day/night textures */
-    minFilter: THREE.LinearFilter,
+    minFilter: LinearFilter,
     /** Mag filter for day/night textures */
-    magFilter: THREE.LinearFilter,
+    magFilter: LinearFilter,
     /** Min filter for country ID map */
-    idMinFilter: THREE.NearestFilter,
+    idMinFilter: NearestFilter,
     /** Mag filter for country ID map */
-    idMagFilter: THREE.NearestFilter,
+    idMagFilter: NearestFilter,
     /** Whether to generate mipmaps for country ID map */
     generateMipmaps: false,
     /** Whether to flip the Y axis on the country ID map texture */
@@ -233,7 +239,7 @@ export const CONFIG = {
       /** Whether globe material is transparent */
       transparent: false,
       /** Blending mode for fragment color */
-      blending: THREE.NormalBlending,
+      blending: NormalBlending,
     },
   },
 
@@ -248,10 +254,10 @@ export const CONFIG = {
     maxCountryCount: 2048,
     /** Texture settings for country selection DataTexture */
     selectionTexture: {
-      minFilter: THREE.NearestFilter,
-      magFilter: THREE.NearestFilter,
-      wrapS: THREE.ClampToEdgeWrapping,
-      wrapT: THREE.ClampToEdgeWrapping,
+      minFilter: NearestFilter,
+      magFilter: NearestFilter,
+      wrapS: ClampToEdgeWrapping,
+      wrapT: ClampToEdgeWrapping,
     },
   },
 
@@ -268,10 +274,10 @@ export const CONFIG = {
 
     /** Texture settings for ocean selection DataTexture (same format as country selection) */
     selectionTexture: {
-      minFilter: THREE.NearestFilter,
-      magFilter: THREE.NearestFilter,
-      wrapS: THREE.ClampToEdgeWrapping,
-      wrapT: THREE.ClampToEdgeWrapping,
+      minFilter: NearestFilter,
+      magFilter: NearestFilter,
+      wrapS: ClampToEdgeWrapping,
+      wrapT: ClampToEdgeWrapping,
     },
   },
 
@@ -319,35 +325,6 @@ export const CONFIG = {
       fillStyle: "#BFE1FF",
     },
   },
-
-  // /** Configuration for 3D country labels */
-  // labels3D: {
-  //   /** Font type for both country and ocean labels */
-  //   fontFamily: "Inter",
-  //   /** Base scale for the text sprite relative to canvas size (actual fontsize) */
-  //   spriteScale: 0.2,
-  //   /** Canvas font size for text clarity (px) */
-  //   canvasFontSize: 256,
-  //   /** Line color connecting label to country */
-  //   lineColor: 0x9ed5ff,
-  //   /**Thickness of the label lines */
-  //   lineWidth: 1.5,
-  //   /** Distance from globe center for label anchor point */
-  //   markerRadius: 1.01,
-  //   /** Zoom range used to calculate dynamic label offset */
-  //   zoomRange: { min: 1.1, max: 10 },
-  //   /** Label offset range (minimum and maximum label distance from anchor) */
-  //   offsetRange: { min: 0.0, max: 1.0 },
-  //   /** Glow effect for text labels */
-  //   glow: {
-  //     /** Shadow color for glow effect */
-  //     shadowColor: "rgba(0, 140, 255, 0.2)",
-  //     /** Shadow blur radius in pixels */
-  //     shadowBlur: 20,
-  //     /** Fill color for label text */
-  //     fillStyle: "#BFE1FF",
-  //   },
-  // },
 
   /** Geographic and astronomy-related constants */
   geo: {

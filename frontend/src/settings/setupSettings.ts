@@ -48,7 +48,7 @@ export function setupSettingsPanel(
   let useFixedBackground = false;
 
   // Initial scene setup
-  setupUserLocation(scene, globe);
+  setupUserLocation(globe);
   hideAll3DLabelsExcept();
   hideAll3DOceanLabels();
   setupLocationSearch(
