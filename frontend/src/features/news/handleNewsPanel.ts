@@ -142,25 +142,27 @@ export async function showNewsPanel(isoCode: string): Promise<void> {
  */
 function renderNewsItems(newsItems: any[], translate = true): string {
   return `
-    <ul>
-      ${newsItems
-        .map((item: any) => {
-          const title = translate
-            ? item.title
-            : item.originalTitle || item.title;
-          const desc = translate
-            ? item.description
-            : item.originalDescription || item.description;
+    <div id="news-list" class="fade-in">
+      <ul>
+        ${newsItems
+          .map((item: any) => {
+            const title = translate
+              ? item.title
+              : item.originalTitle || item.title;
+            const desc = translate
+              ? item.description
+              : item.originalDescription || item.description;
 
-          return `
-            <li>
-              <a href="${item.link}" target="_blank">${title}</a><br/>
-              <small>${item.source} – ${item.published || ""}</small><br/>
-              <em style="opacity: 0.7;">${desc || ""}</em>
-            </li>`;
-        })
-        .join("")}
-    </ul>
+            return `
+              <li>
+                <a href="${item.link}" target="_blank">${title}</a><br/>
+                <small>${item.source} – ${item.published || ""}</small><br/>
+                <em style="opacity: 0.7;">${desc || ""}</em>
+              </li>`;
+          })
+          .join("")}
+      </ul>
+    </div>
   `;
 }
 
