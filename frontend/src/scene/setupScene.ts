@@ -81,7 +81,15 @@ export function setupSceneObjects(
     CONFIG.stars.heightSegments
   );
 
-  const starSphere = new THREE.Mesh(starSphereGeometry, createStarMaterial());
+  const starMaterial = createStarMaterial(esoSkyMapTexture, uniforms);
+  
+  const starSphere = new THREE.Mesh(starSphereGeometry, starMaterial);
+
+  // Explicit render order
+  starSphere.renderOrder = -1;
+  atmosphere.renderOrder = 0;
+  globe.renderOrder = 1;
+
   scene.add(starSphere);
 
   return { globe, atmosphere, starSphere };

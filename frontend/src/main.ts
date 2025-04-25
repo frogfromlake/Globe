@@ -17,6 +17,8 @@ import { inject } from "@vercel/analytics";
  */
 import { injectSpeedInsights } from "@vercel/speed-insights";
 
+performance.mark("start-app-init");
+
 /**
  * Updates the loading subtitle displayed during application initialization.
  *
@@ -30,7 +32,16 @@ function setLoadingSubtitle(text: string): void {
 }
 
 // Initialize and start the application
-startApp(setLoadingSubtitle).then(({ animate }) => {
+startApp(setLoadingSubtitle).then(({ animate, startHoverSystem }) => {
+  performance.mark("start-app-done");
+
+  performance.measure("App Init", "start-app-init", "start-app-done");
+  const [entry] = performance.getEntriesByName("App Init");
+  console.log(
+    `📈 %cApp Init took ${entry.duration.toFixed(2)} ms`,
+    "color: #4caf50; font-weight: bold"
+  );
+
   // Inject Vercel Analytics script
   inject();
   // Inject Vercel Speed Insights script
@@ -45,14 +56,18 @@ startApp(setLoadingSubtitle).then(({ animate }) => {
   }
 
   // Trigger fade-out transition of the loading screen
-  loadingScreen.classList.add("fade-out");
+  loadingScreen.classList.add("fade-out"); 
 
   // Wait for transition to complete before removing loading screen and showing the app
   loadingScreen.addEventListener("transitionend", () => {
-    loadingScreen.remove();
-    appContainer.classList.add("visible");
+    setTimeout(() => {
+      loadingScreen.remove();
+      appContainer.classList.add("visible");
 
-    // Start the main rendering loop
-    animate();
+      animate();
+      startHoverSystem().catch((err) => {
+        console.error("Error in hover system initialization:", err);
+      });
+    }, 300);
   });
 });

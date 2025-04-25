@@ -22,6 +22,7 @@ uniform float cityLightStrength;                 // The strength of city lights 
 uniform float cursorGlowStrength;                // The strength of the cursor's glow effect on the globe.
 uniform float cursorGlowRadius;                  // The radius within which the cursor will cause a glow effect.
 uniform float nightBrightness;                   // The brightness of the night side of the globe.
+uniform float uTextureFade;
 
 uniform vec3 lightDirection;                     // The direction of the sunlight, used to simulate day/night transitions.
 uniform vec3 cameraDirection;                    // The direction from the camera to the Earth, used for lighting and view-dependent effects.
@@ -264,5 +265,5 @@ void main() {
     }
 
     // Final output color.
-    gl_FragColor = vec4(finalColor, 1.0); // Set the final color output of the fragment shader.
+    gl_FragColor = vec4(finalColor * uTextureFade, 1.0); // Final color + fade, alpha is 1
 }

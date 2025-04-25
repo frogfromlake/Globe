@@ -107,6 +107,18 @@ export interface GlobeUniforms {
   uCameraDistance: THREE.IUniform<number>;
 
   /**
+   * Uniform to control fade in of country and ocean textures
+   */
+  uTextureFade: THREE.IUniform<number>;
+
+  /**
+   * Uniform to control fade in of background starmap textures
+   */
+  uStarFade: THREE.IUniform<number>;
+
+  uTimeStars: THREE.IUniform<number>;
+
+  /**
    * Dynamic uniform for any other additional uniforms that may be added to the shaders.
    */
   [uniform: string]: THREE.IUniform<any>;

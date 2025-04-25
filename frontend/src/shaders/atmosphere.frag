@@ -16,8 +16,8 @@ void main() {
 
     // === Rim glow calculation ===
     // The fresnel term controls the strength of the rim glow effect, which is strongest at the tangent angles (when the view direction
-    // is nearly perpendicular to the normal). We use the dot product of view direction and normal to calculate this.
-    float fresnel = pow(0.85 - dot(viewDir, normal), 6.0);
+    // is nearly perpendicular to the normal). The dot product of view direction and normal is used to calculate this.
+    float fresnel = pow(0.82 - dot(viewDir, normal), 8.0);
 
     // === Sunlight incidence calculation ===
     // The dot product between the normal and the light direction gives the angle of incidence between the surface and the sunlight.
@@ -35,8 +35,8 @@ void main() {
     twilight *= 1.0;  // Increased intensity by multiplying with a factor
 
     // === Combine fade values for overall glow effect ===
-    // The final fade value combines daylight and twilight. The twilight effect is reduced by a factor of 0.7 to create a more subtle sunset effect.
-    float fade = dayFade + twilight * 0.7;
+    // The final fade value combines daylight and twilight. The twilight effect is reduced by a factor of 0.8 to create a more subtle sunset effect.
+    float fade = dayFade + twilight * 0.9;
 
     // === Alpha calculation ===
     // Alpha is the transparency of the final color, combining the fresnel effect and the calculated fade.
@@ -52,7 +52,7 @@ void main() {
     // Daylight color (a soft blue) and twilight color (a warm orange-pink) are blended based on the twilight effect.
     vec3 dayColor = vec3(0.5, 0.8, 1.5); // Daylight color (light blue)
     // vec3 twilightHue = vec3(1.0, 0.5, 0.3); // Twilight color (sunset orange)
-    vec3 twilightHue = mix(vec3(1.0, 0.5, 0.3), vec3(0.5, 0.3, 0.5), 0.1);  // Blending orange with purple
+    vec3 twilightHue = mix(vec3(1.0, 0.5, 0.3), vec3(0.5, 0.3, 0.5), 0.55);  // Blending orange with purple
 
     // Blend the day and twilight colors based on the calculated twilight effect.
     vec3 glowColor = mix(dayColor, twilightHue, twilight);

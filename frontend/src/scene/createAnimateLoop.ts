@@ -127,7 +127,8 @@ export function createAnimateLoop({
     const delta = (now - lastFrameTime) / 1000;
     lastFrameTime = now;
     uniforms.uTime.value = now / 1000;
-
+    uniforms.uTimeStars.value = uniforms.uTime.value;
+    
     // Hover detection
     raycaster.setFromCamera(pointer, camera);
     const globeIntersection = raycaster.intersectObject(globe);

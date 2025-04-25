@@ -60,6 +60,14 @@ export async function runWithLoadingMessage<T>(
   action: () => Promise<T> | T
 ): Promise<T> {
   updateSubtitle(randomMessage(messagePool));
+
+  // Allow the DOM to update and the subtitle to be painted
+  await Promise.resolve();
+  await new Promise((resolve) => requestAnimationFrame(resolve));
+
+  // Ensure subtitle is visible for at least 300ms
+  await new Promise((resolve) => setTimeout(resolve, 300));
+
   return await action();
 }
 
@@ -69,12 +77,17 @@ export async function runWithLoadingMessage<T>(
  */
 export function showLoadingScreen(): void {
   const loadingScreen = document.getElementById("loading-screen");
-  const appContainer = document.getElementById("app-container");
+  if (loadingScreen) {
+    loadingScreen.style.display = "flex";
+  }
+}
 
-  if (loadingScreen && appContainer) {
+/**
+ * Fades out the entire loading screen (spinner + subtitle + background).
+ */
+export function fadeOutLoadingScreen(): void {
+  const loadingScreen = document.getElementById("loading-screen");
+  if (loadingScreen) {
     loadingScreen.classList.add("fade-out");
-    setTimeout(() => {
-      appContainer.classList.add("visible");
-    }, 1200); // Match fade-out animation duration
   }
 }

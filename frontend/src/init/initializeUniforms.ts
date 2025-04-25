@@ -108,6 +108,9 @@ export function initializeUniforms(
     uCursorOnGlobe: { value: false },
     nightBrightness: { value: CONFIG.textures.nightBrightness },
     uCameraDistance: { value: 0.0 },
+    uTextureFade: { value: 0.0 },
+    uStarFade: { value: 0.0 },
+    uTimeStars: { value: 0 },
   };
 
   return {

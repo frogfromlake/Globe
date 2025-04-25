@@ -5,6 +5,8 @@ import vertexShader from "./earth.vert"; // Import the vertex shader for the Ear
 import fragmentShader from "./earth.frag"; // Import the fragment shader for the Earth.
 import aVertexShader from "./atmosphere.vert"; // Import the vertex shader for the atmosphere.
 import aFragmentShader from "./atmosphere.frag"; // Import the fragment shader for the atmosphere.
+import sVertexShader from "./stars.vert";
+import sFragmentShader from "./stars.frag";
 
 /**
  * Earth vertex shader.
@@ -31,3 +33,15 @@ export const atmosphereVertexShader = aVertexShader;
  * This shader is responsible for rendering the visual appearance of the atmosphere, including transparency, glow effects, and lighting.
  */
 export const atmosphereFragmentShader = aFragmentShader;
+
+/**
+ * Stars vertex shader.
+ *
+ */
+export const starsVertexShader = sVertexShader;
+
+/**
+ * Stars fragment shader.
+ * This shader is responsible for rendering the visual appearance of the stars in the background.
+ */
+export const starsFragmentShader = sFragmentShader;

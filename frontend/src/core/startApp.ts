@@ -9,7 +9,6 @@ import * as THREE from "three";
 import { initializeCamera } from "../init/initializeCamera";
 import { initializeRenderer } from "../init/initializeRenderer";
 import { initializeScene } from "../init/initializeScene";
-import { initializeTextures } from "../init/initializeTextures";
 import { initializeUniforms } from "../init/initializeUniforms";
 
 import { loadCountryIdMapTexture } from "../hoverLabel/countryHover";
@@ -25,21 +24,40 @@ import { handleGlobeClick } from "../interactions/handleGlobeClick";
 import { setupSceneObjects } from "../scene/setupScene";
 import { createAnimateLoop } from "../scene/createAnimateLoop";
 import {
+  fadeOutLoadingScreen,
   loadingMessages,
   runWithLoadingMessage,
-  showLoadingScreen,
 } from "../scene/showLoadingScreen";
 
 import { setupSettingsPanel } from "../settings/setupSettings";
 import { initNewsPanel } from "../features/news/handleNewsPanel";
 import { setupAdminPanel } from "../features/news/setupAdminPanel";
+import {
+  loadCoreTextures,
+  loadVisualTextures,
+} from "../init/initializeTextures";
+
+// === Fallback texture: flat gray ===
+const fallbackTexture = new THREE.DataTexture(
+  new Uint8Array([0, 0, 0, 255]),
+  1,
+  1,
+  THREE.RGBAFormat
+);
+fallbackTexture.generateMipmaps = false;
+fallbackTexture.minFilter = THREE.NearestFilter;
+fallbackTexture.magFilter = THREE.NearestFilter;
+fallbackTexture.needsUpdate = true;
+
+// Hover interactivity is disabled until RGB ID maps are ready
+let hoverReady = false;
 
 /**
  * Bootstraps the entire OrbitalOne app with full 3D scene, interactivity,
  * and feature initialization.
  *
  * @param updateSubtitle - Callback for updating the loading screen subtitle
- * @returns Animation loop starter
+ * @returns Animation loop starter and a deferred hover activation function
  */
 export async function startApp(updateSubtitle: (text: string) => void) {
   // === State Stores for Country/Ocean Selection ===
@@ -64,19 +82,15 @@ export async function startApp(updateSubtitle: (text: string) => void) {
   const renderer = initializeRenderer(camera);
   const { scene, controls } = initializeScene(camera, renderer);
 
-  // === Load Textures & Initialize Shader Uniforms ===
+  // === Load UI element reference
   const locationSearchInput = document.getElementById(
     "country-search"
   ) as HTMLInputElement;
 
-  const {
-    dayTexture,
-    nightTexture,
-    countryIdMapTexture,
-    oceanIdMapTexture,
-    esoSkyMapTexture,
-  } = initializeTextures(renderer);
+  // === Load Core (Lightweight) Textures ===
+  const { countryIdMapTexture, oceanIdMapTexture } = await loadCoreTextures();
 
+  // === Initialize Uniforms with temporary placeholder maps ===
   const {
     uniforms,
     selectedData,
@@ -86,8 +100,8 @@ export async function startApp(updateSubtitle: (text: string) => void) {
     selectedOceanFadeIn,
     selectedOceanFlags,
   } = initializeUniforms(
-    dayTexture,
-    nightTexture,
+    fallbackTexture, // Fallback day texture
+    fallbackTexture, // Fallback night texture
     countryIdMapTexture,
     oceanIdMapTexture
   );
@@ -101,17 +115,7 @@ export async function startApp(updateSubtitle: (text: string) => void) {
     oceanData: selectedOceanData,
   });
 
-  // === Loading Steps ===
-  await runWithLoadingMessage(
-    loadingMessages.countryTextures,
-    updateSubtitle,
-    loadCountryIdMapTexture
-  );
-  await runWithLoadingMessage(
-    loadingMessages.oceanTextures,
-    updateSubtitle,
-    loadOceanIdMapTexture
-  );
+  // === Load 3D Labels and Panels ===
   await runWithLoadingMessage(loadingMessages.labels, updateSubtitle, () => {
     init3DLabels(scene);
     init3DOceanLabels(scene);
@@ -123,12 +127,13 @@ export async function startApp(updateSubtitle: (text: string) => void) {
   );
   runWithLoadingMessage(loadingMessages.final, updateSubtitle, () => {});
 
-  // === Populate Scene with Core Meshes ===
+  // === Populate Scene with Core Meshes (temporary placeholder sky texture) ===
   const { globe, atmosphere, starSphere } = setupSceneObjects(
     scene,
     uniforms,
-    esoSkyMapTexture
+    new THREE.Texture() // Placeholder texture
   );
+  starSphere.visible = false; // Hidden until esoSkyMap is ready
 
   // === Set Up UI & Interactions ===
   const { getBackgroundMode } = setupSettingsPanel(
@@ -148,9 +153,11 @@ export async function startApp(updateSubtitle: (text: string) => void) {
 
   setupGlobePointerEvents(renderer, globe, raycaster, pointer, camera, {
     onHover: (hit) => {
+      if (!hoverReady) return;
       uniforms.cursorWorldPos.value.copy(hit.point.clone().normalize());
     },
     onClick: (hit) => {
+      if (!hoverReady) return;
       handleGlobeClick(
         hit,
         selection.countryIds,
@@ -163,7 +170,70 @@ export async function startApp(updateSubtitle: (text: string) => void) {
 
   // === Boot Other Features ===
   setupAdminPanel();
-  showLoadingScreen();
+
+  // === Defer loading of heavy textures and assign to uniforms ===
+  loadVisualTextures(renderer).then(
+    ({ dayTexture, nightTexture, esoSkyMapTexture }) => {
+      // Replace the fallback day and night textures with the real ones
+      uniforms.dayTexture.value = dayTexture;
+      uniforms.nightTexture.value = nightTexture;
+
+      // Ensure globe material is updated after textures are loaded
+      if (globe.material) {
+        if (Array.isArray(globe.material)) {
+          globe.material.forEach((mat) => (mat.needsUpdate = true));
+        } else {
+          globe.material.needsUpdate = true;
+        }
+      }
+
+      // Update the star sphere material with the sky texture
+      if (
+        starSphere.material &&
+        starSphere.material instanceof THREE.ShaderMaterial
+      ) {
+        const starMaterial = starSphere.material;
+        starMaterial.uniforms.uStarMap.value = esoSkyMapTexture;
+        starMaterial.needsUpdate = true;
+      }
+
+      const starMaterial = starSphere.material as THREE.ShaderMaterial;
+      if (starMaterial) {
+        let starFade = 0;
+        let lastStarTime = performance.now();
+
+        setTimeout(() => {
+          starSphere.visible = true;
+
+          const fadeInStarSphere = (now = performance.now()) => {
+            const delta = (now - lastStarTime) / 1000;
+            lastStarTime = now;
+
+            starFade += delta * 0.1;
+            starMaterial.uniforms.uStarFade.value = Math.min(starFade, 1);
+            starMaterial.needsUpdate = true;
+
+            if (starFade < 1) requestAnimationFrame(fadeInStarSphere);
+          };
+          fadeInStarSphere();
+        }, 1500);
+      }
+
+      // === Smoothly fade in day/night textures using uTextureFade ===
+      let fade = 0;
+      let last = performance.now();
+      const fadeInTextures = (now = performance.now()) => {
+        const delta = (now - last) / 1000;
+        last = now;
+
+        fade += delta * 0.4;
+        uniforms.uTextureFade.value = Math.min(fade, 1);
+
+        if (fade < 1) requestAnimationFrame(fadeInTextures);
+      };
+      fadeInTextures();
+    }
+  );
 
   // === Launch Render Loop ===
   const animate = createAnimateLoop({
@@ -189,7 +259,22 @@ export async function startApp(updateSubtitle: (text: string) => void) {
     selectedOceanIds: selection.oceanIds,
   });
 
-  return { animate };
+  // === Expose startHoverSystem for main.ts to call after loading screen
+  const startHoverSystem = async () => {
+    await runWithLoadingMessage(
+      loadingMessages.countryTextures,
+      updateSubtitle,
+      loadCountryIdMapTexture
+    );
+    await runWithLoadingMessage(
+      loadingMessages.oceanTextures,
+      updateSubtitle,
+      loadOceanIdMapTexture
+    );
+    hoverReady = true;
+  };
+
+  return { animate, startHoverSystem };
 }
 
 /**
