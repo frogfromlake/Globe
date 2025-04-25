@@ -13,5 +13,6 @@ WORKDIR /usr/src/app
 RUN apt-get update && apt-get install -y ca-certificates && rm -rf /var/lib/apt/lists/*
 
 COPY --from=builder /run-app /usr/local/bin/
-COPY data/feeds.db /data/feeds.db
+COPY data/feeds.db /usr/share/seed/feeds.db
+
 CMD ["run-app"]

@@ -9,7 +9,7 @@ import { interactionState } from "../state/interactionState";
 import { getCountryIdAtUV } from "../hoverLabel/countryHover";
 import { getOceanIdAtUV } from "../hoverLabel/oceanHover";
 import { oceanIdToIndex } from "../utils/oceanIdToIndex";
-import { countryIdToIso } from "../data/countryIdToIso";
+import { countryMeta } from "../data/countryMeta";
 import { showNewsPanel, hideNewsPanel } from "../features/news/handleNewsPanel";
 
 let lastOpenedCountryId: number | null = null;
@@ -62,7 +62,7 @@ export function handleGlobeClick(
     selectedCountryIds.add(clickedCountryId);
     selectedFlags[clickedCountryId] = 1;
 
-    const isoCode = countryIdToIso[clickedCountryId];
+    const isoCode = countryMeta[clickedCountryId]?.iso;
     if (isoCode) {
       showNewsPanel(isoCode);
       lastOpenedCountryId = clickedCountryId;

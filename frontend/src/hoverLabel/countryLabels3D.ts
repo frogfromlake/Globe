@@ -5,7 +5,7 @@
  */
 
 import * as THREE from "three";
-import { countryCenters } from "../data/countryCenters";
+import { countryMeta } from "../data/countryMeta";
 import { latLonToSphericalCoordsGeographic } from "../globe/geo";
 import { CONFIG } from "../configs/config";
 import { createLabelLineMaterial } from "../materials/globeMaterials";
@@ -102,7 +102,7 @@ export async function update3DLabel(
   camera: THREE.Camera,
   fade: number
 ): Promise<void> {
-  const entry = countryCenters[countryId];
+  const entry = countryMeta[countryId];
   if (!entry) return;
 
   // Create the label if it doesn't exist

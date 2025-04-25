@@ -8,6 +8,14 @@
  */
 
 import { startApp } from "./core/startApp";
+/**
+ * Injects the Vercel Analytics script into the document.
+ */
+import { inject } from "@vercel/analytics";
+/**
+ * Injects the Vercel Speed Insights script into the document.
+ */
+import { injectSpeedInsights } from "@vercel/speed-insights";
 
 /**
  * Updates the loading subtitle displayed during application initialization.
@@ -23,6 +31,11 @@ function setLoadingSubtitle(text: string): void {
 
 // Initialize and start the application
 startApp(setLoadingSubtitle).then(({ animate }) => {
+  // Inject Vercel Analytics script
+  inject();
+  // Inject Vercel Speed Insights script
+  injectSpeedInsights();
+
   const loadingScreen = document.getElementById("loading-screen");
   const appContainer = document.getElementById("app-container");
 

@@ -1,7 +1,7 @@
 // src/configs/config.ts
 import * as THREE from "three";
 import { oceanCenters } from "../data/oceanCenters";
-import { countryCenters } from "../data/countryCenters";
+import { countryMeta } from "../data/countryMeta";
 import { oceanIdToIndex } from "../utils/oceanIdToIndex";
 
 export const CONFIG = {
@@ -240,7 +240,7 @@ export const CONFIG = {
   /** Settings related to the country ID hover system */
   countryHover: {
     /** Precomputed geographic center coordinates for each country ID */
-    countryCenters: countryCenters,
+    countryCenters: countryMeta,
 
     /** Path to the RGB-encoded country ID map image */
     idMapPath: "textures/country_id_map_8k_rgb.png",

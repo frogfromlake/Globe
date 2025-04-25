@@ -1,4 +1,4 @@
-package data
+package utils
 
 // Translation supported countries map
 var IsoToDeepLLang = map[string]string{

@@ -3,6 +3,8 @@
  * @description Controls the draggable, interactive country news panel. Handles UI state, data fetching, and dynamic rendering.
  */
 
+import { countryMeta } from "../../data/countryMeta";
+
 let isFetchingNews = false;
 const initialTop = 20;
 const initialRight = 20;
@@ -48,6 +50,10 @@ export async function showNewsPanel(isoCode: string): Promise<void> {
   const title = document.getElementById("news-title")!;
   const content = document.getElementById("news-content")!;
 
+  // Get the country name from countryMeta using ISO
+  const entry = Object.values(countryMeta).find((c) => c.iso === isoCode);
+  const displayName = entry?.name || isoCode;
+
   // Reset and display the panel
   panel.classList.remove("fade-out", "closing");
   panel.classList.add("open");
@@ -58,29 +64,26 @@ export async function showNewsPanel(isoCode: string): Promise<void> {
   panel.style.bottom = "";
   panel.style.transform = "none";
 
-  // Center the title visually
-  title.textContent = `Top News from ${isoCode}`;
+  // Center the title visually with full country name
+  title.textContent = `Top News from ${displayName}`;
   title.style.display = "block";
   title.style.width = "100%";
   title.style.textAlign = "center";
   title.style.fontSize = "1rem";
   title.style.marginBottom = "0.25rem";
 
-  // Show loading text
   content.innerHTML = `<strong style="opacity: 0.8;">Loading...</strong>`;
 
   try {
     const res = await fetch(`${API_BASE}/api/news?country=${isoCode}`);
     if (res.status === 204) {
-      content.innerHTML = `<strong>No news found for ${isoCode}</strong>`;
-      isFetchingNews = false;
+      content.innerHTML = `<strong>No news found for ${displayName}</strong>`;
       return;
     }
 
     if (!res.ok) {
       console.warn(`[News API] Non-OK response: ${res.status} for ${isoCode}`);
       content.innerHTML = `<strong style="color: red;">Failed to fetch news</strong>`;
-      isFetchingNews = false;
       return;
     }
 
@@ -90,7 +93,6 @@ export async function showNewsPanel(isoCode: string): Promise<void> {
       "translate-toggle"
     ) as HTMLButtonElement;
 
-    // Persisted translation toggle preference across sessions (default: true)
     let useTranslation = sessionStorage.getItem("translatePref") !== "false";
 
     const render = () => {

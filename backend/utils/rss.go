@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/frogfromlake/Orbitalone/backend/data"
 	"github.com/frogfromlake/Orbitalone/backend/feeds"
 	"github.com/frogfromlake/Orbitalone/backend/localization"
 
@@ -54,7 +53,7 @@ func GetNewsByCountry(code string) ([]NewsArticle, error) {
 		return nil, err
 	}
 
-	lang, shouldTranslate := data.IsoToDeepLLang[code]
+	lang, shouldTranslate := IsoToDeepLLang[code]
 	if !shouldTranslate {
 		log.Printf("⚠️ No DeepL mapping for %s – will serve original language only", code)
 	}

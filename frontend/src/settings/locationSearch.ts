@@ -11,10 +11,9 @@ import {
   latLonToSphericalCoordsGeographic,
   getEarthRotationAngle,
 } from "../globe/geo";
-import { countryCenters } from "../data/countryCenters";
+import { countryMeta } from "../data/countryMeta";
 import { oceanCenters } from "../data/oceanCenters";
 import { CONFIG } from "../configs/config";
-import { countryIdToIso } from "../data/countryIdToIso";
 import { showNewsPanel } from "../features/news/handleNewsPanel";
 
 /**
@@ -46,7 +45,7 @@ export function setupLocationSearch(
   const transitionDuration = CONFIG.camera.autoTransitionDuration;
 
   // Populate name lookup map
-  for (const [id, data] of Object.entries(countryCenters)) {
+  for (const [id, data] of Object.entries(countryMeta)) {
     nameToIdMap.set(data.name.toLowerCase(), {
       id: Number(id),
       type: "country",
@@ -71,8 +70,7 @@ export function setupLocationSearch(
     }
 
     const { id, type } = result;
-    const centerData =
-      type === "country" ? countryCenters[id] : oceanCenters[id];
+    const centerData = type === "country" ? countryMeta[id] : oceanCenters[id];
 
     // === Clear previous selections ===
     for (const cid of selectedCountryIds) selectedFlags[cid] = 0;
@@ -87,7 +85,7 @@ export function setupLocationSearch(
         selectedCountryIds.add(id);
         selectedFlags[id] = 1;
 
-        const isoCode = countryIdToIso[id];
+        const isoCode = countryMeta[id]?.iso;
         if (isoCode) {
           showNewsPanel(isoCode);
         } else {

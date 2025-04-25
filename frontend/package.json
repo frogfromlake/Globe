@@ -9,9 +9,8 @@
     "preview": "vite preview",
     "generate:rgbmap": "tsx src/dev/generateRgbMap.ts",
     "generate:oceanrgbmap": "tsx src/dev/generateOceanRgbMap.ts",
-    "generate:centroids": "tsx src/dev/generateCountryCenters.ts",
     "generate:oceancentroids": "tsx src/dev/generateOceanCenters.ts",
-    "generate:iso": "tsx src/dev/generateCountryIdToIso.ts"
+    "generate:countryData": "tsx src/dev/generateCountryMeta.ts"
   },
   "devDependencies": {
     "@types/d3-geo": "^3.1.0",
@@ -26,6 +25,8 @@
     "vite-plugin-glsl": "^1.4.0"
   },
   "dependencies": {
+    "@vercel/analytics": "^1.5.0",
+    "@vercel/speed-insights": "^1.2.0",
     "canvas": "^3.1.0",
     "d3-geo": "^3.1.1",
     "gsap": "^3.12.7",
