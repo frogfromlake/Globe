@@ -32,7 +32,9 @@ export async function loadOceanIdMapTexture(): Promise<void> {
       oceanIdMapCanvas = document.createElement("canvas");
       oceanIdMapCanvas.width = image.width;
       oceanIdMapCanvas.height = image.height;
-      oceanIdCtx = oceanIdMapCanvas.getContext("2d");
+      oceanIdCtx = oceanIdMapCanvas.getContext("2d", {
+        willReadFrequently: true,
+      });
       oceanIdCtx?.drawImage(image, 0, 0);
       oceanImageLoaded = true;
       resolve();

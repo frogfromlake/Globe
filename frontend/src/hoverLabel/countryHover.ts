@@ -50,7 +50,7 @@ export async function loadCountryIdMapTexture(): Promise<void> {
       countryIdMapCanvas = document.createElement("canvas");
       countryIdMapCanvas.width = image.width;
       countryIdMapCanvas.height = image.height;
-      countryIdCtx = countryIdMapCanvas.getContext("2d");
+      countryIdCtx = countryIdMapCanvas.getContext("2d", { willReadFrequently: true });
       countryIdCtx?.drawImage(image, 0, 0);
       imageLoaded = true;
       resolve();
