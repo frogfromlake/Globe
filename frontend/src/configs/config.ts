@@ -77,7 +77,7 @@ export const CONFIG = {
   /** Limits for zoom distance using orbit controls */
   zoom: {
     /** Minimum zoom distance — how close the camera can get to the globe */
-    min: 1.13,
+    min: 1.25,
     /** Maximum zoom distance — how far the camera can pull back from the globe */
     max: 10,
   },
@@ -161,15 +161,15 @@ export const CONFIG = {
   /** Texture file paths and settings */
   textures: {
     /** Path to the day-side Earth texture */
-    dayMapPath: "/textures/earth_day_8k.jpg",
+    dayMapPath: "/textures/earth_day_8k.webp",
     /** Path to the night-side Earth texture */
-    nightMapPath: "/textures/earth_night_8k.jpg",
+    nightMapPath: "/textures/earth_night_8k.webp",
     /** Path to the RGB-encoded country ID map */
     countryIdMapPath: "/textures/country_id_map_8k_rgb.png",
     /** Path to the RGB-encoded ocean ID map */
     oceanIdMapPath: "/textures/ocean_id_map_8k_rgb.png",
     /** Path to the eso sky map */
-    esoSkyMapPath: "/textures/eso_sky.jpg",
+    esoSkyMapPath: "/textures/eso_sky.webp",
     /** Min filter for day/night textures */
     minFilter: LinearFilter,
     /** Mag filter for day/night textures */

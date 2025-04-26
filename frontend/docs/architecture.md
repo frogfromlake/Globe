@@ -68,13 +68,3 @@ graph TD
 - **Future-Proof** (easy to slot in overlays, space weather, network effects, etc.)
 
 ---
-
-TODO:
-Priority | Task | Why | How
-✅ (Done!) | Tree shaking & lazy loading | Greatly reduced main thread blocking and JS parsing | Already achieved
-1️⃣ | Serve critical textures smaller or lazy load big textures | 90% of payload is giant JPGs & PNGs | See below (progressive loading or lower-res first)
-2️⃣ | Split vendor bundles more aggressively | Some Three.js modules (like OrbitControls, etc.) are always loaded even if not immediately needed | Dynamic import OrbitControls, etc.
-3️⃣ | Reduce unused JavaScript (52 KB saving) | Lighthouse sees some dead weight in vendor bundle | Might need fine-tuned imports from Three.js
-4️⃣ | Reduce blocking Google Fonts | 220ms blocking Orbitron font load | Preconnect, preload, or host fonts locally
-5️⃣ | Serve images in next-gen formats (WebP/AVIF) | Huge image size savings (save ~1.6 MB) | Convert big PNG/JPGs to WebP or AVIF
-6️⃣ | Set long cache headers (static assets) | Speed up repeat visits massively | Should be configured via Vercel caching
