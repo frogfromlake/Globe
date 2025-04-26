@@ -5,7 +5,7 @@
  */
 
 import { MathUtils, Spherical, Vector3, PerspectiveCamera } from "three";
-import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
+import type { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
 
 /**
  * Sets up keyboard-based globe rotation using arrow keys or WASD.

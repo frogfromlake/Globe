@@ -9,7 +9,10 @@ import {
   PerspectiveCamera,
   WebGLRenderer,
 } from "three";
-import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
+const { OrbitControls } = await import(
+  "three/examples/jsm/controls/OrbitControls"
+);
+
 import { CONFIG } from "../configs/config";
 
 /**

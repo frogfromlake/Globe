@@ -5,8 +5,7 @@
  */
 
 import * as THREE from "three";
-import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
-
+const { OrbitControls } = await import('three/examples/jsm/controls/OrbitControls');
 import { interactionState } from "../state/interactionState";
 import { clearAllSelections } from "./clearSelections";
 import {
@@ -43,7 +42,7 @@ export function setupSettingsPanel(
   globe: THREE.Mesh,
   locationSearchInput: HTMLInputElement,
   camera: THREE.PerspectiveCamera,
-  controls: OrbitControls
+  controls: typeof OrbitControls
 ) {
   let useFixedBackground = false;
 
