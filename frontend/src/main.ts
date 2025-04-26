@@ -6,6 +6,7 @@
  * - Manage loading screen transitions.
  * - Set the loading subtitle text dynamically during the app boot sequence.
  */
+
 import { startApp } from "./core/startApp";
 /**
  * Injects the Vercel Analytics script into the document.

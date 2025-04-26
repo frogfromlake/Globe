@@ -1,10 +1,3 @@
-/**
- * @file createAnimateLoop.ts
- * @description Provides the animation loop for the 3D Earth scene. This includes handling camera movement, hover effects,
- * label updates, and selection fading based on user interactions (hover and click). Also manages dynamic adjustments to globe rotation,
- * atmosphere, and star background based on camera position and interaction states.
- */
-
 import {
   Mesh,
   ShaderMaterial,
@@ -34,10 +27,6 @@ import { oceanIdToIndex } from "../utils/oceanIdToIndex";
 import { interactionState } from "../state/interactionState";
 import { userHasMovedPointer } from "../interactions/pointerTracker";
 
-/**
- * Parameters required to initialize the animation loop.
- * @interface AnimateParams
- */
 interface AnimateParams {
   globe: Mesh;
   atmosphere: Mesh;
@@ -61,13 +50,6 @@ interface AnimateParams {
   selectedOceanIds: Set<number>;
 }
 
-/**
- * Creates and returns the animation loop that updates the scene, handles hover and selection, and controls dynamic properties
- * like the globe's rotation and camera adjustments.
- *
- * @param {AnimateParams} params - Parameters used for the animation loop.
- * @returns {Function} A function that repeatedly calls `animate` for rendering the scene and handling updates.
- */
 export function createAnimateLoop({
   globe,
   atmosphere,
@@ -100,14 +82,9 @@ export function createAnimateLoop({
     previousHoveredOceanId = -1;
   let lastFrameTime = performance.now();
 
-  /**
-   * Updates the selection texture based on the selected flags and fading values.
-   * @param {Float32Array} fadeInArray - Array containing fade-in values for selections.
-   * @param {Uint8Array} flagsArray - Array of flags indicating selected items.
-   * @param {Uint8Array} dataArray - Array of data used for generating selection textures.
-   * @param {DataTexture} texture - The texture that holds the selection data.
-   * @param {number} delta - Time delta used for fading calculations.
-   */
+  const atmosphereMaterial = atmosphere.material as ShaderMaterial;
+  const zoomRange = CONFIG.zoom.max - CONFIG.zoom.min;
+
   function updateSelectionTexture(
     fadeInArray: Float32Array,
     flagsArray: Uint8Array,
@@ -115,7 +92,7 @@ export function createAnimateLoop({
     texture: DataTexture,
     delta: number
   ) {
-    for (let i = 0; i < dataArray.length; i++) {
+    for (let i = 0, len = dataArray.length; i < len; i++) {
       const isSelected = flagsArray[i] === 1;
       fadeInArray[i] += delta * CONFIG.fade.selection * (isSelected ? 1 : -1);
       fadeInArray[i] = MathUtils.clamp(fadeInArray[i], 0, 1);
@@ -126,12 +103,9 @@ export function createAnimateLoop({
     texture.needsUpdate = true;
   }
 
-  /**
-   * The main animation loop function that is called repeatedly to update the scene.
-   * Handles camera movement, hover effects, fade-in/out, and selection updates.
-   */
-  return function animate(): void {
+  function animate(): void {
     requestAnimationFrame(animate);
+
     const now = performance.now();
     const delta = (now - lastFrameTime) / 1000;
     lastFrameTime = now;
@@ -139,39 +113,39 @@ export function createAnimateLoop({
     uniforms.uTimeStars.value = uniforms.uTime.value;
 
     // Hover detection
-    raycaster.setFromCamera(pointer, camera);
-    const globeIntersection = raycaster.intersectObject(globe);
-    if (globeIntersection.length > 0) {
-      uniforms.cursorWorldPos.value.copy(
-        globeIntersection[0].point.clone().normalize()
-      );
-      uniforms.uCursorOnGlobe.value = true;
-    } else {
-      uniforms.uCursorOnGlobe.value = false;
+    let globeIntersection: Vector3 | null = null;
+    if (userHasMovedPointer()) {
+      raycaster.setFromCamera(pointer, camera);
+      const hits = raycaster.intersectObject(globe);
+      if (hits.length > 0) {
+        globeIntersection = hits[0].point.clone().normalize();
+      }
     }
 
-    const atmosphereMaterial = atmosphere.material as ShaderMaterial;
+    uniforms.uCursorOnGlobe.value = globeIntersection !== null;
+    if (globeIntersection) {
+      uniforms.cursorWorldPos.value.copy(globeIntersection);
+    }
 
+    // Atmosphere + Rotation Speed Updates
     const distance = camera.position.distanceTo(controls.target);
-    atmosphereMaterial.uniforms.uCameraDistance.value = distance;
-
-    const normalized =
-      (distance - CONFIG.zoom.min) / (CONFIG.zoom.max - CONFIG.zoom.min);
+    const normalizedZoom = (distance - CONFIG.zoom.min) / zoomRange;
 
     controls.rotateSpeed = MathUtils.clamp(
       CONFIG.interaction.rotateSpeed.base +
-        normalized * CONFIG.interaction.rotateSpeed.scale,
+        normalizedZoom * CONFIG.interaction.rotateSpeed.scale,
       CONFIG.interaction.rotateSpeed.min,
       CONFIG.interaction.rotateSpeed.max
     );
 
     controls.zoomSpeed = MathUtils.clamp(
       CONFIG.interaction.zoomSpeed.base +
-        normalized * CONFIG.interaction.zoomSpeed.scale,
+        normalizedZoom * CONFIG.interaction.zoomSpeed.scale,
       CONFIG.interaction.zoomSpeed.min,
       CONFIG.interaction.zoomSpeed.max
     );
 
+    atmosphereMaterial.uniforms.uCameraDistance.value = distance;
     uniforms.lightDirection.value.copy(getSunDirectionUTC());
     atmosphereMaterial.uniforms.uLightDirection.value.copy(
       uniforms.lightDirection.value
@@ -180,17 +154,13 @@ export function createAnimateLoop({
     updateKeyboard(delta);
     controls.update();
 
-    // Hover updates
+    // Country / Ocean Hover Updates
     let newHoveredId = -1;
-    type HoverResult = {
-      id: number;
-      position: Vector3 | null;
-    };
-
-    let countryResult: HoverResult = { id: -1, position: null };
-    let oceanResult: HoverResult = { id: -1, position: null };
-
     if (userHasMovedPointer()) {
+      type HoverResult = { id: number; position: Vector3 | null };
+      let countryResult: HoverResult = { id: -1, position: null };
+      let oceanResult: HoverResult = { id: -1, position: null };
+
       if (interactionState.countryEnabled) {
         countryResult = updateHoveredCountry(
           raycaster,
@@ -203,12 +173,12 @@ export function createAnimateLoop({
       if (interactionState.oceanEnabled) {
         oceanResult = updateHoveredOcean(raycaster, pointer, camera, globe);
       }
-    }
 
-    if (countryResult.id > 0) {
-      newHoveredId = countryResult.id;
-    } else if (oceanResult.id >= 10000) {
-      newHoveredId = oceanResult.id;
+      if (countryResult.id > 0) {
+        newHoveredId = countryResult.id;
+      } else if (oceanResult.id >= 10000) {
+        newHoveredId = oceanResult.id;
+      }
     }
 
     if (newHoveredId !== currentHoveredId) {
@@ -221,12 +191,11 @@ export function createAnimateLoop({
         fadeOutOcean = fadeInOcean;
         fadeInOcean = 0;
       }
-
       currentHoveredId = newHoveredId;
       if (newHoveredId >= 10000) currentHoveredOceanId = newHoveredId;
     }
 
-    // Fade updates
+    // Fade Logic
     if (currentHoveredId > 0 && currentHoveredId < 10000)
       fadeIn = Math.min(fadeIn + delta * CONFIG.fade.highlight, 1);
     if (fadeOut > 0)
@@ -237,11 +206,10 @@ export function createAnimateLoop({
     if (
       previousHoveredOceanId >= 10000 &&
       previousHoveredOceanId !== currentHoveredOceanId
-    ) {
+    )
       fadeOutOcean = Math.max(fadeOutOcean - delta * CONFIG.fade.highlight, 0);
-    }
 
-    // Label updates
+    // Label Updates
     hideAll3DLabelsExcept(
       [...selectedCountryIds, currentHoveredId].filter(
         (id) => id > 0 && id < 10000
@@ -272,7 +240,6 @@ export function createAnimateLoop({
         update3DLabel(id, rotationY, camera, selectedFadeIn[id]);
       }
     }
-
     for (const id of selectedOceanIds) {
       if (id !== currentHoveredId) {
         const ocean = CONFIG.oceanHover.oceanCenters[id];
@@ -296,7 +263,6 @@ export function createAnimateLoop({
       uniforms.selectedMask.value as DataTexture,
       delta
     );
-
     updateSelectionTexture(
       selectedOceanFadeIn,
       selectedOceanFlags,
@@ -328,5 +294,7 @@ export function createAnimateLoop({
     }
 
     renderer.render(scene, camera);
-  };
+  }
+
+  return animate;
 }

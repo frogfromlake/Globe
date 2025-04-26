@@ -22,11 +22,7 @@ import { initializeUniforms } from "../init/initializeUniforms";
 
 import { loadCountryIdMapTexture } from "../hoverLabel/countryHover";
 import { loadOceanIdMapTexture } from "../hoverLabel/oceanHover";
-import { init3DLabels } from "../hoverLabel/countryLabels3D";
-import { init3DOceanLabels } from "../hoverLabel/oceanLabel3D";
-
 import { setupGlobePointerEvents } from "../interactions/globePointerEvents";
-import { setupKeyboardControls } from "../interactions/keyboardControls";
 import { setupPointerMoveTracking } from "../interactions/pointerTracker";
 import { handleGlobeClick } from "../interactions/handleGlobeClick";
 
@@ -76,6 +72,9 @@ export async function startApp(updateSubtitle: (text: string) => void) {
     oceanData: new Uint8Array(),
   };
 
+  // === Function references for dynamic features
+  let updateKeyboard: (delta: number) => void = () => undefined;
+
   // === Pointer & Raycasting ===
   const raycaster = new Raycaster();
   const pointer = new Vector2();
@@ -104,8 +103,8 @@ export async function startApp(updateSubtitle: (text: string) => void) {
     selectedOceanFadeIn,
     selectedOceanFlags,
   } = initializeUniforms(
-    fallbackTexture, // Fallback day texture
-    fallbackTexture, // Fallback night texture
+    fallbackTexture,
+    fallbackTexture,
     countryIdMapTexture,
     oceanIdMapTexture
   );
@@ -119,47 +118,15 @@ export async function startApp(updateSubtitle: (text: string) => void) {
     oceanData: selectedOceanData,
   });
 
-  // === Load 3D Labels and Panels ===
-  await runWithLoadingMessage(loadingMessages.labels, updateSubtitle, () => {
-    init3DLabels(scene);
-    init3DOceanLabels(scene);
-  });
-  await runWithLoadingMessage(
-    loadingMessages.atmosphere,
-    updateSubtitle,
-    async () =>
-      (
-        await import("../features/news/handleNewsPanel")
-      ).initNewsPanel(selection.countryIds, selection.countryFlags)
-  );
-
-  runWithLoadingMessage(loadingMessages.final, updateSubtitle, () => {});
-
   // === Populate Scene with Core Meshes (temporary placeholder sky texture) ===
   const { globe, atmosphere, starSphere } = setupSceneObjects(
     scene,
     uniforms,
-    new Texture() // Placeholder texture
+    new Texture()
   );
   starSphere.visible = false; // Hidden until esoSkyMap is ready
 
-  // === Set Up UI & Interactions ===
-  const { getBackgroundMode } = await (
-    await import("../settings/setupSettings")
-  ).setupSettingsPanel(
-    uniforms,
-    selectedFlags,
-    selectedOceanFlags,
-    selection.countryIds,
-    selection.oceanIds,
-    globe,
-    locationSearchInput,
-    camera,
-    controls
-  );
-
-  const updateKeyboard = setupKeyboardControls(camera, controls);
-
+  // === Set Up Pointer Events ===
   setupGlobePointerEvents(renderer, globe, raycaster, pointer, camera, {
     onHover: (hit) => {
       if (!hoverReady) return;
@@ -177,74 +144,21 @@ export async function startApp(updateSubtitle: (text: string) => void) {
     },
   });
 
-  // === Boot Other Features ===
-  (await import("../features/news/setupAdminPanel")).setupAdminPanel();
-
-  // === Defer loading of heavy textures and assign to uniforms ===
-  loadVisualTextures(renderer).then(
-    ({ dayTexture, nightTexture, esoSkyMapTexture }) => {
-      // Replace the fallback day and night textures with the real ones
-      uniforms.dayTexture.value = dayTexture;
-      uniforms.nightTexture.value = nightTexture;
-
-      // Ensure globe material is updated after textures are loaded
-      if (globe.material) {
-        if (Array.isArray(globe.material)) {
-          globe.material.forEach((mat) => (mat.needsUpdate = true));
-        } else {
-          globe.material.needsUpdate = true;
-        }
-      }
-
-      // Update the star sphere material with the sky texture
-      if (
-        starSphere.material &&
-        starSphere.material instanceof ShaderMaterial
-      ) {
-        const starMaterial = starSphere.material;
-        starMaterial.uniforms.uStarMap.value = esoSkyMapTexture;
-        starMaterial.needsUpdate = true;
-      }
-
-      const starMaterial = starSphere.material as ShaderMaterial;
-      if (starMaterial) {
-        let starFade = 0;
-        let lastStarTime = performance.now();
-
-        setTimeout(() => {
-          starSphere.visible = true;
-
-          const fadeInStarSphere = (now = performance.now()) => {
-            const delta = (now - lastStarTime) / 1000;
-            lastStarTime = now;
-
-            starFade += delta * 0.1;
-            starMaterial.uniforms.uStarFade.value = Math.min(starFade, 1);
-            starMaterial.needsUpdate = true;
-
-            if (starFade < 1) requestAnimationFrame(fadeInStarSphere);
-          };
-          fadeInStarSphere();
-        }, 1500);
-      }
-
-      // === Smoothly fade in day/night textures using uTextureFade ===
-      let fade = 0;
-      let last = performance.now();
-      const fadeInTextures = (now = performance.now()) => {
-        const delta = (now - last) / 1000;
-        last = now;
-
-        fade += delta * 0.4;
-        uniforms.uTextureFade.value = Math.min(fade, 1);
-
-        if (fade < 1) requestAnimationFrame(fadeInTextures);
-      };
-      fadeInTextures();
-    }
+  // === Load Settings Panel early
+  const { setupSettingsPanel } = await import("../settings/setupSettings");
+  const { getBackgroundMode } = await setupSettingsPanel(
+    uniforms,
+    selectedFlags,
+    selectedOceanFlags,
+    selection.countryIds,
+    selection.oceanIds,
+    globe,
+    locationSearchInput,
+    camera,
+    controls
   );
 
-  // === Launch Render Loop ===
+  // === Launch Render Loop Immediately ===
   const animate = createAnimateLoop({
     globe,
     atmosphere,
@@ -267,6 +181,82 @@ export async function startApp(updateSubtitle: (text: string) => void) {
     selectedCountryIds: selection.countryIds,
     selectedOceanIds: selection.oceanIds,
   });
+
+  // === Deferred Loading for Heavy Features ===
+  setTimeout(async () => {
+    // === Load Visual Textures (day/night/sky)
+    loadVisualTextures(renderer).then(
+      ({ dayTexture, nightTexture, esoSkyMapTexture }) => {
+        uniforms.dayTexture.value = dayTexture;
+        uniforms.nightTexture.value = nightTexture;
+
+        if (globe.material) {
+          if (Array.isArray(globe.material)) {
+            globe.material.forEach((mat) => (mat.needsUpdate = true));
+          } else {
+            globe.material.needsUpdate = true;
+          }
+        }
+
+        if (starSphere.material instanceof ShaderMaterial) {
+          const starMaterial = starSphere.material;
+          starMaterial.uniforms.uStarMap.value = esoSkyMapTexture;
+          starMaterial.needsUpdate = true;
+
+          setTimeout(() => {
+            starSphere.visible = true;
+            let starFade = 0;
+            let lastStarTime = performance.now();
+            const fadeInStarSphere = (now = performance.now()) => {
+              const delta = (now - lastStarTime) / 1000;
+              lastStarTime = now;
+              starFade += delta * 0.1;
+              starMaterial.uniforms.uStarFade.value = Math.min(starFade, 1);
+              starMaterial.needsUpdate = true;
+              if (starFade < 1) requestAnimationFrame(fadeInStarSphere);
+            };
+            fadeInStarSphere();
+          }, 1500);
+        }
+
+        let fade = 0;
+        let last = performance.now();
+        const fadeInTextures = (now = performance.now()) => {
+          const delta = (now - last) / 1000;
+          last = now;
+          fade += delta * 0.4;
+          uniforms.uTextureFade.value = Math.min(fade, 1);
+          if (fade < 1) requestAnimationFrame(fadeInTextures);
+        };
+        fadeInTextures();
+      }
+    );
+
+    // === Load 3D Labels
+    const { init3DLabels } = await import("../hoverLabel/countryLabels3D");
+    const { init3DOceanLabels } = await import("../hoverLabel/oceanLabel3D");
+    init3DLabels(scene);
+    init3DOceanLabels(scene);
+
+    // FIX NEEDED FOR AWAIT
+    // === Load News Panel
+    const { initNewsPanel } = await import("../features/news/handleNewsPanel");
+    await initNewsPanel(selection.countryIds, selection.countryFlags);
+
+    // === Load Keyboard Controls
+    const { setupKeyboardControls } = await import(
+      "../interactions/keyboardControls"
+    );
+    updateKeyboard = setupKeyboardControls(camera, controls);
+
+    // === Load Admin Panel only in development
+    if (import.meta.env.DEV) {
+      const { setupAdminPanel } = await import(
+        "../features/news/setupAdminPanel"
+      );
+      setupAdminPanel();
+    }
+  }, 0); // after one tick
 
   // === Expose startHoverSystem for main.ts to call after loading screen
   const startHoverSystem = async () => {
