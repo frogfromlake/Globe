@@ -4,8 +4,7 @@
  * such as flashlight mode, country/ocean interactivity, label clearing, and star background modes.
  */
 
-import * as THREE from "three";
-const { OrbitControls } = await import('three/examples/jsm/controls/OrbitControls');
+import { Scene, Mesh, PerspectiveCamera } from "three";
 import { interactionState } from "../state/interactionState";
 import { clearAllSelections } from "./clearSelections";
 import {
@@ -16,6 +15,9 @@ import { setupUserLocation } from "./showUserLocation";
 import { setupLocationSearch } from "./locationSearch";
 import { hideAll3DLabelsExcept } from "../hoverLabel/countryLabels3D";
 import { hideAll3DOceanLabels } from "../hoverLabel/oceanLabel3D";
+import type { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
+
+let OrbitControlsClass: typeof import("three/examples/jsm/controls/OrbitControls").OrbitControls;
 
 /**
  * Initializes all interactive settings buttons and handlers for the user settings panel.
@@ -32,18 +34,22 @@ import { hideAll3DOceanLabels } from "../hoverLabel/oceanLabel3D";
  * @param controls - OrbitControls instance.
  * @returns An object with a `getBackgroundMode()` function to query background state.
  */
-export function setupSettingsPanel(
+export async function setupSettingsPanel(
   uniforms: { [key: string]: any },
   selectedFlags: Uint8Array,
   selectedOceanFlags: Uint8Array,
   selectedCountryIds: Set<number>,
   selectedOceanIds: Set<number>,
-  scene: THREE.Scene,
-  globe: THREE.Mesh,
+  globe: Mesh,
   locationSearchInput: HTMLInputElement,
-  camera: THREE.PerspectiveCamera,
-  controls: typeof OrbitControls
+  camera: PerspectiveCamera,
+  controls: OrbitControls
 ) {
+  if (!OrbitControlsClass) {
+    const module = await import("three/examples/jsm/controls/OrbitControls");
+    OrbitControlsClass = module.OrbitControls;
+  }
+
   let useFixedBackground = false;
 
   // Initial scene setup

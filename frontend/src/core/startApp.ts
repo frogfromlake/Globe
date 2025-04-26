@@ -36,10 +36,6 @@ import {
   loadingMessages,
   runWithLoadingMessage,
 } from "../scene/showLoadingScreen";
-
-// import { setupSettingsPanel } from "../settings/setupSettings";
-// import { initNewsPanel } from "../features/news/handleNewsPanel";
-// import { setupAdminPanel } from "../features/news/setupAdminPanel";
 import {
   loadCoreTextures,
   loadVisualTextures,
@@ -88,7 +84,7 @@ export async function startApp(updateSubtitle: (text: string) => void) {
   // === Core Three.js Setup ===
   const camera = initializeCamera();
   const renderer = initializeRenderer(camera);
-  const { scene, controls } = initializeScene(camera, renderer);
+  const { scene, controls } = await initializeScene(camera, renderer);
 
   // === Load UI element reference
   const locationSearchInput = document.getElementById(
@@ -156,7 +152,6 @@ export async function startApp(updateSubtitle: (text: string) => void) {
     selectedOceanFlags,
     selection.countryIds,
     selection.oceanIds,
-    scene,
     globe,
     locationSearchInput,
     camera,

@@ -9,9 +9,6 @@ import {
   PerspectiveCamera,
   WebGLRenderer,
 } from "three";
-const { OrbitControls } = await import(
-  "three/examples/jsm/controls/OrbitControls"
-);
 
 import { CONFIG } from "../configs/config";
 
@@ -20,12 +17,17 @@ import { CONFIG } from "../configs/config";
  *
  * @param camera - The main perspective camera used for rendering the scene.
  * @param renderer - The WebGLRenderer instance used to attach controls.
- * @returns An object containing the configured scene and OrbitControls.
+ * @returns A Promise resolving to an object containing the configured scene and OrbitControls.
  */
-export function initializeScene(
+export async function initializeScene(
   camera: PerspectiveCamera,
   renderer: WebGLRenderer
 ) {
+  // Dynamically import OrbitControls only when needed
+  const { OrbitControls } = await import(
+    "three/examples/jsm/controls/OrbitControls"
+  );
+
   // Create the main scene
   const scene = new Scene();
 
