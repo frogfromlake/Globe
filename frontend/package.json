@@ -8,8 +8,8 @@
     "build": "vite build",
     "preview": "vite preview",
     "analyze": "vite build",
-    "generate:rgbmap": "tsx src/dev/generateRgbMap.ts",
-    "generate:oceanrgbmap": "tsx src/dev/generateOceanRgbMap.ts",
+    "generate:crgbmap": "tsx src/dev/generateCountryIdMapRgb.ts",
+    "generate:orgbmap": "tsx src/dev/generateOceanIdMapPacked.ts",
     "generate:oceancentroids": "tsx src/dev/generateOceanCenters.ts",
     "generate:countryData": "tsx src/dev/generateCountryMeta.ts"
   },

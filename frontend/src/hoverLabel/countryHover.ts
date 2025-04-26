@@ -36,7 +36,8 @@ export function getCountryIdAtUV(uv: Vector2): number {
   const y = Math.floor((1.0 - uv.y) * countryIdMapCanvas.height);
   const pixel = countryIdCtx.getImageData(x, y, 1, 1).data;
 
-  return (pixel[0] << 16) | (pixel[1] << 8) | pixel[2];
+  const id = pixel[0]; // 8-bit grayscale ID (0-255)
+  return id;
 }
 
 /**
@@ -45,12 +46,14 @@ export function getCountryIdAtUV(uv: Vector2): number {
 export async function loadCountryIdMapTexture(): Promise<void> {
   await new Promise<void>((resolve) => {
     const image = new Image();
-    image.src = CONFIG.countryHover.idMapPath;
+    image.src = CONFIG.textures.countryIdMapPath;
     image.onload = () => {
       countryIdMapCanvas = document.createElement("canvas");
       countryIdMapCanvas.width = image.width;
       countryIdMapCanvas.height = image.height;
-      countryIdCtx = countryIdMapCanvas.getContext("2d", { willReadFrequently: true });
+      countryIdCtx = countryIdMapCanvas.getContext("2d", {
+        willReadFrequently: true,
+      });
       countryIdCtx?.drawImage(image, 0, 0);
       imageLoaded = true;
       resolve();

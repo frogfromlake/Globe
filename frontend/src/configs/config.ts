@@ -165,7 +165,7 @@ export const CONFIG = {
     /** Path to the night-side Earth texture */
     nightMapPath: "/textures/earth_night_8k.webp",
     /** Path to the RGB-encoded country ID map */
-    countryIdMapPath: "/textures/country_id_map_8k_rgb.png",
+    countryIdMapPath: "/textures/country_id_map_8k_gray.png",
     /** Path to the RGB-encoded ocean ID map */
     oceanIdMapPath: "/textures/ocean_id_map_8k_rgb.png",
     /** Path to the eso sky map */
@@ -247,11 +247,8 @@ export const CONFIG = {
   countryHover: {
     /** Precomputed geographic center coordinates for each country ID */
     countryCenters: countryMeta,
-
-    /** Path to the RGB-encoded country ID map image */
-    idMapPath: "textures/country_id_map_8k_rgb.png",
     /** Maximum number of countries supported for selection */
-    maxCountryCount: 2048,
+    maxCountryCount: 242,
     /** Texture settings for country selection DataTexture */
     selectionTexture: {
       minFilter: NearestFilter,

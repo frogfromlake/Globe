@@ -10,6 +10,7 @@ import { getCountryIdAtUV } from "../hoverLabel/countryHover";
 import { getOceanIdAtUV } from "../hoverLabel/oceanHover";
 import { oceanIdToIndex } from "../utils/oceanIdToIndex";
 import { countryMeta } from "../data/countryMeta";
+import { CONFIG } from "../configs/config";
 
 /**
  * Dynamically loads and shows news for a country by ISO code.
@@ -24,8 +25,6 @@ async function showNewsForCountry(isoCode: string) {
 async function hideNews() {
   (await import("../features/news/handleNewsPanel")).hideNewsPanel();
 }
-
-let lastOpenedCountryId: number | null = null;
 
 /**
  * Handles a click event on the globe, determining whether a country or ocean was selected.
@@ -56,30 +55,26 @@ export function handleGlobeClick(
     : -1;
 
   // === Country selection logic ===
-  if (clickedCountryId > 0 && clickedCountryId < selectedFlags.length) {
+  if (
+    clickedCountryId > 0 &&
+    clickedCountryId <= CONFIG.countryHover.maxCountryCount
+  ) {
     const isAlreadySelected = selectedCountryIds.has(clickedCountryId);
 
     if (isAlreadySelected) {
       selectedCountryIds.delete(clickedCountryId);
-      selectedFlags[clickedCountryId] = 0;
-
-      if (lastOpenedCountryId === clickedCountryId) {
-        hideNews();
-        lastOpenedCountryId = null;
-      }
-
-      return; // Prevent re-showing on deselect
+      selectedFlags[clickedCountryId - 1] = 0;
+      hideNews();
+      return;
     }
 
-    // New country selection
     selectedCountryIds.add(clickedCountryId);
-    selectedFlags[clickedCountryId] = 1;
-    interactionState.lastOpenedCountryId = clickedCountryId;
+    selectedFlags[clickedCountryId - 1] = 1;
+    interactionState.lastOpenedCountryId = clickedCountryId - 1;
 
     const isoCode = countryMeta[clickedCountryId]?.iso;
     if (isoCode) {
       showNewsForCountry(isoCode);
-      lastOpenedCountryId = clickedCountryId;
     } else {
       console.warn(`No ISO code found for country ID: ${clickedCountryId}`);
     }

@@ -26,7 +26,7 @@ type LabelObject = {
   group: Group;
 };
 
-const labelObjectsOcean = new Map<string, LabelObject>();
+const labelObjectsOcean = new Map<number, LabelObject>();
 const labelGroup = new Group();
 
 /**
@@ -49,6 +49,7 @@ export function init3DOceanLabels(scene: Scene): void {
  * @param fade - Alpha fade (0 to 1) for the label and its connector line.
  */
 export async function update3DOceanLabel(
+  oceanId: number,
   name: string,
   lat: number,
   lon: number,
@@ -56,8 +57,8 @@ export async function update3DOceanLabel(
   camera: Camera,
   fade: number
 ): Promise<void> {
-  if (!labelObjectsOcean.has(name)) {
-    const sprite = await createTextSprite(name, true); // Pass true for ocean
+  if (!labelObjectsOcean.has(oceanId)) {
+    const sprite = await createTextSprite(name, true);
 
     const geometry = new LineGeometry();
     geometry.setPositions([0, 0, 0, 0, 0, 0]);
@@ -70,15 +71,14 @@ export async function update3DOceanLabel(
     group.add(sprite);
     group.add(line as unknown as Object3D);
 
-    // ✅ Enforce render order for correct depth sorting
     line.renderOrder = 0;
     sprite.renderOrder = 1;
 
     labelGroup.add(group);
-    labelObjectsOcean.set(name, { sprite, line, group });
+    labelObjectsOcean.set(oceanId, { sprite, line, group });
   }
 
-  const { sprite, line, group } = labelObjectsOcean.get(name)!;
+  const { sprite, line, group } = labelObjectsOcean.get(oceanId)!;
 
   const { phi, theta, radius } = latLonToSphericalCoordsGeographic(
     lat,
@@ -154,5 +154,11 @@ export async function update3DOceanLabel(
 export function hideAll3DOceanLabels(): void {
   for (const { group } of labelObjectsOcean.values()) {
     group.visible = false;
+  }
+}
+
+export function hideAll3DOceanLabelsExcept(idsToKeep: number[] = []) {
+  for (const [id, { group }] of labelObjectsOcean.entries()) {
+    group.visible = idsToKeep.includes(id);
   }
 }

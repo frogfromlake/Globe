@@ -30,6 +30,8 @@ export interface GlobeUniforms {
   uTextureFade: IUniform<number>;
   uStarFade: IUniform<number>;
   uTimeStars: IUniform<number>;
+  uCountryCount: IUniform<number>;
+  uOceanCount: IUniform<number>;
 
   /** Dynamic uniform extension point */
   [uniform: string]: IUniform<any>;

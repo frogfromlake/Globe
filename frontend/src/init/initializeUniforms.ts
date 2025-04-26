@@ -26,6 +26,9 @@ export function initializeUniforms(
   oceanIdMapTexture: Texture
 ) {
   // === Selection Textures and Buffers ===
+  const countryCount = Object.keys(CONFIG.countryHover.countryCenters).length;
+  const oceanCount = Object.keys(CONFIG.oceanHover.oceanCenters).length;
+
   const selectedCountryMask = createSelectionTexture();
   const selectedOceanMask = createSelectionOceanTexture();
 
@@ -111,6 +114,8 @@ export function initializeUniforms(
     uTextureFade: { value: 0.0 },
     uStarFade: { value: 0.0 },
     uTimeStars: { value: 0 },
+    uCountryCount: { value: countryCount },
+    uOceanCount: { value: oceanCount },
   };
 
   return {

@@ -22,6 +22,7 @@ import {
 import {
   update3DOceanLabel,
   hideAll3DOceanLabels,
+  hideAll3DOceanLabelsExcept,
 } from "../hoverLabel/oceanLabel3D";
 import { oceanIdToIndex } from "../utils/oceanIdToIndex";
 import { interactionState } from "../state/interactionState";
@@ -196,13 +197,17 @@ export function createAnimateLoop({
     }
 
     // Fade Logic
-    if (currentHoveredId > 0 && currentHoveredId < 10000)
+    if (currentHoveredId > 0 && currentHoveredId < 10000) {
       fadeIn = Math.min(fadeIn + delta * CONFIG.fade.highlight, 1);
-    if (fadeOut > 0)
+    }
+    if (fadeOut > 0) {
       fadeOut = Math.max(fadeOut - delta * CONFIG.fade.highlight, 0);
+    }
 
-    if (currentHoveredId >= 10000)
+    if (currentHoveredId >= 10000) {
       fadeInOcean = Math.min(fadeInOcean + delta * CONFIG.fade.highlight, 1);
+    }
+
     if (
       previousHoveredOceanId >= 10000 &&
       previousHoveredOceanId !== currentHoveredOceanId
@@ -215,16 +220,26 @@ export function createAnimateLoop({
         (id) => id > 0 && id < 10000
       )
     );
-    hideAll3DOceanLabels();
+    hideAll3DOceanLabelsExcept(
+      [...selectedOceanIds, currentHoveredId].filter((id) => id >= 10000)
+    );
 
     const rotationY = getEarthRotationAngle();
 
-    if (currentHoveredId > 0 && currentHoveredId < 10000) {
+    if (
+      currentHoveredId > 0 &&
+      currentHoveredId < 10000 &&
+      !selectedCountryIds.has(currentHoveredId)
+    ) {
       update3DLabel(currentHoveredId, rotationY, camera, fadeIn);
-    } else if (currentHoveredId >= 10000) {
+    } else if (
+      currentHoveredId >= 10000 &&
+      !selectedOceanIds.has(currentHoveredId)
+    ) {
       const ocean = CONFIG.oceanHover.oceanCenters[currentHoveredId];
       if (ocean) {
         update3DOceanLabel(
+          currentHoveredId,
           ocean.name,
           ocean.lat,
           ocean.lon,
@@ -235,16 +250,12 @@ export function createAnimateLoop({
       }
     }
 
-    for (const id of selectedCountryIds) {
-      if (id !== currentHoveredId) {
-        update3DLabel(id, rotationY, camera, selectedFadeIn[id]);
-      }
-    }
     for (const id of selectedOceanIds) {
       if (id !== currentHoveredId) {
         const ocean = CONFIG.oceanHover.oceanCenters[id];
         if (ocean) {
           update3DOceanLabel(
+            id,
             ocean.name,
             ocean.lat,
             ocean.lon,

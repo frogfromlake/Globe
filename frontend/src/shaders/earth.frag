@@ -23,6 +23,8 @@ uniform float cursorGlowStrength;                // The strength of the cursor's
 uniform float cursorGlowRadius;                  // The radius within which the cursor will cause a glow effect.
 uniform float nightBrightness;                   // The brightness of the night side of the globe.
 uniform float uTextureFade;
+uniform float uCountryCount;                     // Number of countries in the selectedMask texture
+uniform float uOceanCount;                       // Number of oceans in the selectedOceanMask texture
 
 uniform vec3 lightDirection;                     // The direction of the sunlight, used to simulate day/night transitions.
 uniform vec3 cameraDirection;                    // The direction from the camera to the Earth, used for lighting and view-dependent effects.
@@ -146,13 +148,11 @@ void main() {
     vec2 flippedUv = vec2(vUv.x, 1.0 - vUv.y);
     
     // Sample the country ID map.
-    vec3 countryRGB = texture2D(countryIdMap, flippedUv).rgb; 
+    float countryIdValue = texture2D(countryIdMap, flippedUv).r * 255.0;
     
     // Sample the ocean ID map.
-    vec3 oceanRGB = texture2D(oceanIdMap, vUv).rgb; 
-
+    vec3 oceanRGB = texture2D(oceanIdMap, vUv).rgb;
     // Convert the RGB values to their corresponding ID values.
-    float countryIdValue = countryRGB.r * 255.0 * 65536.0 + countryRGB.g * 255.0 * 256.0 + countryRGB.b * 255.0;
     float oceanIdValue = oceanRGB.r * 255.0 * 65536.0 + oceanRGB.g * 255.0 * 256.0 + oceanRGB.b * 255.0;
 
     // === Hover, Previous, and Selection Effects ===
@@ -218,15 +218,15 @@ void main() {
     }
 
     // === Selection Effects for Highlighted Countries and Oceans ===
-    
+    // Grayscale country IDs range 0–242:
     // Clamp the country ID for selection texture lookup.
-    float selectedIndex = clamp(countryIdValue, 0.0, 2047.0);                       
-    
+    float selectedIndex = clamp(countryIdValue - 1.0, 0.0, 241.0);
+
     // Calculate the UV coordinates for the selected country mask.
-    vec2 selectedUV = vec2((selectedIndex + 0.5) / 2048.0, 0.5);                     
+    vec2 selectedUV = vec2((selectedIndex + 0.5) / uCountryCount, 0.5);
     
     // Sample the selected mask.
-    float selected = texture2D(selectedMask, selectedUV).r;                         
+    float selected = texture2D(selectedMask, selectedUV).r;
     bool isSelected = selected > 0.5;
 
     if (isSelected) {
@@ -238,6 +238,7 @@ void main() {
     }
 
     // Clamp the ocean ID for selection texture lookup.
+    // RGB ocean IDs range 10000–10305:
     float oceanIndex = clamp(oceanIdValue - 10000.0, 0.0, 2047.0);                  
     
     // Calculate the UV coordinates for the selected ocean mask.

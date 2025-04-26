@@ -238,10 +238,9 @@ export async function startApp(updateSubtitle: (text: string) => void) {
     init3DLabels(scene);
     init3DOceanLabels(scene);
 
-    // FIX NEEDED FOR AWAIT
     // === Load News Panel
     const { initNewsPanel } = await import("../features/news/handleNewsPanel");
-    await initNewsPanel(selection.countryIds, selection.countryFlags);
+    initNewsPanel(selection.countryIds, selection.countryFlags);
 
     // === Load Keyboard Controls
     const { setupKeyboardControls } = await import(

@@ -212,17 +212,6 @@ export async function update3DLabel(
 }
 
 /**
- * Hides the label group associated with a specific country ID.
- * Typically used when a country is deselected.
- *
- * @param countryId - The ID of the country label to hide.
- */
-export function hide3DLabel(countryId: number): void {
-  const label = labelObjects.get(countryId);
-  if (label) label.group.visible = false;
-}
-
-/**
  * Hides all country labels except those in the specified list of IDs.
  *
  * @param idsToKeep - An array of country IDs whose labels should remain visible.

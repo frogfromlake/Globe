@@ -18,10 +18,7 @@ import { CONFIG } from "../configs/config";
  * Apply standard filtering and anisotropy to base map textures.
  * Used for visuals like day and night Earth textures.
  */
-const applyBaseMapSettings = (
-  texture: Texture,
-  renderer: WebGLRenderer
-) => {
+const applyBaseMapSettings = (texture: Texture, renderer: WebGLRenderer) => {
   texture.minFilter = CONFIG.textures.minFilter;
   texture.magFilter = CONFIG.textures.magFilter;
   texture.anisotropy = Math.min(
@@ -77,7 +74,6 @@ export async function loadCoreTextures() {
  */
 export async function loadVisualTextures(renderer: WebGLRenderer) {
   const loader = new TextureLoader();
-  const startTime = performance.now();
 
   const [dayTexture, nightTexture, esoSkyMapTexture] = await Promise.all([
     loader.loadAsync(CONFIG.textures.dayMapPath).then((t) => {
