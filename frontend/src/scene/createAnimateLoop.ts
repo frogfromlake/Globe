@@ -177,23 +177,35 @@ export function createAnimateLoop({
 
       if (countryResult.id > 0) {
         newHoveredId = countryResult.id;
+        currentHoveredOceanId = -1;
       } else if (oceanResult.id >= 10000) {
         newHoveredId = oceanResult.id;
+        currentHoveredOceanId = oceanResult.id;
+      } else {
+        newHoveredId = -1;
+        currentHoveredOceanId = -1;
       }
     }
 
+    // --- Hover State Transitions ---
     if (newHoveredId !== currentHoveredId) {
-      if (newHoveredId < 10000) {
+      // Save previous hovered
+      if (currentHoveredId > 0 && currentHoveredId < 10000) {
         previousHoveredId = currentHoveredId;
         fadeOut = fadeIn;
         fadeIn = 0;
-      } else {
-        previousHoveredOceanId = currentHoveredOceanId;
+        previousHoveredOceanId = 0;
+        fadeOutOcean = 0;
+      } else if (currentHoveredId >= 10000) {
+        previousHoveredOceanId = currentHoveredId;
         fadeOutOcean = fadeInOcean;
         fadeInOcean = 0;
+        previousHoveredId = 0;
+        fadeOut = 0;
       }
+
+      // Update current hovered
       currentHoveredId = newHoveredId;
-      if (newHoveredId >= 10000) currentHoveredOceanId = newHoveredId;
     }
 
     // Fade Logic
