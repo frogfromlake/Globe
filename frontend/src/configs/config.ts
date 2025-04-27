@@ -133,9 +133,9 @@ export const CONFIG = {
   /** Speeds for highlight and selection fade effects */
   fade: {
     /** Speed at which hover highlights fade in and out */
-    highlight: 2.5,
+    highlight: 4.0,
     /** Speed at which selected countries fade in and out */
-    selection: 2.5,
+    selection: 4.5,
   },
 
   /** Texture settings for selection highlight */

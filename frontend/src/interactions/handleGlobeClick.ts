@@ -70,7 +70,7 @@ export function handleGlobeClick(
 
     selectedCountryIds.add(clickedCountryId);
     selectedFlags[clickedCountryId - 1] = 1;
-    interactionState.lastOpenedCountryId = clickedCountryId - 1;
+    interactionState.lastOpenedCountryId = clickedCountryId;
 
     const isoCode = countryMeta[clickedCountryId]?.iso;
     if (isoCode) {

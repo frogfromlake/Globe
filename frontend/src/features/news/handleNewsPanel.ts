@@ -6,6 +6,7 @@
 
 import { countryMeta } from "../../data/countryMeta";
 import { interactionState } from "../../state/interactionState";
+import { hideAll3DLabelsExcept } from "../../hoverLabel/countryLabels3D";
 
 let isFetchingNews = false;
 const initialTop = 20;
@@ -28,7 +29,7 @@ export function initNewsPanel(
     const lastId = interactionState.lastOpenedCountryId;
     if (lastId !== null) {
       selectedCountryIds.delete(lastId);
-      selectedFlags[lastId] = 0;
+      selectedFlags[lastId - 1] = 0;
       interactionState.lastOpenedCountryId = null;
     }
   };
