@@ -255,14 +255,16 @@ void main() {
     }
 
     // === Flashlight Effect ===
-    if (uFlashlightEnabled && uCursorOnGlobe) {
-        // Simulate a flashlight effect based on the cursor's position on the globe.
-        float cursorDistance = distance(normalize(vWorldNormal), normalize(cursorWorldPos));
+    if (uFlashlightEnabled) {
+        vec3 normalizedCursor = normalize(cursorWorldPos);
+        vec3 normalizedFrag = normalize(vWorldNormal);
+
+        float cursorDistance = distance(normalizedFrag, normalizedCursor);
         float glowFalloff = smoothstep(cursorGlowRadius, 0.0, cursorDistance);
         float nightFactor = 1.0 - sharpened;
 
-        vec3 cursorGlowColor = vec3(0.65, 0.74, 1.0); // The color of the cursor's glow (light blue).
-        finalColor += cursorGlowColor * glowFalloff * nightFactor * cursorGlowStrength; // Add the glow effect based on the cursor's position.
+        vec3 cursorGlowColor = vec3(0.65, 0.74, 1.0);
+        finalColor += cursorGlowColor * glowFalloff * nightFactor * cursorGlowStrength;
     }
 
     // Final output color.

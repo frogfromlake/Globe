@@ -13,6 +13,7 @@ import {
   Vector2,
   Texture,
   ShaderMaterial,
+  Vector3,
 } from "three";
 
 import { initializeCamera } from "../init/initializeCamera";
@@ -129,8 +130,18 @@ export async function startApp(updateSubtitle: (text: string) => void) {
   // === Set Up Pointer Events ===
   setupGlobePointerEvents(renderer, globe, raycaster, pointer, camera, {
     onHover: (hit) => {
-      if (!hoverReady) return;
-      uniforms.cursorWorldPos.value.copy(hit.point.clone().normalize());
+      if (hit && hit.point) {
+        uniforms.uCursorOnGlobe.value = true;
+        uniforms.cursorWorldPos.value.copy(hit.point.normalize());
+      } else {
+        // 🔵 If no hit, approximate by using camera direction + pointer
+        const direction = new Vector3(pointer.x, pointer.y, 0.5)
+          .unproject(camera)
+          .sub(camera.position)
+          .normalize();
+        uniforms.uCursorOnGlobe.value = false; // cursor is not *on* globe
+        uniforms.cursorWorldPos.value.copy(direction);
+      }
     },
     onClick: (hit) => {
       if (!hoverReady) return;
