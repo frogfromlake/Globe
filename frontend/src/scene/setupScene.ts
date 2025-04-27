@@ -1,19 +1,16 @@
-/**
- * @file setupScene.ts
- * @description Defines and adds the globe, atmosphere, and star background objects to the js scene.
- */
-
 import {
   Scene,
   SphereGeometry,
   ShaderMaterial,
   Mesh,
+  MeshBasicMaterial,
   Vector3,
   RepeatWrapping,
   BackSide,
   AdditiveBlending,
   Texture,
-} from "three";
+} from "three"; // <== Add MeshBasicMaterial import
+
 import { CONFIG } from "../configs/config";
 import { createStarMaterial } from "../materials/starMaterials";
 import {
@@ -24,12 +21,12 @@ import {
 } from "../shaders/earthShaders";
 
 /**
- * Initializes and adds the main 3D globe, its atmosphere layer, and the surrounding star background to the scene.
+ * Initializes and adds the main 3D globe, its atmosphere layer, star background, and raycast helper.
  *
  * @param scene - The Three.js scene to which objects will be added.
- * @param uniforms - Uniforms shared between shaders and the rendering pipeline (used for the globe).
+ * @param uniforms - Uniforms shared between shaders and rendering pipeline.
  * @param esoSkyMapTexture - High-res star map texture for the star sphere background.
- * @returns An object containing the created globe, atmosphere, and star sphere meshes.
+ * @returns An object containing created globe, atmosphere, star sphere, and raycast helper mesh.
  */
 export function setupSceneObjects(
   scene: Scene,
@@ -39,6 +36,7 @@ export function setupSceneObjects(
   globe: Mesh;
   atmosphere: Mesh;
   starSphere: Mesh;
+  globeRaycastMesh: Mesh;
 } {
   // === Globe (Earth) ===
   const globeGeometry = new SphereGeometry(
@@ -58,7 +56,6 @@ export function setupSceneObjects(
 
   // === Atmosphere ===
   const atmosphereRadius = CONFIG.globe.radius * 1.027;
-
   const atmosphereGeometry = new SphereGeometry(atmosphereRadius, 128, 128);
   const atmosphereMaterial = new ShaderMaterial({
     vertexShader: atmosphereVertexShader,
@@ -72,7 +69,6 @@ export function setupSceneObjects(
       uLightDirection: { value: new Vector3(1, 0, 0) },
     },
   });
-
   const atmosphere = new Mesh(atmosphereGeometry, atmosphereMaterial);
   scene.add(atmosphere);
 
@@ -88,15 +84,24 @@ export function setupSceneObjects(
   );
 
   const starMaterial = createStarMaterial(esoSkyMapTexture, uniforms);
-
   const starSphere = new Mesh(starSphereGeometry, starMaterial);
-
-  // Explicit render order
   starSphere.renderOrder = -1;
   atmosphere.renderOrder = 0;
   globe.renderOrder = 1;
-
   scene.add(starSphere);
 
-  return { globe, atmosphere, starSphere };
+  // === Invisible Raycast Globe ===
+  const globeRaycastGeometry = new SphereGeometry(
+    CONFIG.globe.radius * 1.01, // Slightly bigger
+    32, // Fewer segments
+    32
+  );
+
+  const globeRaycastMesh = new Mesh(
+    globeRaycastGeometry,
+    new MeshBasicMaterial({ visible: false })
+  );
+  scene.add(globeRaycastMesh);
+
+  return { globe, atmosphere, starSphere, globeRaycastMesh };
 }

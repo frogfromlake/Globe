@@ -9,6 +9,7 @@ import {
   Vector3,
   MathUtils,
   DataTexture,
+  Intersection,
 } from "three";
 
 import { CONFIG } from "../configs/config";
@@ -21,7 +22,6 @@ import {
 } from "../hoverLabel/countryLabels3D";
 import {
   update3DOceanLabel,
-  hideAll3DOceanLabels,
   hideAll3DOceanLabelsExcept,
 } from "../hoverLabel/oceanLabel3D";
 import { oceanIdToIndex } from "../utils/oceanIdToIndex";
@@ -32,6 +32,7 @@ interface AnimateParams {
   globe: Mesh;
   atmosphere: Mesh;
   starSphere: Mesh;
+  globeRaycastMesh: Mesh;
   uniforms: { [key: string]: any };
   camera: PerspectiveCamera;
   controls: any;
@@ -55,6 +56,7 @@ export function createAnimateLoop({
   globe,
   atmosphere,
   starSphere,
+  globeRaycastMesh,
   uniforms,
   camera,
   controls,
@@ -82,6 +84,10 @@ export function createAnimateLoop({
   let currentHoveredOceanId = -1,
     previousHoveredOceanId = -1;
   let lastFrameTime = performance.now();
+
+  let lastRaycastTime = 0;
+  const raycastInterval = 100; // Milliseconds between raycasts
+  let currentUV: Vector2 | null = null;
 
   const atmosphereMaterial = atmosphere.material as ShaderMaterial;
   const zoomRange = CONFIG.zoom.max - CONFIG.zoom.min;
@@ -113,13 +119,33 @@ export function createAnimateLoop({
     uniforms.uTime.value = now / 1000;
     uniforms.uTimeStars.value = uniforms.uTime.value;
 
-    // Hover detection
     let globeIntersection: Vector3 | null = null;
-    if (userHasMovedPointer()) {
+    let globeHit: Intersection | null = null;
+
+    // Only raycast every 'raycastInterval' ms
+    if (userHasMovedPointer() && now - lastRaycastTime > raycastInterval) {
+      lastRaycastTime = now;
       raycaster.setFromCamera(pointer, camera);
-      const hits = raycaster.intersectObject(globe);
+      const hits = raycaster.intersectObject(globeRaycastMesh);
       if (hits.length > 0) {
-        globeIntersection = hits[0].point.clone().normalize();
+        const hitPoint = hits[0].point.clone().normalize();
+        globeHit = hits[0];
+        globeIntersection = hitPoint;
+
+        const longitude = Math.atan2(hitPoint.z, hitPoint.x);
+        const latitude = Math.asin(hitPoint.y);
+
+        const u = MathUtils.euclideanModulo(
+          0.5 - longitude / (2.0 * Math.PI) + 0.125,
+          1.0
+        );
+        const v = MathUtils.clamp(0.5 + latitude / Math.PI, 0, 1);
+
+        currentUV = new Vector2(u, v);
+      } else {
+        globeHit = null;
+        globeIntersection = null;
+        currentUV = null;
       }
     }
 
@@ -157,22 +183,21 @@ export function createAnimateLoop({
 
     // Country / Ocean Hover Updates
     let newHoveredId = -1;
-    if (userHasMovedPointer()) {
+    if (userHasMovedPointer() && currentUV) {
       type HoverResult = { id: number; position: Vector3 | null };
       let countryResult: HoverResult = { id: -1, position: null };
       let oceanResult: HoverResult = { id: -1, position: null };
 
-      if (interactionState.countryEnabled) {
-        countryResult = updateHoveredCountry(
-          raycaster,
-          pointer,
-          camera,
-          globe,
-          globe.material as ShaderMaterial
-        );
-      }
-      if (interactionState.oceanEnabled) {
-        oceanResult = updateHoveredOcean(raycaster, pointer, camera, globe);
+      if (currentUV) {
+        if (interactionState.countryEnabled) {
+          countryResult = updateHoveredCountry(
+            currentUV,
+            globe.material as ShaderMaterial
+          );
+        }
+        if (interactionState.oceanEnabled) {
+          oceanResult = updateHoveredOcean(currentUV);
+        }
       }
 
       if (countryResult.id > 0) {
@@ -189,7 +214,6 @@ export function createAnimateLoop({
 
     // --- Hover State Transitions ---
     if (newHoveredId !== currentHoveredId) {
-      // Save previous hovered
       if (currentHoveredId > 0 && currentHoveredId < 10000) {
         previousHoveredId = currentHoveredId;
         fadeOut = fadeIn;
@@ -203,9 +227,12 @@ export function createAnimateLoop({
         previousHoveredId = 0;
         fadeOut = 0;
       }
-
-      // Update current hovered
       currentHoveredId = newHoveredId;
+
+      uniforms.hoveredCountryId.value =
+        currentHoveredId > 0 && currentHoveredId < 10000 ? currentHoveredId : 0;
+      uniforms.hoveredOceanId.value =
+        currentHoveredId >= 10000 ? currentHoveredId : 0;
     }
 
     // Fade Logic
@@ -215,16 +242,15 @@ export function createAnimateLoop({
     if (fadeOut > 0) {
       fadeOut = Math.max(fadeOut - delta * CONFIG.fade.highlight, 0);
     }
-
     if (currentHoveredId >= 10000) {
       fadeInOcean = Math.min(fadeInOcean + delta * CONFIG.fade.highlight, 1);
     }
-
     if (
       previousHoveredOceanId >= 10000 &&
       previousHoveredOceanId !== currentHoveredOceanId
-    )
+    ) {
       fadeOutOcean = Math.max(fadeOutOcean - delta * CONFIG.fade.highlight, 0);
+    }
 
     // Label Updates
     hideAll3DLabelsExcept(

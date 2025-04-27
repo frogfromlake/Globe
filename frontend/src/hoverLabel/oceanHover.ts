@@ -1,9 +1,3 @@
-/**
- * oceanHover.ts
- * Provides ocean hover detection, ocean ID retrieval via RGB-encoded ID textures,
- * and setup for GLSL-compatible selection texture used in ocean highlighting.
- */
-
 import {
   Vector2,
   Raycaster,
@@ -13,12 +7,14 @@ import {
   DataTexture,
   RedFormat,
   UnsignedByteType,
+  Intersection,
 } from "three";
 import { CONFIG } from "../configs/config";
 
 // Internal state for ocean ID map decoding via canvas
 let oceanIdMapCanvas: HTMLCanvasElement | null = null;
 let oceanIdCtx: CanvasRenderingContext2D | null = null;
+let oceanIdPixelData: Uint8ClampedArray | null = null;
 let oceanImageLoaded = false;
 
 /**
@@ -36,6 +32,18 @@ export async function loadOceanIdMapTexture(): Promise<void> {
         willReadFrequently: true,
       });
       oceanIdCtx?.drawImage(image, 0, 0);
+
+      // Grab pixel data once
+      const imageData = oceanIdCtx?.getImageData(
+        0,
+        0,
+        oceanIdMapCanvas.width,
+        oceanIdMapCanvas.height
+      );
+      if (imageData) {
+        oceanIdPixelData = imageData.data;
+      }
+
       oceanImageLoaded = true;
       resolve();
     };
@@ -50,40 +58,37 @@ export async function loadOceanIdMapTexture(): Promise<void> {
  * @returns The 24-bit ocean ID derived from RGB values
  */
 export function getOceanIdAtUV(uv: Vector2): number {
-  if (!oceanImageLoaded || !oceanIdMapCanvas || !oceanIdCtx) return -1;
+  if (!oceanImageLoaded || !oceanIdMapCanvas || !oceanIdPixelData) return -1;
 
   const x = Math.floor(uv.x * oceanIdMapCanvas.width);
   const y = Math.floor((1.0 - uv.y) * oceanIdMapCanvas.height);
-  const pixel = oceanIdCtx.getImageData(x, y, 1, 1).data;
 
-  return (pixel[0] << 16) | (pixel[1] << 8) | pixel[2];
+  const index = (y * oceanIdMapCanvas.width + x) * 4; // 4 bytes per pixel (RGBA)
+
+  // Read RGB and reconstruct the 24-bit ID
+  const r = oceanIdPixelData[index];
+  const g = oceanIdPixelData[index + 1];
+  const b = oceanIdPixelData[index + 2];
+
+  return (r << 16) | (g << 8) | b;
 }
 
 /**
- * Performs a raycast against the globe to determine the hovered ocean region.
+ * Determines the currently hovered ocean based on UV coordinates.
  *
- * @param raycaster - The active Three.js raycaster
- * @param pointer - Normalized pointer coordinates
- * @param camera - The active camera
- * @param globe - The globe mesh to test for intersection
- * @returns Object containing the hovered ocean ID and hit point
+ * @param uv - The UV coordinates from the globe surface.
+ * @returns The hovered ocean ID and null for position (not used).
  */
-export function updateHoveredOcean(
-  raycaster: Raycaster,
-  pointer: Vector2,
-  camera: Camera,
-  globe: Mesh
-): { id: number; position: Vector3 | null } {
-  if (!oceanImageLoaded || !oceanIdMapCanvas || !oceanIdCtx) {
+export function updateHoveredOcean(uv: Vector2): {
+  id: number;
+  position: Vector3 | null;
+} {
+  if (!oceanImageLoaded || !oceanIdMapCanvas || !oceanIdPixelData) {
     return { id: -1, position: null };
   }
 
-  raycaster.setFromCamera(pointer, camera);
-  const hit = raycaster.intersectObject(globe)[0];
-  if (!hit || !hit.uv || !hit.point) return { id: -1, position: null };
-
-  const id = getOceanIdAtUV(hit.uv);
-  return { id, position: hit.point.clone() };
+  const id = getOceanIdAtUV(uv);
+  return { id, position: null };
 }
 
 /**

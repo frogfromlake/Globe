@@ -16,6 +16,7 @@ import {
   Color,
   LinearFilter,
   Object3D,
+  PerspectiveCamera,
 } from "three";
 import { countryMeta } from "../data/countryMeta";
 import { latLonToSphericalCoordsGeographic } from "../globe/geo";
@@ -33,14 +34,16 @@ type LabelObject = {
 const labelGroup = new Group();
 const labelObjects = new Map<number, LabelObject>();
 
-/**
- * Adds the container for all 3D country labels into the main Three.js scene.
- * This group will contain all label sprites and connecting lines.
- *
- * @param scene - The Three.js scene to add label objects into.
- */
-export function init3DLabels(scene: Scene): void {
+export function init3DLabels(scene: Scene, camera: PerspectiveCamera): void {
   scene.add(labelGroup);
+
+  // === Pre-create all country labels ===
+  for (const id of Object.keys(countryMeta)) {
+    const countryId = parseInt(id);
+    if (countryId > 0) {
+      update3DLabel(countryId, 0, camera, 0); // No rotation, invisible (fade=0)
+    }
+  }
 }
 
 /**

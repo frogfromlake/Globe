@@ -1,9 +1,3 @@
-/**
- * countryHover.ts
- * Handles country hover detection and country ID retrieval via UV-mapped RGB ID textures.
- * Also provides initialization and creation of the selection texture used in GLSL highlighting.
- */
-
 import {
   Vector2,
   Raycaster,
@@ -14,12 +8,14 @@ import {
   DataTexture,
   RedFormat,
   UnsignedByteType,
+  Intersection,
 } from "three";
 import { CONFIG } from "../configs/config";
 
 // Internal state for the RGB country ID map loaded into a canvas
 let countryIdMapCanvas: HTMLCanvasElement | null = null;
 let countryIdCtx: CanvasRenderingContext2D | null = null;
+let countryIdPixelData: Uint8ClampedArray | null = null;
 let imageLoaded = false;
 
 /**
@@ -30,13 +26,14 @@ let imageLoaded = false;
  * @returns A 24-bit country ID derived from the RGB pixel
  */
 export function getCountryIdAtUV(uv: Vector2): number {
-  if (!imageLoaded || !countryIdMapCanvas || !countryIdCtx) return -1;
+  if (!imageLoaded || !countryIdMapCanvas || !countryIdPixelData) return -1;
 
   const x = Math.floor(uv.x * countryIdMapCanvas.width);
   const y = Math.floor((1.0 - uv.y) * countryIdMapCanvas.height);
-  const pixel = countryIdCtx.getImageData(x, y, 1, 1).data;
 
-  const id = pixel[0]; // 8-bit grayscale ID (0-255)
+  const index = (y * countryIdMapCanvas.width + x) * 4; // RGBA, 4 bytes per pixel
+  const id = countryIdPixelData[index]; // Use red channel only
+
   return id;
 }
 
@@ -55,6 +52,18 @@ export async function loadCountryIdMapTexture(): Promise<void> {
         willReadFrequently: true,
       });
       countryIdCtx?.drawImage(image, 0, 0);
+
+      // Grab pixel data once
+      const imageData = countryIdCtx?.getImageData(
+        0,
+        0,
+        countryIdMapCanvas.width,
+        countryIdMapCanvas.height
+      );
+      if (imageData) {
+        countryIdPixelData = imageData.data;
+      }
+
       imageLoaded = true;
       resolve();
     };
@@ -62,35 +71,25 @@ export async function loadCountryIdMapTexture(): Promise<void> {
 }
 
 /**
- * Performs raycasting to determine the currently hovered country based on the globe intersection.
- * Also updates the corresponding uniform used in the GLSL shader.
+ * Determines the currently hovered country based on UV coordinates.
+ * Also updates the hoveredCountryId uniform in the globe shader material.
  *
- * @param raycaster - Three.js raycaster instance
- * @param pointer - Current normalized pointer position
- * @param camera - The active scene camera
- * @param globe - The globe mesh to test intersections against
- * @param globeMaterial - The globe's shader material containing the hoveredCountryId uniform
- * @returns The hovered country ID and the intersection point in world space
+ * @param uv - The UV coordinates from the globe surface.
+ * @param globeMaterial - The globe's shader material containing the hoveredCountryId uniform.
+ * @returns The hovered country ID and null for position (not used).
  */
 export function updateHoveredCountry(
-  raycaster: Raycaster,
-  pointer: Vector2,
-  camera: Camera,
-  globe: Mesh,
+  uv: Vector2,
   globeMaterial: ShaderMaterial
 ): { id: number; position: Vector3 | null } {
-  if (!imageLoaded || !countryIdMapCanvas || !countryIdCtx) {
+  if (!imageLoaded || !countryIdMapCanvas || !countryIdPixelData) {
     return { id: -1, position: null };
   }
 
-  raycaster.setFromCamera(pointer, camera);
-  const hit = raycaster.intersectObject(globe)[0];
-  if (!hit || !hit.uv || !hit.point) return { id: -1, position: null };
-
-  const id = getCountryIdAtUV(hit.uv);
+  const id = getCountryIdAtUV(uv);
   globeMaterial.uniforms.hoveredCountryId.value = id;
 
-  return { id, position: hit.point.clone() };
+  return { id, position: null };
 }
 
 /**

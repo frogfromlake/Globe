@@ -12,6 +12,7 @@ import {
   MathUtils,
   Object3D,
   Scene,
+  PerspectiveCamera,
 } from "three";
 import { createTextSprite } from "./countryLabels3D";
 import { CONFIG } from "../configs/config";
@@ -29,12 +30,20 @@ type LabelObject = {
 const labelObjectsOcean = new Map<number, LabelObject>();
 const labelGroup = new Group();
 
-/**
- * Initializes the 3D ocean label system by adding the internal label group to the main scene.
- * @param scene - The Three.js scene to attach ocean labels to.
- */
-export function init3DOceanLabels(scene: Scene): void {
+export function init3DOceanLabels(
+  scene: Scene,
+  camera: PerspectiveCamera
+): void {
   scene.add(labelGroup);
+
+  // === Pre-create all ocean labels ===
+  for (const idStr of Object.keys(CONFIG.oceanHover.oceanCenters)) {
+    const id = parseInt(idStr);
+    const ocean = CONFIG.oceanHover.oceanCenters[id];
+    if (ocean) {
+      update3DOceanLabel(id, ocean.name, ocean.lat, ocean.lon, 0, camera, 0);
+    }
+  }
 }
 
 /**

@@ -119,7 +119,7 @@ export async function startApp(updateSubtitle: (text: string) => void) {
   });
 
   // === Populate Scene with Core Meshes (temporary placeholder sky texture) ===
-  const { globe, atmosphere, starSphere } = setupSceneObjects(
+  const { globe, atmosphere, starSphere, globeRaycastMesh } = setupSceneObjects(
     scene,
     uniforms,
     new Texture()
@@ -164,6 +164,7 @@ export async function startApp(updateSubtitle: (text: string) => void) {
     globe,
     atmosphere,
     starSphere,
+    globeRaycastMesh,
     uniforms,
     camera,
     controls,
@@ -236,8 +237,8 @@ export async function startApp(updateSubtitle: (text: string) => void) {
     // === Load 3D Labels
     const { init3DLabels } = await import("../hoverLabel/countryLabels3D");
     const { init3DOceanLabels } = await import("../hoverLabel/oceanLabel3D");
-    init3DLabels(scene);
-    init3DOceanLabels(scene);
+    init3DLabels(scene, camera);
+    init3DOceanLabels(scene, camera);
 
     // === Load News Panel
     const { initNewsPanel } = await import("../features/news/handleNewsPanel");
