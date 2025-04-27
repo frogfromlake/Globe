@@ -228,24 +228,25 @@ canvas {
   padding: 0.55rem 0.9rem;
   font-size: 0.92rem;
   font-weight: 500;
-  color: #e0f0ffd8;
+  color: #c9e5ffd8;
   background: rgba(0, 0, 0, 0.45);
-  border: 1.5px solid rgba(171, 202, 237, 0.429);
+  border: 1.5px solid rgba(71, 106, 147, 0.474);
   border-radius: 8px;
-  backdrop-filter: blur(5px);
+  backdrop-filter: blur(1px);
   outline: none;
-  transition: background 0.3s ease, box-shadow 0.3s ease;
+  transition: background 0.2s ease, box-shadow 0.2s ease;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
   font-family: inherit;
 }
 
 #country-search::placeholder {
-  color: rgba(200, 225, 255, 0.45);
+  color: rgba(184, 216, 255, 0.888);
 }
 
 #country-search:focus {
-  background: rgba(0, 0, 0, 0.55);
-  box-shadow: 0 0 0 2px rgba(135, 190, 255, 0.4);
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(6px);
+  box-shadow: 0 0 0 1.2px rgba(100, 170, 255, 0.696);
 }
 
 .news-panel-header {

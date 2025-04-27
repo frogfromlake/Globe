@@ -1,19 +1,13 @@
-/**
- * @file keyboardControls.ts
- * @description Adds WASD/arrow key camera controls to rotate the globe using OrbitControls.
- * Uses smooth damping for inertial movement. Call the returned update function inside your animation loop.
- */
-
 import { MathUtils, Spherical, Vector3, PerspectiveCamera } from "three";
 import type { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
 
 /**
- * Sets up keyboard-based globe rotation using arrow keys or WASD.
- * Smoothly applies damped azimuth and polar changes to the camera.
+ * Sets up WASD/Arrow key globe rotation.
+ * Ignores key inputs while typing into inputs.
  *
- * @param camera - The PerspectiveCamera instance.
- * @param controls - OrbitControls instance for the scene.
- * @returns An update function to call within the render loop.
+ * @param camera - Perspective camera.
+ * @param controls - OrbitControls instance.
+ * @returns Per-frame update function.
  */
 export function setupKeyboardControls(
   camera: PerspectiveCamera,
@@ -27,7 +21,7 @@ export function setupKeyboardControls(
   const spherical = new Spherical();
   const offset = new Vector3();
 
-  // Track key press state
+  // Track key press state globally
   window.addEventListener("keydown", (e) => {
     pressed[e.key.toLowerCase()] = true;
   });
@@ -36,24 +30,25 @@ export function setupKeyboardControls(
     pressed[e.key.toLowerCase()] = false;
   });
 
-  /**
-   * Updates camera rotation based on keyboard input and delta time.
-   * Should be called every frame from your main animation loop.
-   *
-   * @param delta - Time in seconds since the last frame.
-   */
   return function updateKeyboard(delta: number) {
-    const step = rotateSpeed * delta;
+    const activeElement = document.activeElement;
+    const isTyping =
+      activeElement &&
+      (activeElement.tagName === "INPUT" ||
+        activeElement.tagName === "TEXTAREA");
 
+    const step = rotateSpeed * delta;
     let targetAzimuth = 0;
     let targetPolar = 0;
 
-    if (pressed["arrowleft"] || pressed["a"]) targetAzimuth -= step;
-    if (pressed["arrowright"] || pressed["d"]) targetAzimuth += step;
-    if (pressed["arrowup"] || pressed["w"]) targetPolar -= step;
-    if (pressed["arrowdown"] || pressed["s"]) targetPolar += step;
+    // Only process movement if user is NOT typing
+    if (!isTyping) {
+      if (pressed["arrowleft"] || pressed["a"]) targetAzimuth -= step;
+      if (pressed["arrowright"] || pressed["d"]) targetAzimuth += step;
+      if (pressed["arrowup"] || pressed["w"]) targetPolar -= step;
+      if (pressed["arrowdown"] || pressed["s"]) targetPolar += step;
+    }
 
-    // Apply smooth damping to movement
     velocity.azimuth = MathUtils.damp(
       velocity.azimuth,
       targetAzimuth,
@@ -67,22 +62,18 @@ export function setupKeyboardControls(
       delta
     );
 
-    // Skip update if no motion
     if (velocity.azimuth === 0 && velocity.polar === 0) return;
 
-    // Convert camera position to spherical coordinates
+    // Apply rotation
     offset.copy(camera.position).sub(controls.target);
     spherical.setFromVector3(offset);
 
-    // Apply rotation deltas
     spherical.theta += velocity.azimuth;
     spherical.phi += velocity.polar;
 
-    // Clamp polar angle to avoid poles
     const EPS = 0.0001;
     spherical.phi = MathUtils.clamp(spherical.phi, EPS, Math.PI - EPS);
 
-    // Recalculate camera position
     offset.setFromSpherical(spherical);
     camera.position.copy(controls.target).add(offset);
     camera.lookAt(controls.target);

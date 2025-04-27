@@ -46,7 +46,7 @@ interface AnimateParams {
   selectedData: Uint8Array;
   selectedOceanData: Uint8Array;
   getBackgroundMode: () => boolean;
-  updateKeyboard: (delta: number) => void;
+  updateKeyboardRef: { fn: (delta: number) => void };
   selectedCountryIds: Set<number>;
   selectedOceanIds: Set<number>;
 }
@@ -69,7 +69,7 @@ export function createAnimateLoop({
   selectedData,
   selectedOceanData,
   getBackgroundMode,
-  updateKeyboard,
+  updateKeyboardRef,
   selectedCountryIds,
   selectedOceanIds,
 }: AnimateParams): () => void {
@@ -152,7 +152,7 @@ export function createAnimateLoop({
       uniforms.lightDirection.value
     );
 
-    updateKeyboard(delta);
+    updateKeyboardRef.fn(delta);
     controls.update();
 
     // Country / Ocean Hover Updates

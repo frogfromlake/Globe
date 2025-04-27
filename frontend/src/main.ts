@@ -56,7 +56,7 @@ startApp(setLoadingSubtitle).then(({ animate, startHoverSystem }) => {
   }
 
   // Trigger fade-out transition of the loading screen
-  loadingScreen.classList.add("fade-out"); 
+  loadingScreen.classList.add("fade-out");
 
   // Wait for transition to complete before removing loading screen and showing the app
   loadingScreen.addEventListener("transitionend", () => {
@@ -68,6 +68,6 @@ startApp(setLoadingSubtitle).then(({ animate, startHoverSystem }) => {
       startHoverSystem().catch((err) => {
         console.error("Error in hover system initialization:", err);
       });
-    }, 300);
+    }, 200);
   });
 });

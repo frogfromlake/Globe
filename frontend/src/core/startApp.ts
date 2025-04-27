@@ -73,7 +73,7 @@ export async function startApp(updateSubtitle: (text: string) => void) {
   };
 
   // === Function references for dynamic features
-  let updateKeyboard: (delta: number) => void = () => undefined;
+  // let updateKeyboard: (delta: number) => void = () => undefined;
 
   // === Pointer & Raycasting ===
   const raycaster = new Raycaster();
@@ -158,6 +158,7 @@ export async function startApp(updateSubtitle: (text: string) => void) {
     controls
   );
 
+  const updateKeyboardRef = { fn: (delta: number) => {} };
   // === Launch Render Loop Immediately ===
   const animate = createAnimateLoop({
     globe,
@@ -177,7 +178,7 @@ export async function startApp(updateSubtitle: (text: string) => void) {
     selectedData,
     selectedOceanData,
     getBackgroundMode,
-    updateKeyboard,
+    updateKeyboardRef,
     selectedCountryIds: selection.countryIds,
     selectedOceanIds: selection.oceanIds,
   });
@@ -216,7 +217,7 @@ export async function startApp(updateSubtitle: (text: string) => void) {
               if (starFade < 1) requestAnimationFrame(fadeInStarSphere);
             };
             fadeInStarSphere();
-          }, 1500);
+          }, 500);
         }
 
         let fade = 0;
@@ -246,7 +247,7 @@ export async function startApp(updateSubtitle: (text: string) => void) {
     const { setupKeyboardControls } = await import(
       "../interactions/keyboardControls"
     );
-    updateKeyboard = setupKeyboardControls(camera, controls);
+    updateKeyboardRef.fn = setupKeyboardControls(camera, controls);
 
     // === Load Admin Panel only in development
     if (import.meta.env.DEV) {
