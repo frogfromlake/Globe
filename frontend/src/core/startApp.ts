@@ -161,7 +161,9 @@ export async function startApp(updateSubtitle: (text: string) => void) {
     globe,
     locationSearchInput,
     camera,
-    controls
+    controls,
+    selectedFadeIn,
+    selectedOceanFadeIn
   );
 
   const updateKeyboardRef = { fn: (delta: number) => {} };

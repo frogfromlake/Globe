@@ -14,6 +14,14 @@ import {
 import { countryMeta } from "../data/countryMeta";
 import { oceanCenters } from "../data/oceanCenters";
 import { CONFIG } from "../configs/config";
+import {
+  hideAll3DLabelsExcept,
+  update3DLabel,
+} from "../hoverLabel/countryLabels3D";
+import {
+  hideAll3DOceanLabelsExcept,
+  update3DOceanLabel,
+} from "../hoverLabel/oceanLabel3D";
 
 async function showNewsLazy(isoCode: string) {
   const { showNewsPanel } = await import("../features/news/handleNewsPanel");
@@ -39,31 +47,27 @@ export function setupLocationSearch(
   selectedCountryIds: Set<number>,
   selectedOceanIds: Set<number>,
   selectedFlags: Uint8Array,
-  selectedOceanFlags: Uint8Array
+  selectedOceanFlags: Uint8Array,
+  selectedFadeIn: Float32Array<ArrayBuffer>,
+  selectedOceanFadeIn: Float32Array<ArrayBuffer>
 ) {
   const nameToIdMap = new Map<
     string,
     { id: number; type: "country" | "ocean" }
   >();
-
   const transitionDuration = CONFIG.camera.autoTransitionDuration;
 
-  // Populate name lookup map
   for (const [id, data] of Object.entries(countryMeta)) {
     nameToIdMap.set(data.name.toLowerCase(), {
       id: Number(id),
       type: "country",
     });
   }
-
   for (const [id, data] of Object.entries(oceanCenters)) {
-    nameToIdMap.set(data.name.toLowerCase(), {
-      id: Number(id),
-      type: "ocean",
-    });
+    nameToIdMap.set(data.name.toLowerCase(), { id: Number(id), type: "ocean" });
   }
 
-  inputLocation?.addEventListener("change", () => {
+  inputLocation?.addEventListener("change", async () => {
     const query = inputLocation.value.trim().toLowerCase();
     if (!query) return;
 
@@ -77,16 +81,20 @@ export function setupLocationSearch(
     const centerData = type === "country" ? countryMeta[id] : oceanCenters[id];
 
     // === Clear previous selections ===
-    for (const cid of selectedCountryIds) selectedFlags[cid] = 0;
-    for (const oid of selectedOceanIds) selectedOceanFlags[oid] = 0;
+    for (const cid of selectedCountryIds) selectedFlags[cid - 1] = 0;
+    for (const oid of selectedOceanIds) selectedOceanFlags[oid - 1] = 0;
     selectedCountryIds.clear();
     selectedOceanIds.clear();
 
     // === Apply new selection ===
-    if (id < selectedFlags.length) {
+    if (id < selectedFlags.length + 1) {
       if (type === "country") {
         selectedCountryIds.add(id);
-        selectedFlags[id] = 1;
+        selectedFlags[id - 1] = 1;
+        selectedFadeIn[id - 1] = 1;
+
+        hideAll3DLabelsExcept([id]);
+        await update3DLabel(id, getEarthRotationAngle(), camera, 1);
 
         const isoCode = countryMeta[id]?.iso;
         if (isoCode) {
@@ -103,6 +111,21 @@ export function setupLocationSearch(
           oceanIndex < CONFIG.oceanHover.maxOceanCount
         ) {
           selectedOceanFlags[oceanIndex] = 1;
+          selectedOceanFadeIn[oceanIndex] = 1;
+        }
+
+        hideAll3DOceanLabelsExcept([id]);
+        const ocean = CONFIG.oceanHover.oceanCenters[id];
+        if (ocean) {
+          await update3DOceanLabel(
+            id,
+            ocean.name,
+            ocean.lat,
+            ocean.lon,
+            getEarthRotationAngle(),
+            camera,
+            1
+          );
         }
       }
     }
@@ -126,7 +149,6 @@ export function setupLocationSearch(
       .clone()
       .sub(controls.target)
       .normalize();
-
     const originalDistance = camera.position.distanceTo(controls.target);
     const defaultDistance = CONFIG.camera.initialPosition.z ?? originalDistance;
     const shouldZoom = originalDistance < defaultDistance * 0.98;
@@ -152,7 +174,6 @@ export function setupLocationSearch(
           .clone()
           .lerp(targetDirection, tmp.t)
           .normalize();
-
         const newPos = interpolatedDirection.multiplyScalar(zoomFactor);
         camera.position.copy(newPos);
         controls.update();

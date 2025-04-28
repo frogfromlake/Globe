@@ -43,7 +43,9 @@ export async function setupSettingsPanel(
   globe: Mesh,
   locationSearchInput: HTMLInputElement,
   camera: PerspectiveCamera,
-  controls: OrbitControls
+  controls: OrbitControls,
+  selectedFadeIn: Float32Array<ArrayBuffer>,
+  selectedOceanFadeIn: Float32Array<ArrayBuffer>
 ) {
   if (!OrbitControlsClass) {
     const module = await import("three/examples/jsm/controls/OrbitControls");
@@ -63,7 +65,9 @@ export async function setupSettingsPanel(
     selectedCountryIds,
     selectedOceanIds,
     selectedFlags,
-    selectedOceanFlags
+    selectedOceanFlags,
+    selectedFadeIn,
+    selectedOceanFadeIn
   );
 
   /**
