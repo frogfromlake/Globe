@@ -13,7 +13,6 @@ import {
   Vector2,
   Texture,
   ShaderMaterial,
-  Vector3,
 } from "three";
 
 import { initializeCamera } from "../init/initializeCamera";
@@ -128,32 +127,28 @@ export async function startApp(updateSubtitle: (text: string) => void) {
   starSphere.visible = false; // Hidden until esoSkyMap is ready
 
   // === Set Up Pointer Events ===
-  setupGlobePointerEvents(renderer, globe, raycaster, pointer, camera, {
-    onHover: (hit) => {
-      if (hit && hit.point) {
-        uniforms.uCursorOnGlobe.value = true;
-        uniforms.cursorWorldPos.value.copy(hit.point.normalize());
-      } else {
-        // 🔵 If no hit, approximate by using camera direction + pointer
-        const direction = new Vector3(pointer.x, pointer.y, 0.5)
-          .unproject(camera)
-          .sub(camera.position)
-          .normalize();
-        uniforms.uCursorOnGlobe.value = false; // cursor is not *on* globe
-        uniforms.cursorWorldPos.value.copy(direction);
-      }
-    },
-    onClick: (hit) => {
-      if (!hoverReady) return;
-      handleGlobeClick(
-        hit,
-        selection.countryIds,
-        selection.countryFlags,
-        selection.oceanIds,
-        selection.oceanFlags
-      );
-    },
-  });
+  setupGlobePointerEvents(
+    renderer,
+    globeRaycastMesh,
+    raycaster,
+    pointer,
+    camera,
+    {
+      onHover: undefined, // <<< important! Let animate() handle hover logic!
+      onClick: (hit) => {
+        if (!hoverReady) return;
+        if (hit) {
+          handleGlobeClick(
+            hit,
+            selection.countryIds,
+            selection.countryFlags,
+            selection.oceanIds,
+            selection.oceanFlags
+          );
+        }
+      },
+    }
+  );
 
   // === Load Settings Panel early
   const { setupSettingsPanel } = await import("../settings/setupSettings");

@@ -16,15 +16,15 @@ import {
 type InteractionOptions = {
   /**
    * Callback fired when the globe is hovered.
-   * Receives the first intersection point.
+   * Receives the first intersection point if hit, or undefined if no hit.
    */
-  onHover?: (hit: Intersection) => void;
+  onHover?: (hit: Intersection | undefined) => void;
 
   /**
    * Callback fired when the globe is clicked.
-   * Receives the first intersection point.
+   * Receives the first intersection point if hit, or undefined if no hit.
    */
-  onClick?: (hit: Intersection) => void;
+  onClick?: (hit: Intersection | undefined) => void;
 };
 
 /**
@@ -70,18 +70,17 @@ export function setupGlobePointerEvents(
       pointer.y = -(e.clientY / window.innerHeight) * 2 + 1;
 
       raycaster.setFromCamera(pointer, camera);
-      const hit = raycaster.intersectObject(globe)[0];
-      if (hit && onClick) onClick(hit);
+      const hit = raycaster.intersectObject(globe, true)[0];
+      if (onClick) onClick(hit);
     }
   });
 
-  // On pointer move, update ray and call hover handler if applicable
-  canvas.addEventListener("pointermove", (event: PointerEvent) => {
-    pointer.x = (event.clientX / window.innerWidth) * 2 - 1;
-    pointer.y = -(event.clientY / window.innerHeight) * 2 + 1;
+  // On pointer move, update ray and call hover handler
+  canvas.addEventListener("pointermove", (e: PointerEvent) => {
+    pointer.x = (e.clientX / window.innerWidth) * 2 - 1;
+    pointer.y = -(e.clientY / window.innerHeight) * 2 + 1;
 
-    raycaster.setFromCamera(pointer, camera);
-    const hit = raycaster.intersectObject(globe)[0];
-    if (hit && onHover) onHover(hit);
+    // mark pointer moved
+    // if (onHover) onHover(undefined);
   });
 }

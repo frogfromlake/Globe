@@ -120,11 +120,9 @@ export function createAnimateLoop({
 
     const rotationY = getEarthRotationAngle();
 
-    // 1. Update globe rotations
     globe.rotation.y = rotationY;
     globeRaycastMesh.rotation.y = rotationY;
 
-    // 2. Update time-based uniforms
     uniforms.uTime.value = nowInSeconds;
     uniforms.uTimeStars.value = nowInSeconds;
 
@@ -132,13 +130,13 @@ export function createAnimateLoop({
     let globeIntersection: Vector3 | null = null;
     let globeHit: Intersection | null = null;
 
-    // 3. Raycast
     // Only raycast every 'raycastInterval' ms
-    const UV_LONGITUDE_OFFSET = 0.022; // Your measured good offset
-    if (userHasMovedPointer() && now - lastRaycastTime > raycastInterval) {
+    const enoughTimePassed = now - lastRaycastTime > raycastInterval;
+    if (userHasMovedPointer() && enoughTimePassed) {
       lastRaycastTime = now;
+
       raycaster.setFromCamera(pointer, camera);
-      const hits = raycaster.intersectObject(globeRaycastMesh);
+      const hits = raycaster.intersectObject(globeRaycastMesh, true);
 
       if (hits.length > 0) {
         const hitPoint = hits[0].point.clone().normalize();
@@ -153,18 +151,28 @@ export function createAnimateLoop({
           0.5 - correctedLongitude / (2.0 * Math.PI),
           1.0
         );
-
         const v = MathUtils.clamp(0.5 + latitude / Math.PI, 0, 1);
 
         currentUV = new Vector2(u, v);
+
+        uniforms.uCursorOnGlobe.value = true;
+        uniforms.cursorWorldPos.value.copy(hitPoint);
       } else {
         globeHit = null;
         globeIntersection = null;
         currentUV = null;
       }
+    } else {
+      // No raycast, but if cursor was already on globe, update cursorWorldPos
+      if (uniforms.uCursorOnGlobe.value) {
+        raycaster.setFromCamera(pointer, camera);
+        const hit = raycaster.intersectObject(globeRaycastMesh, true)[0];
+        if (hit) {
+          uniforms.cursorWorldPos.value.copy(hit.point.normalize());
+        }
+      }
     }
 
-    uniforms.uCursorOnGlobe.value = globeIntersection !== null;
     if (globeIntersection) {
       uniforms.cursorWorldPos.value.copy(globeIntersection);
     }
