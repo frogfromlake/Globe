@@ -92,7 +92,7 @@ export function setupSceneObjects(
 
   // === Invisible Raycast Globe ===
   const globeRaycastGeometry = new SphereGeometry(
-    CONFIG.globe.radius * 1.01, // Slightly bigger
+    CONFIG.globe.radius,
     32, // Fewer segments
     32
   );

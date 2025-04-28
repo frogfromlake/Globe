@@ -114,19 +114,32 @@ export function createAnimateLoop({
     requestAnimationFrame(animate);
 
     const now = performance.now();
+    const nowInSeconds = now / 1000;
     const delta = (now - lastFrameTime) / 1000;
     lastFrameTime = now;
-    uniforms.uTime.value = now / 1000;
-    uniforms.uTimeStars.value = uniforms.uTime.value;
 
+    const rotationY = getEarthRotationAngle();
+
+    // 1. Update globe rotations
+    globe.rotation.y = rotationY;
+    globeRaycastMesh.rotation.y = rotationY;
+
+    // 2. Update time-based uniforms
+    uniforms.uTime.value = nowInSeconds;
+    uniforms.uTimeStars.value = nowInSeconds;
+
+    // Store rotationY globally for this frame
     let globeIntersection: Vector3 | null = null;
     let globeHit: Intersection | null = null;
 
+    // 3. Raycast
     // Only raycast every 'raycastInterval' ms
+    const UV_LONGITUDE_OFFSET = 0.022; // Your measured good offset
     if (userHasMovedPointer() && now - lastRaycastTime > raycastInterval) {
       lastRaycastTime = now;
       raycaster.setFromCamera(pointer, camera);
       const hits = raycaster.intersectObject(globeRaycastMesh);
+
       if (hits.length > 0) {
         const hitPoint = hits[0].point.clone().normalize();
         globeHit = hits[0];
@@ -135,10 +148,12 @@ export function createAnimateLoop({
         const longitude = Math.atan2(hitPoint.z, hitPoint.x);
         const latitude = Math.asin(hitPoint.y);
 
+        const correctedLongitude = longitude + rotationY;
         const u = MathUtils.euclideanModulo(
-          0.5 - longitude / (2.0 * Math.PI) + 0.125,
+          0.5 - correctedLongitude / (2.0 * Math.PI),
           1.0
         );
+
         const v = MathUtils.clamp(0.5 + latitude / Math.PI, 0, 1);
 
         currentUV = new Vector2(u, v);
@@ -262,8 +277,6 @@ export function createAnimateLoop({
       [...selectedOceanIds, currentHoveredId].filter((id) => id >= 10000)
     );
 
-    const rotationY = getEarthRotationAngle();
-
     if (
       currentHoveredId > 0 &&
       currentHoveredId < 10000 &&
@@ -331,8 +344,6 @@ export function createAnimateLoop({
     uniforms.highlightFadeOut.value =
       currentHoveredId >= 10000 ? fadeOutOcean : fadeOut;
     uniforms.cameraDirection.value.copy(camera.position).normalize();
-
-    globe.rotation.y = rotationY;
 
     if (getBackgroundMode()) {
       starSphere.quaternion.copy(camera.quaternion);
