@@ -16,6 +16,8 @@ import {
  * @returns A ShaderMaterial ready for the cloud layer.
  */
 export function createCloudMaterial(cloudTexture?: Texture) {
+  const MAX_FLASHES = 100; // Same as in shader
+
   return new ShaderMaterial({
     vertexShader: cloudsVertexShader,
     fragmentShader: cloudsFragmentShader,
@@ -28,6 +30,11 @@ export function createCloudMaterial(cloudTexture?: Texture) {
       uLightDirection: { value: new Vector3(1, 0, 0) },
       uCloudDrift: { value: new Vector2(1, 0) },
       uBaseDriftSpeed: { value: 0.4 },
+      uFlashPoints: {
+        value: Array.from({ length: MAX_FLASHES }, () => new Vector2(0, 0)),
+      },
+      uFlashStrengths: { value: new Array(MAX_FLASHES).fill(0) },
+      uNumFlashes: { value: MAX_FLASHES },
     },
   });
 }

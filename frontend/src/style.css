@@ -189,6 +189,24 @@ canvas {
   transition: all 0.3s ease;
 }
 
+/* Sidebar grouping */
+.sidebar-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+}
+
+.sidebar-heading {
+  font-size: 0.9rem;
+  font-weight: bold;
+  color: #8acfff;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin: 0.5rem 0 0.2rem 0.2rem;
+}
+
+
 .globe-btn {
   width: 100%;
   padding: 0.6rem 1.2rem;

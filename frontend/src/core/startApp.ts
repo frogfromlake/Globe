@@ -160,6 +160,7 @@ export async function startApp(updateSubtitle: (text: string) => void) {
     selection.countryIds,
     selection.oceanIds,
     globe,
+    cloudSphere,
     locationSearchInput,
     camera,
     controls,

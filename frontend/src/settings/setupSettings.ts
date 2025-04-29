@@ -16,6 +16,7 @@ import { setupLocationSearch } from "./locationSearch";
 import { hideAll3DLabelsExcept } from "../hoverLabel/countryLabels3D";
 import { hideAll3DOceanLabels } from "../hoverLabel/oceanLabel3D";
 import type { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
+import { toggleClouds } from "./toggleClouds";
 
 let OrbitControlsClass: typeof import("three/examples/jsm/controls/OrbitControls").OrbitControls;
 
@@ -41,6 +42,7 @@ export async function setupSettingsPanel(
   selectedCountryIds: Set<number>,
   selectedOceanIds: Set<number>,
   globe: Mesh,
+  cloudSphere: Mesh,
   locationSearchInput: HTMLInputElement,
   camera: PerspectiveCamera,
   controls: OrbitControls,
@@ -91,6 +93,9 @@ export async function setupSettingsPanel(
   const starBtn = document.getElementById(
     "toggle-star-mode"
   ) as HTMLButtonElement;
+  const cloudBtn = document.getElementById(
+    "toggle-clouds"
+  ) as HTMLButtonElement;
 
   // === Bind actions ===
 
@@ -134,6 +139,10 @@ export async function setupSettingsPanel(
       ? "Background: Infinite"
       : "Background: Realistic";
     updateButtonState(starBtn, useFixedBackground);
+  });
+
+  cloudBtn?.addEventListener("click", () => {
+    toggleClouds(cloudSphere, cloudBtn); // <- Pass cloud sphere + button
   });
 
   // === Initial states ===

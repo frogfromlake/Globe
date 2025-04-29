@@ -134,13 +134,13 @@ void main() {
     float nightRimFade = smoothstep(0.0, 1.0, pow(rimDot, 1.5)) * (1.0 - sharpened);
     
     // Darken the final color on the night side.
-    finalColor = mix(finalColor, vec3(0.0), nightRimFade * 1.5);                    
+    finalColor = mix(finalColor, vec3(0.0), nightRimFade * 1.5);
 
     // Add a slight edge effect for visual enhancement.
     float edgeFill = smoothstep(0.0, 0.2, sharpened);
     
     // Add the edge effect to the final color.
-    finalColor += vec3(0.01, 0.015, 0.025) * edgeFill;                             
+    finalColor += vec3(0.01, 0.015, 0.025) * edgeFill;
 
     // === Country and Ocean Highlighting ===
     // Sample the country and ocean ID maps to identify hovered or selected regions.

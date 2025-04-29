@@ -108,6 +108,24 @@ export function createAnimateLoop({
   const speedVariationChangeInterval = 20000; // update every 20s
   const speedLerpSpeed = 0.04;
 
+  // === Lightning Config ===
+  const MAX_FLASHES = 100;
+  const NUM_STORM_CENTERS = 30; // more storm systems (used to be 15)
+  const baseFlashChance = 0.007; // flashes more rarely inside each storm (was 0.02)
+  const stormDriftSpeed = 0.00002; // keep same slow drift
+  const flashFadeSpeed = 0.8; // faster fading (was 0.88)
+
+  const flashPoints: Vector2[] = Array.from(
+    { length: MAX_FLASHES },
+    () => new Vector2(Math.random(), Math.random())
+  );
+  const flashStrengths: number[] = Array(MAX_FLASHES).fill(0);
+
+  const stormCenters: Vector2[] = Array.from(
+    { length: NUM_STORM_CENTERS },
+    () => new Vector2(Math.random(), Math.random())
+  );
+
   function updateSelectionTexture(
     fadeInArray: Float32Array,
     flagsArray: Uint8Array,
@@ -178,6 +196,46 @@ export function createAnimateLoop({
         uniforms.lightDirection.value
       );
       cloudSphere.material.uniforms.uBaseDriftSpeed.value = totalSpeed;
+
+      // === LIGHTNING FLASH ===
+      // === Drift storm centers slightly ===
+      for (let center of stormCenters) {
+        center.x += MathUtils.randFloatSpread(stormDriftSpeed);
+        center.y += MathUtils.randFloatSpread(stormDriftSpeed);
+        if (center.x < 0) center.x += 1;
+        if (center.x > 1) center.x -= 1;
+        if (center.y < 0) center.y += 1;
+        if (center.y > 1) center.y -= 1;
+      }
+
+      const baseFlashChance = 0.02; // base 2%
+
+      for (let i = 0; i < MAX_FLASHES; i++) {
+        const randomChance = baseFlashChance * MathUtils.randFloat(0.7, 1.3);
+        if (Math.random() < randomChance) {
+          const center =
+            stormCenters[Math.floor(Math.random() * NUM_STORM_CENTERS)];
+          const jitter = new Vector2(
+            MathUtils.randFloatSpread(0.05),
+            MathUtils.randFloatSpread(0.05)
+          );
+          flashPoints[i].copy(center).add(jitter);
+
+          // Random strength (rarely bright)
+          flashStrengths[i] = Math.random() < 0.05 ? 2.0 : 1.0;
+        }
+
+        // Faster fade per frame
+        flashStrengths[i] *= flashFadeSpeed;
+      }
+
+      // Send to shader
+      if (cloudSphere.material instanceof ShaderMaterial) {
+        const mat = cloudSphere.material as ShaderMaterial;
+        mat.uniforms.uFlashPoints.value = flashPoints;
+        mat.uniforms.uFlashStrengths.value = flashStrengths;
+        mat.uniforms.uNumFlashes.value = MAX_FLASHES;
+      }
     }
 
     // Store rotationY globally for this frame

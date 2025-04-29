@@ -26,4 +26,6 @@ export const interactionState = {
   flashlightEnabled: true,
 
   lastOpenedCountryId: null as number | null,
+
+  cloudsEnabled: true,
 };
