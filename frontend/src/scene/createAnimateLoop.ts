@@ -277,9 +277,11 @@ export function createAnimateLoop({
     } else {
       // No raycast, but if cursor was already on globe, update cursorWorldPos
       if (uniforms.uCursorOnGlobe.value) {
+        uniforms.uCursorOnGlobe.value = false;
         raycaster.setFromCamera(pointer, camera);
         const hit = raycaster.intersectObject(globeRaycastMesh, true)[0];
         if (hit) {
+          uniforms.uCursorOnGlobe.value = true;
           uniforms.cursorWorldPos.value.copy(hit.point.normalize());
         }
       }

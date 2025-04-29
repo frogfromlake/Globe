@@ -255,7 +255,7 @@ void main() {
     }
 
     // === Flashlight Effect ===
-    if (uFlashlightEnabled) {
+    if (uFlashlightEnabled && uCursorOnGlobe) {
         vec3 normalizedCursor = normalize(cursorWorldPos);
         vec3 normalizedFrag = normalize(vWorldNormal);
 
