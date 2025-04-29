@@ -26,18 +26,16 @@ void main() {
 
     // === Daylight fade ===
     // Apply a smooth transition for daylight (gradual fade in/out) when the light is perpendicular to the surface.
-    float dayFade = smoothstep(-0.12, 0.12, lightDot);
-
+    float dayFade = smoothstep(-0.08, 0.08, lightDot);
     // === Twilight effect (sunset/sunrise) ===
     // Twilight is stronger when the light is at lower angles (closer to the horizon). 
     // Adjust the smoothstep range and the multiplier to increase twilight intensity.
-    float twilight = smoothstep(-0.28, -0.05, lightDot) * (1.0 - dayFade);  // Adjusted range
+    float twilight = smoothstep(-0.2, -0.02, lightDot) * (1.0 - dayFade);
     twilight *= 1.0;  // Increased intensity by multiplying with a factor
 
     // === Combine fade values for overall glow effect ===
     // The final fade value combines daylight and twilight. The twilight effect is reduced by a factor of 0.8 to create a more subtle sunset effect.
-    float fade = dayFade + twilight * 0.9;
-
+    float fade = dayFade + twilight * 0.7;
     // === Alpha calculation ===
     // Alpha is the transparency of the final color, combining the fresnel effect and the calculated fade.
     float alpha = fresnel * fade;

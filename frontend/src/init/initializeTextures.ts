@@ -10,6 +10,8 @@ import {
   TextureLoader,
   LinearSRGBColorSpace,
   SRGBColorSpace,
+  ClampToEdgeWrapping,
+  RepeatWrapping,
 } from "three";
 
 import { CONFIG } from "../configs/config";
@@ -68,14 +70,16 @@ export async function loadCoreTextures() {
   };
 }
 
-/**
- * Loads high-resolution visual textures (day, night, sky) in the background.
- * Should be called after first frame to avoid blocking FCP and TBT.
- */
 export async function loadVisualTextures(renderer: WebGLRenderer) {
   const loader = new TextureLoader();
 
-  const [dayTexture, nightTexture, esoSkyMapTexture] = await Promise.all([
+  const [
+    dayTexture,
+    nightTexture,
+    esoSkyMapTexture,
+    cloudTexture,
+    topographyTexture,
+  ] = await Promise.all([
     loader.loadAsync(CONFIG.textures.dayMapPath).then((t) => {
       applyBaseMapSettings(t, renderer);
       return t;
@@ -88,11 +92,27 @@ export async function loadVisualTextures(renderer: WebGLRenderer) {
       t.colorSpace = SRGBColorSpace;
       return t;
     }),
+    loader.loadAsync(CONFIG.textures.cloudsMapPath).then((t) => {
+      applyBaseMapSettings(t, renderer);
+      t.colorSpace = SRGBColorSpace;
+      t.wrapS = RepeatWrapping;
+      t.wrapT = ClampToEdgeWrapping;
+      return t;
+    }),
+    loader.loadAsync(CONFIG.textures.topographyMapPath).then((t) => {
+      applyBaseMapSettings(t, renderer);
+      t.colorSpace = LinearSRGBColorSpace; // Important: bump maps are linear
+      t.wrapS = ClampToEdgeWrapping;
+      t.wrapT = ClampToEdgeWrapping;
+      return t;
+    }),
   ]);
 
   return {
     dayTexture,
     nightTexture,
     esoSkyMapTexture,
+    cloudTexture,
+    topographyTexture,
   };
 }

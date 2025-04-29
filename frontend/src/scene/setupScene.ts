@@ -9,7 +9,7 @@ import {
   BackSide,
   AdditiveBlending,
   Texture,
-} from "three"; // <== Add MeshBasicMaterial import
+} from "three";
 
 import { CONFIG } from "../configs/config";
 import { createStarMaterial } from "../materials/starMaterials";
@@ -19,6 +19,7 @@ import {
   earthFragmentShader,
   earthVertexShader,
 } from "../shaders/earthShaders";
+import { createCloudMaterial } from "../materials/cloudMaterial";
 
 /**
  * Initializes and adds the main 3D globe, its atmosphere layer, star background, and raycast helper.
@@ -34,6 +35,7 @@ export function setupSceneObjects(
   esoSkyMapTexture: Texture
 ): {
   globe: Mesh;
+  cloudSphere: Mesh;
   atmosphere: Mesh;
   starSphere: Mesh;
   globeRaycastMesh: Mesh;
@@ -53,6 +55,18 @@ export function setupSceneObjects(
 
   const globe = new Mesh(globeGeometry, globeMaterial);
   scene.add(globe);
+
+  // === Cloud Layer ===
+  const cloudRadius = CONFIG.globe.radius * 1.003;
+  const cloudGeometry = new SphereGeometry(cloudRadius, 128, 128);
+
+  // Pass no texture yet — will be set after loading in startApp
+  const cloudMaterial = createCloudMaterial();
+
+  const cloudSphere = new Mesh(cloudGeometry, cloudMaterial);
+  cloudSphere.renderOrder = 1.5;
+  cloudSphere.visible = false;
+  scene.add(cloudSphere);
 
   // === Atmosphere ===
   const atmosphereRadius = CONFIG.globe.radius * 1.027;
@@ -103,5 +117,5 @@ export function setupSceneObjects(
   );
   scene.add(globeRaycastMesh);
 
-  return { globe, atmosphere, starSphere, globeRaycastMesh };
+  return { globe, cloudSphere, atmosphere, starSphere, globeRaycastMesh };
 }

@@ -7,7 +7,7 @@
 
 **OrbitalOne** is a real-time 3D Earth visualization app powered by **TypeScript**, **Three.js**, and custom **GLSL shaders**. It blends beauty and function to deliver intuitive, extensible Earth-based data visualizations — including country borders, ocean overlays, live news, and more.
 
-🚀 Live at: [https://orbitalone.space](https://orbitalone.space)
+Live at: [https://orbitalone.space](https://orbitalone.space)
 
 ---
 
@@ -34,23 +34,30 @@ Only by embracing our smallness can we act with purpose.
 
 ---
 
-## ✨ Features
+## Features
 
-- 🧭 Interactive 3D globe with clickable country and ocean regions  
-- 🌞 Real-time Earth rotation, lighting, and day/night shaders  
-- 🛰️ Floating 3D labels + connector lines for hover and selection  
-- 🌐 Search any country or ocean to jump directly to it  
-- 📍 Show your current location via geolocation marker  
-- 📰 Translated daily news articles when selecting a country  
-- 💬 Language toggle for original vs. translated text  
-- 🧠 DeepL-powered backend with smart caching to reduce API usage  
-- 🛠️ Admin panel for managing and testing country RSS feeds  
-- ⚙️ Clean, modular TypeScript architecture with centralized config  
-- 🪞 Fade transitions, label scaling, and dynamic lighting effects
+- Interactive 3D globe with clickable country and ocean regions  
+- Real-time Earth rotation, lighting, and day/night shaders  
+- Floating 3D labels + connector lines for hover and selection  
+- Search any country or ocean to jump directly to it  
+- Show your current location via geolocation marker  
+- Translated daily news articles when selecting a country  
+- Language toggle for original vs. translated text  
+- DeepL-powered backend with smart caching to reduce API usage  
+- Admin panel for managing and testing country RSS feeds  
+- Clean, modular TypeScript architecture with centralized config  
+- Fade transitions, label scaling, and dynamic lighting effects
 
 ---
 
-## 🛠 Installation
+## Textures
+Earth Day: https://visibleearth.nasa.gov/images/76487/june-blue-marble-next-generation
+Earth Night: https://www.visibleearth.nasa.gov/images/144898/earth-at-night-black-marble-2016-color-maps
+Earth Clouds: https://visibleearth.nasa.gov/images/57747/blue-marble-clouds/57749l
+Earth Topography: https://visibleearth.nasa.gov/images/73934/topography/84331l
+---
+
+## Installation
 
 ```bash
 git clone https://github.com/frogfromlake/Orbitalone.git
@@ -59,7 +66,7 @@ pnpm install      # or npm install
 pnpm dev          # start dev server (http://localhost:5173/)
 ```
 
-### 🮾 Backend (Go) Setup
+### Backend (Go) Setup
 
 The backend serves country-specific news (with DeepL translation + caching) and runs separately:
 
@@ -80,7 +87,7 @@ The backend also supports a lightweight admin panel (for feed management) when r
 
 ---
 
-## 🔤 News Translation + Caching
+## News Translation + Caching
 
 - News is fetched via curated **country-level RSS feeds**
 - Translations are powered by **DeepL** (free tier) with:
@@ -98,7 +105,7 @@ Admin panel available at `/#admin` (in dev) lets you:
 
 ---
 
-## 🛰️ Backend API
+## Backend API
 
 ```http
 GET /api/news?country=JP
@@ -129,7 +136,7 @@ Made for explorers, thinkers, dreamers — and for Earth.
 
 ---
 
-## 🪐 License
+## License
 
 This project is **proprietary** — not open source.
 
@@ -137,7 +144,7 @@ The source code is provided for **viewing and learning only**.
 Please see [LICENSE.txt](./LICENSE.txt) for full terms.
 
 If you're interested in licensing, commercial use, or collaboration, contact:  
-📩 **fabianquist@posteo.de**
+📩 **nelix@posteo.de**
 
 ---
 

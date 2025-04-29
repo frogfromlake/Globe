@@ -30,6 +30,7 @@ import { userHasMovedPointer } from "../interactions/pointerTracker";
 
 interface AnimateParams {
   globe: Mesh;
+  cloudSphere: Mesh;
   atmosphere: Mesh;
   starSphere: Mesh;
   globeRaycastMesh: Mesh;
@@ -51,9 +52,9 @@ interface AnimateParams {
   selectedCountryIds: Set<number>;
   selectedOceanIds: Set<number>;
 }
-
 export function createAnimateLoop({
   globe,
+  cloudSphere,
   atmosphere,
   starSphere,
   globeRaycastMesh,
@@ -84,13 +85,28 @@ export function createAnimateLoop({
   let currentHoveredOceanId = -1,
     previousHoveredOceanId = -1;
   let lastFrameTime = performance.now();
-
   let lastRaycastTime = 0;
-  const raycastInterval = 100; // Milliseconds between raycasts
+  const raycastInterval = 100;
   let currentUV: Vector2 | null = null;
 
   const atmosphereMaterial = atmosphere.material as ShaderMaterial;
   const zoomRange = CONFIG.zoom.max - CONFIG.zoom.min;
+
+  // === Cloud Movement Config ===
+  let cloudElapsedTime = 0;
+  let currentDrift = new Vector2(1, 0);
+  let targetDrift = new Vector2(1, 0);
+  let lastDriftChange = performance.now();
+  const driftChangeInterval = 30000; // every 30s
+  const driftLerpSpeed = 0.015; // slow gradual turn
+
+  let cloudDriftBaseSpeed = 0.00004; // very slow: matches shader default
+  let cloudSpeedVariation = 0.0;
+  let cloudTargetVariation = 0.0;
+  let lastSpeedVariationChange = performance.now();
+  const speedVariationStrength = 0.00001; // subtle pulsing
+  const speedVariationChangeInterval = 20000; // update every 20s
+  const speedLerpSpeed = 0.04;
 
   function updateSelectionTexture(
     fadeInArray: Float32Array,
@@ -114,17 +130,55 @@ export function createAnimateLoop({
     requestAnimationFrame(animate);
 
     const now = performance.now();
-    const nowInSeconds = now / 1000;
     const delta = (now - lastFrameTime) / 1000;
     lastFrameTime = now;
+    const nowInSeconds = now / 1000;
 
     const rotationY = getEarthRotationAngle();
-
     globe.rotation.y = rotationY;
     globeRaycastMesh.rotation.y = rotationY;
 
+    // Update real-time uniform for globe shaders
     uniforms.uTime.value = nowInSeconds;
-    uniforms.uTimeStars.value = nowInSeconds;
+
+    cloudElapsedTime += delta;
+
+    // Drift Direction Update
+    if (now - lastDriftChange > driftChangeInterval) {
+      const maxAngleOffset = MathUtils.degToRad(10); // small angle, stay eastward
+      const angleOffset = MathUtils.randFloatSpread(maxAngleOffset); // random between -5.0° and +5.0°
+      const eastward = new Vector2(1, 0); // pure east
+      targetDrift = eastward
+        .clone()
+        .rotateAround(new Vector2(0, 0), angleOffset);
+      lastDriftChange = now;
+    }
+
+    currentDrift.lerp(targetDrift, delta * driftLerpSpeed);
+    currentDrift.normalize();
+
+    // Speed Variation Update
+    if (now - lastSpeedVariationChange > speedVariationChangeInterval) {
+      cloudTargetVariation = (Math.random() * 2 - 1) * speedVariationStrength;
+      lastSpeedVariationChange = now;
+    }
+    cloudSpeedVariation = MathUtils.lerp(
+      cloudSpeedVariation,
+      cloudTargetVariation,
+      delta * speedLerpSpeed
+    );
+
+    const totalSpeed = cloudDriftBaseSpeed + cloudSpeedVariation;
+
+    // Pass cloud drift and time to shader
+    if (cloudSphere.material instanceof ShaderMaterial) {
+      cloudSphere.material.uniforms.uCloudTime.value = cloudElapsedTime;
+      cloudSphere.material.uniforms.uCloudDrift.value.copy(currentDrift);
+      cloudSphere.material.uniforms.uLightDirection.value.copy(
+        uniforms.lightDirection.value
+      );
+      cloudSphere.material.uniforms.uBaseDriftSpeed.value = totalSpeed;
+    }
 
     // Store rotationY globally for this frame
     let globeIntersection: Vector3 | null = null;

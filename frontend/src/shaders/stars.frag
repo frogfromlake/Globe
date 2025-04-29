@@ -1,7 +1,6 @@
 uniform sampler2D uStarMap;
 uniform float uStarFade;
 uniform float uStarOpacity;
-uniform float uTimeStars;
 
 varying vec2 vUv;
 

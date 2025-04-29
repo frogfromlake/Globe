@@ -13,6 +13,9 @@ import {
   Vector2,
   Texture,
   ShaderMaterial,
+  Material,
+  MeshPhongMaterial,
+  MeshBasicMaterial,
 } from "three";
 
 import { initializeCamera } from "../init/initializeCamera";
@@ -119,12 +122,10 @@ export async function startApp(updateSubtitle: (text: string) => void) {
   });
 
   // === Populate Scene with Core Meshes (temporary placeholder sky texture) ===
-  const { globe, atmosphere, starSphere, globeRaycastMesh } = setupSceneObjects(
-    scene,
-    uniforms,
-    new Texture()
-  );
+  const { globe, cloudSphere, atmosphere, starSphere, globeRaycastMesh } =
+    setupSceneObjects(scene, uniforms, new Texture());
   starSphere.visible = false; // Hidden until esoSkyMap is ready
+  cloudSphere.visible = false; // Hidden until cloud texture is ready
 
   // === Set Up Pointer Events ===
   setupGlobePointerEvents(
@@ -170,6 +171,7 @@ export async function startApp(updateSubtitle: (text: string) => void) {
   // === Launch Render Loop Immediately ===
   const animate = createAnimateLoop({
     globe,
+    cloudSphere,
     atmosphere,
     starSphere,
     globeRaycastMesh,
@@ -196,10 +198,21 @@ export async function startApp(updateSubtitle: (text: string) => void) {
   setTimeout(async () => {
     // === Load Visual Textures (day/night/sky)
     loadVisualTextures(renderer).then(
-      ({ dayTexture, nightTexture, esoSkyMapTexture }) => {
+      async ({
+        dayTexture,
+        nightTexture,
+        esoSkyMapTexture,
+        cloudTexture,
+        topographyTexture,
+      }) => {
+        // === Assign Earth Day/Night Textures
         uniforms.dayTexture.value = dayTexture;
         uniforms.nightTexture.value = nightTexture;
 
+        // === Assign Topography Texture (for bump mapping)
+        uniforms.topographyMap.value = topographyTexture;
+
+        // === Force globe material(s) to update
         if (globe.material) {
           if (Array.isArray(globe.material)) {
             globe.material.forEach((mat) => (mat.needsUpdate = true));
@@ -208,6 +221,7 @@ export async function startApp(updateSubtitle: (text: string) => void) {
           }
         }
 
+        // === Handle Star Background
         if (starSphere.material instanceof ShaderMaterial) {
           const starMaterial = starSphere.material;
           starMaterial.uniforms.uStarMap.value = esoSkyMapTexture;
@@ -229,6 +243,17 @@ export async function startApp(updateSubtitle: (text: string) => void) {
           }, 500);
         }
 
+        // === Handle Cloud Sphere (assign texture to custom cloud material)
+        if (cloudTexture) {
+          if (cloudSphere.material instanceof ShaderMaterial) {
+            const cloudMat = cloudSphere.material;
+            cloudMat.uniforms.uCloudMap.value = cloudTexture;
+            cloudMat.needsUpdate = true;
+          }
+          cloudSphere.visible = true;
+        }
+
+        // === Unified Fade-in for Earth + Clouds
         let fade = 0;
         let last = performance.now();
         const fadeInTextures = (now = performance.now()) => {
@@ -236,6 +261,11 @@ export async function startApp(updateSubtitle: (text: string) => void) {
           last = now;
           fade += delta * 0.4;
           uniforms.uTextureFade.value = Math.min(fade, 1);
+
+          if (cloudSphere.material instanceof ShaderMaterial) {
+            cloudSphere.material.uniforms.uCloudFade.value = Math.min(fade, 1);
+          }
+
           if (fade < 1) requestAnimationFrame(fadeInTextures);
         };
         fadeInTextures();
