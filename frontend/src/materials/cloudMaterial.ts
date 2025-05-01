@@ -1,22 +1,28 @@
-/**
- * @file cloudMaterial.ts
- * @description Provides the material used for rendering the thin cloud layer around the Earth.
- */
-
-import { ShaderMaterial, Texture, Vector2, Vector3 } from "three";
+import {
+  ShaderMaterial,
+  Texture,
+  Vector2,
+  Vector3,
+  RepeatWrapping,
+} from "three";
 import {
   cloudsVertexShader,
   cloudsFragmentShader,
 } from "../shaders/earthShaders";
 
 /**
- * Creates a ShaderMaterial for the cloud sphere with soft cloud edges.
+ * Creates a ShaderMaterial for the cloud sphere with soft cloud edges and drifting.
  *
- * @param cloudTexture - (Optional) Placeholder or actual cloud texture.
- * @returns A ShaderMaterial ready for the cloud layer.
+ * @param cloudTexture - Optional placeholder or loaded cloud texture.
+ * @returns A ShaderMaterial configured for the animated cloud layer.
  */
 export function createCloudMaterial(cloudTexture?: Texture) {
   const MAX_FLASHES = 100; // Same as in shader
+
+  if (cloudTexture) {
+    cloudTexture.wrapS = RepeatWrapping;
+    cloudTexture.wrapT = RepeatWrapping;
+  }
 
   return new ShaderMaterial({
     vertexShader: cloudsVertexShader,
