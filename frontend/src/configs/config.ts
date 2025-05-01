@@ -191,7 +191,7 @@ export const CONFIG = {
     /** Max anisotropy for day/night maps (clamped in code) */
     maxAnisotropy: 4,
     /** Night Brightness*/
-    nightBrightness: 1.0,
+    nightBrightness: 1.2,
   },
 
   /** Default uniform values for shaders */
@@ -199,9 +199,9 @@ export const CONFIG = {
     /** Strength of the city lights in night view (0–1) */
     cityLightStrength: 0.5,
     /** Strength of the circular glow around the cursor */
-    cursorGlowStrength: 0.1,
+    cursorGlowStrength: 0.2,
     /** Radius of the cursor glow (in UV space, 0–1) */
-    cursorGlowRadius: 0.4,
+    cursorGlowRadius: 0.45,
     /** Initial value for cursor UV (offscreen by default) */
     initialCursorUV: [-1, -1] as [number, number],
     /** Initial hovered/previous hovered country and ocean IDs */

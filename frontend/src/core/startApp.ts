@@ -298,18 +298,20 @@ export async function startApp(
     );
     updateKeyboardRef.fn = setupKeyboardControls(camera, controls);
 
-    // === Load Admin Panel only in development
     if (import.meta.env.DEV) {
-      import("../features/news/setupAdminPanel")
-        .then(({ setupAdminPanel }) => {
-          setupAdminPanel();
-        })
-        .catch((err) => {
-          console.warn("🛠 Admin panel failed to load:", err);
-        });
+      const modules = import.meta.glob("../features/news/setupAdminPanel.ts");
+      const load = modules["../features/news/setupAdminPanel.ts"];
+      if (load) {
+        load()
+          .then((module) => {
+            const { setupAdminPanel } = module as { setupAdminPanel: any };
+            setupAdminPanel();
+          })
+          .catch((err) => {
+            console.warn("🛠 Admin panel failed to load:", err);
+          });
+      }
     }
-
-    hoverReady = true;
   }, 0); // after one tick
 
   // === Expose startHoverSystem for main.ts to call after loading screen
@@ -325,6 +327,7 @@ export async function startApp(
     loadOceanIdMapTexture
   );
 
+  hoverReady = true;
   return { animate };
 }
 
