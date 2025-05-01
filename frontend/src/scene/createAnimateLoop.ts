@@ -13,7 +13,11 @@ import {
 } from "three";
 
 import { CONFIG } from "../configs/config";
-import { getEarthRotationAngle, getSunDirectionUTC, latLonToUnitVector } from "../globe/geo";
+import {
+  getEarthRotationAngle,
+  getSunDirectionUTC,
+  latLonToUnitVector,
+} from "../globe/geo";
 import { updateHoveredCountry } from "../hoverLabel/countryHover";
 import { updateHoveredOcean } from "../hoverLabel/oceanHover";
 import {
@@ -156,9 +160,15 @@ export function createAnimateLoop({
 
     if (auroraMesh.material instanceof ShaderMaterial) {
       auroraMesh.material.uniforms.uTime.value = nowInSeconds * 0.015;
-      auroraMesh.material.uniforms.lightDirection.value.copy(uniforms.lightDirection.value);
-      auroraMesh.material.uniforms.uMagneticNorth.value.copy(latLonToUnitVector(86.5, -161));
-      auroraMesh.material.uniforms.uMagneticSouth.value.copy(latLonToUnitVector(-64.5, 137));      
+      auroraMesh.material.uniforms.lightDirection.value.copy(
+        uniforms.lightDirection.value
+      );
+      auroraMesh.material.uniforms.uMagneticNorth.value.copy(
+        latLonToUnitVector(86.5, -161)
+      );
+      auroraMesh.material.uniforms.uMagneticSouth.value.copy(
+        latLonToUnitVector(-64.5, 137)
+      );
     }
 
     const rotationY = getEarthRotationAngle();
@@ -195,7 +205,15 @@ export function createAnimateLoop({
       delta * speedLerpSpeed
     );
 
-    const totalSpeed = cloudDriftBaseSpeed + cloudSpeedVariation;
+    if (!isFinite(cloudSpeedVariation)) {
+      cloudSpeedVariation = 0;
+    }
+
+    const totalSpeed = MathUtils.clamp(
+      cloudDriftBaseSpeed + cloudSpeedVariation,
+      0.00001, // min drift speed
+      0.0001 // max drift speed
+    );
 
     // Pass cloud drift and time to shader
     if (cloudSphere.material instanceof ShaderMaterial) {
