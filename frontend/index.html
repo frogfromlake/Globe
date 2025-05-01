@@ -17,7 +17,7 @@
         <div class="spinner-pulse"></div>
       </div>
       <h1 class="title">OrbitalOne</h1>
-      <h3 class="subtitle visible"></h3>
+      <h3 class="subtitle"></h3> <!-- Start empty and invisible -->
     </div>
   </div>
 
@@ -38,29 +38,34 @@
       <div class="bar"></div>
     </div>
 
-  <!-- Sidebar menu -->
-  <div id="sidebar" class="sidebar">
+    <!-- Sidebar menu -->
+    <div id="sidebar" class="sidebar">
 
-    <div class="sidebar-section">
-      <h3 class="sidebar-heading">Quick Actions</h3>
-      <button id="show-location" class="globe-btn">Show My Location</button>
-      <button id="clear-selection" class="globe-btn">Clear All Selections</button>
+      <div class="sidebar-section">
+        <h3 class="sidebar-heading">Quick Actions</h3>
+        <button id="show-location" class="globe-btn">Show My Location</button>
+        <button id="clear-selection" class="globe-btn">Clear All Selections</button>
+      </div>
+
+      <div class="sidebar-section">
+        <h3 class="sidebar-heading">Interactivity</h3>
+        <button id="toggle-country" class="globe-btn">Disable Country Interactivity</button>
+        <button id="toggle-ocean" class="globe-btn">Disable Ocean Interactivity</button>
+      </div>
+
+      <div class="sidebar-section">
+        <h3 class="sidebar-heading">Visual Effects</h3>
+        <button id="toggle-atmosphere" class="globe-btn">Disable Atmosphere</button>
+        <button id="toggle-clouds" class="globe-btn">Disable Clouds</button>
+        <button id="toggle-star-mode" class="globe-btn">Background: Realistic</button>
+      </div>
+
+      <div class="sidebar-section">
+        <h3 class="sidebar-heading">Night View</h3>
+        <button id="toggle-flashlight" class="globe-btn">Disable Flashlight</button>
+      </div>
+
     </div>
-
-    <div class="sidebar-section">
-      <h3 class="sidebar-heading">Interactivity</h3>
-      <button id="toggle-country" class="globe-btn">Disable Country Interactivity</button>
-      <button id="toggle-ocean" class="globe-btn">Disable Ocean Interactivity</button>
-    </div>
-
-    <div class="sidebar-section">
-      <h3 class="sidebar-heading">Display Settings</h3>
-      <button id="toggle-flashlight" class="globe-btn">Disable Flashlight</button>
-      <button id="toggle-star-mode" class="globe-btn">Background: Realistic</button>
-      <button id="toggle-clouds" class="globe-btn">Disable Clouds</button>
-    </div>
-
-  </div>
 
     <!-- News Panel -->
     <div id="news-panel" class="news-panel">

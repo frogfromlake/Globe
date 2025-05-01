@@ -3,103 +3,117 @@ precision highp float;
 uniform float uTime;
 uniform vec2 uResolution;
 
-varying vec3 vLocalRayOrigin;
-varying vec3 vLocalRayDir;
-uniform vec3 lightDirection;
+varying vec3 vWorldPosition;
 
+uniform sampler2D uAuroraMap;
+uniform vec3 lightDirection;
 uniform vec3 uMagneticNorth;
 uniform vec3 uMagneticSouth;
 
-mat2 mm2(float a) {
-    float c = cos(a), s = sin(a);
-    return mat2(c, s, -s, c);
-}
-mat2 m2 = mat2(0.95534, 0.29552, -0.29552, 0.95534);
-
-float tri(float x) {
-    return clamp(abs(fract(x) - 0.5), 0.01, 0.49);
-}
-vec2 tri2(vec2 p) {
-    return vec2(tri(p.x) + tri(p.y), tri(p.y + tri(p.x)));
+// --- Smoothed flicker using coherent sin-based offset ---
+vec2 flickerVec(vec3 pos, float time) {
+    float flicker = sin(dot(pos.xy, vec2(50.0, 30.0)) + time * 1.5);
+    return vec2(
+        sin(time + pos.y * 10.0),
+        cos(time + pos.x * 8.0)
+    ) * 0.01 * flicker;
 }
 
-float triNoise2d(vec2 p, float spd) {
-    float z = 1.8;
-    float z2 = 2.5;
-    float rz = 0.0;
-    p *= mm2(p.x * 0.06);
-    vec2 bp = p;
-
-    for (float i = 0.0; i < 5.0; i++) {
-        vec2 dg = tri2(bp * 1.85) * 0.75;
-        dg *= mm2(uTime * spd);
-        p -= dg / z2;
-
-        bp *= 1.3;
-        z2 *= 0.45;
-        z *= 0.42;
-        p *= 1.21 + (rz - 1.0) * 0.02;
-
-        rz += tri(p.x + tri(p.y)) * z;
-        p *= -m2;
-    }
-
-    return clamp(1.0 / pow(rz * 29.0, 1.3), 0.0, 0.55);
-}
-
-float hash21(vec2 n) {
-    return fract(sin(dot(n, vec2(12.9898, 4.1414))) * 43758.5453);
-}
-
-vec4 aurora(vec3 ro, vec3 rd) {
-    vec4 col = vec4(0.0);
-    vec4 avgCol = vec4(0.0);
-
-    vec3 surfaceNormal = normalize(rd);
-    float intensity = dot(surfaceNormal, normalize(lightDirection));
-    float normalized = intensity * 0.5 + 0.5;
-    float nightFactor = 1.0 - smoothstep(0.42, 0.58, normalized); // 1 = full night
-
-    for (float i = 0.0; i < 60.0; i++) {
-        float of = 0.006 * hash21(gl_FragCoord.xy) * smoothstep(0.0, 10.0, i);
-        float pt = ((0.75 + pow(i, 1.4) * 0.002) - ro.y) / (rd.y * 2.0 + 0.4);
-        pt -= of;
-
-        vec3 bpos = ro + pt * rd;
-        bpos += -normalize(bpos) * (0.08 + i * 0.0015); // extended height, softened compression
-
-        // --- Magnetic proximity fade ---
-        float distNorth = distance(normalize(bpos), normalize(uMagneticNorth));
-        float distSouth = distance(normalize(bpos), normalize(uMagneticSouth));
-        float magneticFade = 1.0 - smoothstep(0.18, 0.8, min(distNorth, distSouth));
-
-        // --- Local day/night filter at this point ---
-        float sunIntensity = dot(normalize(bpos), normalize(lightDirection));
-        float sunNorm = sunIntensity * 0.5 + 0.5;
-        float localNight = 1.0 - smoothstep(0.42, 0.58, sunNorm);
-
-        // --- Additional dimming on daylight South Pole auroras ---
-        if (bpos.y < 0.0 && sunNorm > 0.5) {
-            localNight *= 0.4; // strong dimming
-        }
-
-        // --- Aurora flicker/shape ---
-        float rzt = triNoise2d(bpos.xz * vec2(26.0, 18.0), 0.07) * magneticFade * localNight * 1.8;
-
-        vec4 col2 = vec4(0.0);
-        col2.rgb = (sin(1.0 - vec3(2.15, -0.5, 1.2) + (i * 1.25) * 0.043) * 0.5 + 0.5) * rzt;
-        col2.a = rzt;
-
-        avgCol = mix(avgCol, col2, 0.5);
-        col += avgCol * exp2(-i * 0.065 - 2.5) * smoothstep(0.0, 5.0, i);
-    }
-
-    return col * 0.6 * mix(0.0, 0.80, nightFactor); // global night dimming
+// --- Soft 5-tap blur for aurora texture ---
+float sampleAuroraBlurred(vec2 uv) {
+    float w = 0.002;
+    float sum = 0.0;
+    sum += texture2D(uAuroraMap, fract(uv)).r * 0.4;
+    sum += texture2D(uAuroraMap, fract(uv + vec2( w, 0.0))).r * 0.15;
+    sum += texture2D(uAuroraMap, fract(uv + vec2(-w, 0.0))).r * 0.15;
+    sum += texture2D(uAuroraMap, fract(uv + vec2(0.0,  w))).r * 0.15;
+    sum += texture2D(uAuroraMap, fract(uv + vec2(0.0, -w))).r * 0.15;
+    return pow(sum, 2.2); // Gamma correction
 }
 
 void main() {
-    vec3 ro = vLocalRayOrigin;
-    vec3 rd = normalize(vLocalRayDir);
-    vec4 aur = aurora(ro, rd);
-    gl_FragColor = vec4(aur.rgb, aur.a);
+    vec3 pos = normalize(vWorldPosition);
+
+    // --- Magnetic pole axes ---
+    vec3 northPole = normalize(uMagneticNorth);
+    vec3 southPole = normalize(uMagneticSouth);
+    vec3 up = vec3(0.0, 1.0, 0.0);
+
+    vec3 northTangent = normalize(cross(up, northPole));
+    vec3 northBitangent = cross(northPole, northTangent);
+
+    vec3 southTangent = normalize(cross(up, southPole));
+    vec3 southBitangent = cross(southPole, southTangent);
+
+    // --- UV projection per pole ---
+    vec2 northUV = vec2(dot(pos, northTangent), dot(pos, northBitangent)) * 0.5 + 0.5;
+    vec2 southUV = vec2(dot(pos, southTangent), dot(pos, southBitangent)) * 0.5 + 0.5;
+
+    // --- Zoom and offset for texture ---
+    float auroraZoom = 0.7; // < 1 = zoom out, > 1 = zoom in
+    vec2 auroraOffset = vec2(0.2, -0.07); // adjust to shift texture position
+
+    northUV = (northUV - 0.5) / auroraZoom + 0.5 + auroraOffset;
+    southUV = (southUV - 0.5) / auroraZoom + 0.5 + auroraOffset;
+
+    // --- Rotation animation ---
+    float angleN = uTime * 0.15;
+    float angleS = -uTime * 0.1;
+    mat2 rotN = mat2(cos(angleN), -sin(angleN), sin(angleN), cos(angleN));
+    mat2 rotS = mat2(cos(angleS), -sin(angleS), sin(angleS), cos(angleS));
+
+    vec2 baseNorthUV = rotN * (northUV - 0.5);
+    vec2 baseSouthUV = rotS * (southUV - 0.5);
+
+    vec2 flicker = flickerVec(pos, uTime);
+
+    northUV = baseNorthUV + flicker + 0.5;
+    southUV = baseSouthUV + flicker + 0.5;
+
+    // --- Sample smoothed texture ---
+    float northAlpha = sampleAuroraBlurred(northUV);
+    float southAlpha = sampleAuroraBlurred(southUV);
+
+    // --- Magnetic ring fade ---
+    float distToNorth = length(cross(pos, northPole));
+    float distToSouth = length(cross(pos, southPole));
+    float northFade = 1.0 - smoothstep(0.25, 0.42, distToNorth);
+    float southFade = 1.0 - smoothstep(0.25, 0.42, distToSouth);
+
+    // --- Hemisphere logic ---
+    bool isNorth = dot(pos, northPole) > 0.0;
+    // bool isSouth = dot(pos, southPole) < 0.0;
+    bool isSouth = dot(pos, southPole) > 0.0;
+
+    float alpha = 0.0;
+
+    if (isNorth) {
+        float alignment = abs(dot(pos, northPole));
+        float ringSharpness = smoothstep(0.75, 0.95, alignment);
+        alpha = northAlpha * northFade * ringSharpness;
+    } else if (isSouth) {
+        float alignment = abs(dot(pos, southPole));
+        float ringSharpness = smoothstep(0.75, 0.95, alignment);
+        alpha = southAlpha * southFade * ringSharpness;
+    }
+
+    // --- Night side fade ---
+    float lightAmount = dot(pos, normalize(lightDirection));
+    // float nightFade = 1.0 - smoothstep(0.3, 0.6, lightAmount * 0.5 + 0.5);
+    float rawNightFade = 1.0 - smoothstep(0.3, 0.6, lightAmount * 0.5 + 0.5);
+    float nightFade = isNorth ? rawNightFade : 1.0; // south is always visible
+
+    // --- Height fade (atmosphere shell) ---
+    float heightFade = smoothstep(0.0, 0.06, length(vWorldPosition) - 1.0);
+
+    // --- Edge blend for color ---
+    float edgeBlend = smoothstep(0.0, 0.4, 1.0 - alpha);
+    vec3 coreColor = vec3(0.1, 1.0, 0.4);
+    vec3 edgeColor = vec3(0.2, 0.8, 1.0);
+    vec3 auroraColor = mix(coreColor, edgeColor, edgeBlend) * alpha;
+
+    // --- Final alpha with blending curve ---
+    float finalAlpha = pow(alpha * nightFade * heightFade * 2.5, 1.2);
+
+    gl_FragColor = vec4(auroraColor, finalAlpha);
 }

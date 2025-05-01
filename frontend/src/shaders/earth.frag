@@ -38,7 +38,7 @@ uniform bool uCursorOnGlobe;                     // Whether the cursor is on the
 varying vec2 vUv;                                // The UV coordinates of the current fragment, passed from the vertex shader.
 varying vec3 vWorldNormal;                       // The normal vector at the current fragment, passed from the vertex shader.
 varying vec3 vViewDirection;                     // The direction from the camera to the current fragment, passed from the vertex shader.
-uniform sampler2D topographyMap;  // Topography (bump) texture
+
 vec3 desaturate(vec3 color, float factor) {
     // Desaturates the given color by the specified factor, making the color more grayscale.
     float gray = dot(color, vec3(0.299, 0.587, 0.114));

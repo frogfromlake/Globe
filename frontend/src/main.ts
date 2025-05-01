@@ -28,11 +28,12 @@ function setLoadingSubtitle(text: string): void {
   const subtitle = document.querySelector(".subtitle") as HTMLElement | null;
   if (subtitle) {
     subtitle.textContent = text;
+    subtitle.classList.add("visible");
   }
 }
 
 // Initialize and start the application
-startApp(setLoadingSubtitle).then(({ animate, startHoverSystem }) => {
+startApp(setLoadingSubtitle).then(({ animate }) => {
   performance.mark("start-app-done");
 
   performance.measure("App Init", "start-app-init", "start-app-done");
@@ -65,9 +66,6 @@ startApp(setLoadingSubtitle).then(({ animate, startHoverSystem }) => {
       appContainer.classList.add("visible");
 
       animate();
-      startHoverSystem().catch((err) => {
-        console.error("Error in hover system initialization:", err);
-      });
-    }, 200);
+    }, 150);
   });
 });

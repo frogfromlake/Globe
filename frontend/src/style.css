@@ -86,9 +86,10 @@ canvas {
   font-weight: 300;
   color: #a4dfff;
   opacity: 0;
-  transition: opacity 0.6s ease;
+  transition: opacity 0.4s ease;
   margin-top: 1rem;
-  animation: fadeIn 2s ease forwards;
+  min-height: 1.5em; /* reserves space for the subtitle before it's visible */
+  text-align: center;
 }
 
 .subtitle.visible {
@@ -149,6 +150,8 @@ canvas {
   backdrop-filter: blur(6px);
   background: rgba(0, 0, 0, 0.515);
   border-radius: 8px;
+  transform: scale(0.90);
+  transform-origin: top left;
 }
 
 .sidebar.open {

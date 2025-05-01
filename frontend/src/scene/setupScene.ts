@@ -91,23 +91,12 @@ export function setupSceneObjects(
   scene.add(atmosphere);
 
   // === Aurora Mesh ===
-  const auroraRadius = CONFIG.globe.radius * 1.005;
-  const auroraGeometry = new SphereGeometry(auroraRadius, 32, 32);
+  const auroraRadius = CONFIG.globe.radius * 1.015;
+  const auroraGeometry = new SphereGeometry(auroraRadius, 64, 64);
   const auroraMaterial = createAuroraMaterial(
     new Vector2(window.innerWidth, window.innerHeight)
   );
-
-  // Magnetic poles (approximate WMM 2025)
-  const magneticNorth = latLonToUnitVector(86.5, -161);
-  const magneticSouth = latLonToUnitVector(-64.5, 137);
-
-  // Add to shader uniforms
-  auroraMaterial.uniforms.uMagneticNorth = { value: magneticNorth };
-  auroraMaterial.uniforms.uMagneticSouth = { value: magneticSouth };
-
   const auroraMesh = new Mesh(auroraGeometry, auroraMaterial);
-  auroraMesh.renderOrder = 1.6;
-  auroraMesh.visible = true;
   scene.add(auroraMesh);
 
   // === Star Sphere ===

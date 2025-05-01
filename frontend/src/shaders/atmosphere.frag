@@ -31,7 +31,7 @@ void main() {
     // Twilight is stronger when the light is at lower angles (closer to the horizon). 
     // Adjust the smoothstep range and the multiplier to increase twilight intensity.
     float twilight = smoothstep(-0.2, -0.02, lightDot) * (1.0 - dayFade);
-    twilight *= 1.0;  // Increased intensity by multiplying with a factor
+    twilight *= 1.2;  // Increased intensity by multiplying with a factor
 
     // === Combine fade values for overall glow effect ===
     // The final fade value combines daylight and twilight. The twilight effect is reduced by a factor of 0.8 to create a more subtle sunset effect.

@@ -13,7 +13,7 @@ import {
 } from "three";
 
 import { CONFIG } from "../configs/config";
-import { getEarthRotationAngle, getSunDirectionUTC } from "../globe/geo";
+import { getEarthRotationAngle, getSunDirectionUTC, latLonToUnitVector } from "../globe/geo";
 import { updateHoveredCountry } from "../hoverLabel/countryHover";
 import { updateHoveredOcean } from "../hoverLabel/oceanHover";
 import {
@@ -155,10 +155,10 @@ export function createAnimateLoop({
     const nowInSeconds = now / 1000;
 
     if (auroraMesh.material instanceof ShaderMaterial) {
-      auroraMesh.material.uniforms.uTime.value = nowInSeconds;
-      auroraMesh.material.uniforms.lightDirection.value.copy(
-        uniforms.lightDirection.value
-      );
+      auroraMesh.material.uniforms.uTime.value = nowInSeconds * 0.015;
+      auroraMesh.material.uniforms.lightDirection.value.copy(uniforms.lightDirection.value);
+      auroraMesh.material.uniforms.uMagneticNorth.value.copy(latLonToUnitVector(86.5, -161));
+      auroraMesh.material.uniforms.uMagneticSouth.value.copy(latLonToUnitVector(-64.5, 137));      
     }
 
     const rotationY = getEarthRotationAngle();

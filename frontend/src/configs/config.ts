@@ -174,6 +174,8 @@ export const CONFIG = {
     cloudsMapPath: "/textures/earth_clouds_8k.webp",
     /** Path to the bump map */
     topographyMapPath: "/textures/earth_topography_8k.webp",
+    /** Path to the aurora noise texture */
+    auroraNoisePath: "/textures/auroraNoise.webp",
     /** Min filter for day/night textures */
     minFilter: LinearFilter,
     /** Mag filter for day/night textures */

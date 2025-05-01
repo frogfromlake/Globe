@@ -168,6 +168,7 @@ export async function startApp(updateSubtitle: (text: string) => void) {
     selection.oceanIds,
     globe,
     cloudSphere,
+    auroraMesh,
     locationSearchInput,
     camera,
     controls,
@@ -307,21 +308,20 @@ export async function startApp(updateSubtitle: (text: string) => void) {
   }, 0); // after one tick
 
   // === Expose startHoverSystem for main.ts to call after loading screen
-  const startHoverSystem = async () => {
-    await runWithLoadingMessage(
-      loadingMessages.countryTextures,
-      updateSubtitle,
-      loadCountryIdMapTexture
-    );
-    await runWithLoadingMessage(
-      loadingMessages.oceanTextures,
-      updateSubtitle,
-      loadOceanIdMapTexture
-    );
-    hoverReady = true;
-  };
+  // === Load Country & Ocean ID Maps (triggers subtitle updates)
+  await runWithLoadingMessage(
+    loadingMessages.countryTextures,
+    updateSubtitle,
+    loadCountryIdMapTexture
+  );
+  await runWithLoadingMessage(
+    loadingMessages.oceanTextures,
+    updateSubtitle,
+    loadOceanIdMapTexture
+  );
+  hoverReady = true;
 
-  return { animate, startHoverSystem };
+  return { animate };
 }
 
 /**
