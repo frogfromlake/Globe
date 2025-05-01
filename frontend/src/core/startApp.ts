@@ -13,9 +13,6 @@ import {
   Vector2,
   Texture,
   ShaderMaterial,
-  Material,
-  MeshPhongMaterial,
-  MeshBasicMaterial,
 } from "three";
 
 import { initializeCamera } from "../init/initializeCamera";
@@ -62,7 +59,10 @@ let hoverReady = false;
  * @param updateSubtitle - Callback for updating the loading screen subtitle
  * @returns Animation loop starter and a deferred hover activation function
  */
-export async function startApp(updateSubtitle: (text: string) => void) {
+export async function startApp(
+  updateSubtitle: (text: string) => void,
+  onGlobeFadeStart?: () => void // 👈 Add this optional callback
+) {
   // === State Stores for Country/Ocean Selection ===
   const selection = {
     countryIds: new Set<number>(),
@@ -250,7 +250,7 @@ export async function startApp(updateSubtitle: (text: string) => void) {
               if (starFade < 1) requestAnimationFrame(fadeInStarSphere);
             };
             fadeInStarSphere();
-          }, 500);
+          }, 300);
         }
 
         // === Handle Cloud Sphere (assign texture to custom cloud material)
@@ -269,7 +269,7 @@ export async function startApp(updateSubtitle: (text: string) => void) {
         const fadeInTextures = (now = performance.now()) => {
           const delta = (now - last) / 1000;
           last = now;
-          fade += delta * 0.4;
+          fade += delta * 0.2;
           uniforms.uTextureFade.value = Math.min(fade, 1);
 
           if (cloudSphere.material instanceof ShaderMaterial) {
@@ -300,11 +300,16 @@ export async function startApp(updateSubtitle: (text: string) => void) {
 
     // === Load Admin Panel only in development
     if (import.meta.env.DEV) {
-      const { setupAdminPanel } = await import(
-        "../features/news/setupAdminPanel"
-      );
-      setupAdminPanel();
+      import("../features/news/setupAdminPanel")
+        .then(({ setupAdminPanel }) => {
+          setupAdminPanel();
+        })
+        .catch((err) => {
+          console.warn("🛠 Admin panel failed to load:", err);
+        });
     }
+
+    hoverReady = true;
   }, 0); // after one tick
 
   // === Expose startHoverSystem for main.ts to call after loading screen
@@ -319,7 +324,6 @@ export async function startApp(updateSubtitle: (text: string) => void) {
     updateSubtitle,
     loadOceanIdMapTexture
   );
-  hoverReady = true;
 
   return { animate };
 }

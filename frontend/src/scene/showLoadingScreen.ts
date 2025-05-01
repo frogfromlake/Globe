@@ -66,7 +66,7 @@ export async function runWithLoadingMessage<T>(
   await new Promise((resolve) => requestAnimationFrame(resolve));
 
   // Ensure subtitle is visible for at least 300ms
-  await new Promise((resolve) => setTimeout(resolve, 300));
+  await new Promise((resolve) => setTimeout(resolve, 100));
 
   return await action();
 }

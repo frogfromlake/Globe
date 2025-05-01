@@ -41,7 +41,7 @@ void main() {
     vec3 rimColor = vec3(0.4, 0.5, 0.8);
     baseColor += rimColor * rimGlow * 0.3;
 
-    // === NEW: Fade clouds out near night-side rim ===
+    // === Fade clouds out near night-side rim ===
     float viewDot = dot(normalize(vViewDirection), normalize(vWorldNormal));
     float rimFactor = 1.0 - max(viewDot, 0.0); // 0 (center) to 1 (edge)
     
@@ -66,7 +66,7 @@ void main() {
     }
 
     totalLightning *= (1.0 - vSunlightFactor) * cloudAlpha; // night-side only
-    baseColor += vec3(1.3, 1.4, 1.8) * totalLightning * 1.0;
+    baseColor += vec3(1.3, 1.4, 1.8) * totalLightning * 0.25;
     finalAlpha += totalLightning * 0.2;
 
     gl_FragColor = vec4(baseColor, finalAlpha);
