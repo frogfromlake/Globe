@@ -51,7 +51,7 @@ void main() {
     
     // The intensity of sunlight at the current point.
     float intensity = dot(normalize(vWorldNormal), normalize(lightDirection)); 
-    
+
     // Normalize the intensity to range from 0 to 1.
     float normalized = intensity * 0.5 + 0.5; 
     
@@ -91,13 +91,13 @@ void main() {
     vec3 tonedNight = mix(nightOriginal, vec3(nightGray), desaturationFactor); 
 
     // Apply a light tint to the night texture to give it a more realistic color.
-    vec3 lightTint = vec3(1.05, 0.9, 0.7); // The light tint for city lights.
+    vec3 lightTintColor = vec3(1.05, 0.9, 0.7); // The light tint for city lights.
     
     // Falloff for city lights, based on the sharpness of the transition.
     float cityFalloff = smoothstep(0.0, 0.7, 1.0 - sharpened); 
     
     // Apply city glow to the night texture.
-    vec3 cityGlow = tonedNight * lightTint * cityLightStrength * cityFalloff * 0.05; 
+    vec3 cityGlow = tonedNight * lightTintColor * cityLightStrength * cityFalloff * 0.05; 
 
     // Blend the toned night texture with the city glow.
     vec3 nightBlended = tonedNight + cityGlow; 
@@ -131,16 +131,16 @@ void main() {
     finalColor += rimColor * dayRimFade * 0.6; 
 
     // Night rim fade effect, with a smoother transition for night-time glow.
-    float nightRimFade = smoothstep(0.0, 1.0, pow(rimDot, 3.5)) * (1.0 - sharpened);
+    float nightRimFade = smoothstep(0.0, 1.0, pow(rimDot, 1.5)) * (1.0 - sharpened);
     
     // Darken the final color on the night side.
-    finalColor = mix(finalColor, vec3(0.0), nightRimFade * 0.9);                    
+    finalColor = mix(finalColor, vec3(0.0), nightRimFade * 1.5);
 
     // Add a slight edge effect for visual enhancement.
     float edgeFill = smoothstep(0.0, 0.2, sharpened);
     
     // Add the edge effect to the final color.
-    finalColor += vec3(0.01, 0.015, 0.025) * edgeFill;                             
+    finalColor += vec3(0.01, 0.015, 0.025) * edgeFill;
 
     // === Country and Ocean Highlighting ===
     // Sample the country and ocean ID maps to identify hovered or selected regions.
@@ -255,7 +255,7 @@ void main() {
     }
 
     // === Flashlight Effect ===
-    if (uFlashlightEnabled) {
+    if (uFlashlightEnabled && uCursorOnGlobe) {
         vec3 normalizedCursor = normalize(cursorWorldPos);
         vec3 normalizedFrag = normalize(vWorldNormal);
 

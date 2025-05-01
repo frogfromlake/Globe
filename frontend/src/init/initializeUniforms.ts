@@ -113,9 +113,10 @@ export function initializeUniforms(
     uCameraDistance: { value: 0.0 },
     uTextureFade: { value: 0.0 },
     uStarFade: { value: 0.0 },
-    uTimeStars: { value: 0 },
     uCountryCount: { value: countryCount },
     uOceanCount: { value: oceanCount },
+    topographyMap: { value: null },
+    bumpScale: { value: 1.0 },
   };
 
   return {

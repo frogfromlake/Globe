@@ -9,7 +9,8 @@ import {
   BackSide,
   AdditiveBlending,
   Texture,
-} from "three"; // <== Add MeshBasicMaterial import
+  Vector2,
+} from "three";
 
 import { CONFIG } from "../configs/config";
 import { createStarMaterial } from "../materials/starMaterials";
@@ -19,6 +20,9 @@ import {
   earthFragmentShader,
   earthVertexShader,
 } from "../shaders/earthShaders";
+import { createCloudMaterial } from "../materials/cloudMaterial";
+import { createAuroraMaterial } from "../materials/auroraMaterial";
+import { latLonToUnitVector } from "../globe/geo";
 
 /**
  * Initializes and adds the main 3D globe, its atmosphere layer, star background, and raycast helper.
@@ -34,7 +38,9 @@ export function setupSceneObjects(
   esoSkyMapTexture: Texture
 ): {
   globe: Mesh;
+  cloudSphere: Mesh;
   atmosphere: Mesh;
+  auroraMesh: Mesh;
   starSphere: Mesh;
   globeRaycastMesh: Mesh;
 } {
@@ -54,6 +60,18 @@ export function setupSceneObjects(
   const globe = new Mesh(globeGeometry, globeMaterial);
   scene.add(globe);
 
+  // === Cloud Layer ===
+  const cloudRadius = CONFIG.globe.radius * 1.003;
+  const cloudGeometry = new SphereGeometry(cloudRadius, 128, 128);
+
+  // Pass no texture yet — will be set after loading in startApp
+  const cloudMaterial = createCloudMaterial();
+
+  const cloudSphere = new Mesh(cloudGeometry, cloudMaterial);
+  cloudSphere.renderOrder = 1.5;
+  cloudSphere.visible = false;
+  scene.add(cloudSphere);
+
   // === Atmosphere ===
   const atmosphereRadius = CONFIG.globe.radius * 1.027;
   const atmosphereGeometry = new SphereGeometry(atmosphereRadius, 128, 128);
@@ -71,6 +89,15 @@ export function setupSceneObjects(
   });
   const atmosphere = new Mesh(atmosphereGeometry, atmosphereMaterial);
   scene.add(atmosphere);
+
+  // === Aurora Mesh ===
+  const auroraRadius = CONFIG.globe.radius * 1.015;
+  const auroraGeometry = new SphereGeometry(auroraRadius, 64, 64);
+  const auroraMaterial = createAuroraMaterial(
+    new Vector2(window.innerWidth, window.innerHeight)
+  );
+  const auroraMesh = new Mesh(auroraGeometry, auroraMaterial);
+  scene.add(auroraMesh);
 
   // === Star Sphere ===
   esoSkyMapTexture.wrapS = RepeatWrapping;
@@ -103,5 +130,12 @@ export function setupSceneObjects(
   );
   scene.add(globeRaycastMesh);
 
-  return { globe, atmosphere, starSphere, globeRaycastMesh };
+  return {
+    globe,
+    cloudSphere,
+    atmosphere,
+    auroraMesh,
+    starSphere,
+    globeRaycastMesh,
+  };
 }

@@ -170,6 +170,12 @@ export const CONFIG = {
     oceanIdMapPath: "/textures/ocean_id_map_8k_rgb.png",
     /** Path to the eso sky map */
     esoSkyMapPath: "/textures/eso_sky.webp",
+    /** Path to the clouds map */
+    cloudsMapPath: "/textures/earth_clouds_8k.webp",
+    /** Path to the bump map */
+    topographyMapPath: "/textures/earth_topography_8k.webp",
+    /** Path to the aurora noise texture */
+    auroraNoisePath: "/textures/auroraNoise.webp",
     /** Min filter for day/night textures */
     minFilter: LinearFilter,
     /** Mag filter for day/night textures */
@@ -185,7 +191,7 @@ export const CONFIG = {
     /** Max anisotropy for day/night maps (clamped in code) */
     maxAnisotropy: 4,
     /** Night Brightness*/
-    nightBrightness: 1.3,
+    nightBrightness: 1.0,
   },
 
   /** Default uniform values for shaders */

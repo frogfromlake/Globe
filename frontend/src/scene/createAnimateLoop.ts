@@ -13,7 +13,7 @@ import {
 } from "three";
 
 import { CONFIG } from "../configs/config";
-import { getEarthRotationAngle, getSunDirectionUTC } from "../globe/geo";
+import { getEarthRotationAngle, getSunDirectionUTC, latLonToUnitVector } from "../globe/geo";
 import { updateHoveredCountry } from "../hoverLabel/countryHover";
 import { updateHoveredOcean } from "../hoverLabel/oceanHover";
 import {
@@ -30,7 +30,9 @@ import { userHasMovedPointer } from "../interactions/pointerTracker";
 
 interface AnimateParams {
   globe: Mesh;
+  cloudSphere: Mesh;
   atmosphere: Mesh;
+  auroraMesh: Mesh;
   starSphere: Mesh;
   globeRaycastMesh: Mesh;
   uniforms: { [key: string]: any };
@@ -51,10 +53,11 @@ interface AnimateParams {
   selectedCountryIds: Set<number>;
   selectedOceanIds: Set<number>;
 }
-
 export function createAnimateLoop({
   globe,
+  cloudSphere,
   atmosphere,
+  auroraMesh,
   starSphere,
   globeRaycastMesh,
   uniforms,
@@ -84,13 +87,46 @@ export function createAnimateLoop({
   let currentHoveredOceanId = -1,
     previousHoveredOceanId = -1;
   let lastFrameTime = performance.now();
-
   let lastRaycastTime = 0;
-  const raycastInterval = 100; // Milliseconds between raycasts
+  const raycastInterval = 100;
   let currentUV: Vector2 | null = null;
 
   const atmosphereMaterial = atmosphere.material as ShaderMaterial;
   const zoomRange = CONFIG.zoom.max - CONFIG.zoom.min;
+
+  // === Cloud Movement Config ===
+  let cloudElapsedTime = 0;
+  let currentDrift = new Vector2(1, 0);
+  let targetDrift = new Vector2(1, 0);
+  let lastDriftChange = performance.now();
+  const driftChangeInterval = 30000; // every 30s
+  const driftLerpSpeed = 0.015; // slow gradual turn
+
+  let cloudDriftBaseSpeed = 0.00004; // very slow: matches shader default
+  let cloudSpeedVariation = 0.0;
+  let cloudTargetVariation = 0.0;
+  let lastSpeedVariationChange = performance.now();
+  const speedVariationStrength = 0.00001; // subtle pulsing
+  const speedVariationChangeInterval = 20000; // update every 20s
+  const speedLerpSpeed = 0.04;
+
+  // === Lightning Config ===
+  const MAX_FLASHES = 80;
+  const NUM_STORM_CENTERS = 30; // more storm systems (used to be 15)
+  const baseFlashChance = 0.007; // flashes more rarely inside each storm (was 0.02)
+  const stormDriftSpeed = 0.00002; // keep same slow drift
+  const flashFadeSpeed = 0.8; // faster fading (was 0.88)
+
+  const flashPoints: Vector2[] = Array.from(
+    { length: MAX_FLASHES },
+    () => new Vector2(Math.random(), Math.random())
+  );
+  const flashStrengths: number[] = Array(MAX_FLASHES).fill(0);
+
+  const stormCenters: Vector2[] = Array.from(
+    { length: NUM_STORM_CENTERS },
+    () => new Vector2(Math.random(), Math.random())
+  );
 
   function updateSelectionTexture(
     fadeInArray: Float32Array,
@@ -114,17 +150,103 @@ export function createAnimateLoop({
     requestAnimationFrame(animate);
 
     const now = performance.now();
-    const nowInSeconds = now / 1000;
     const delta = (now - lastFrameTime) / 1000;
     lastFrameTime = now;
+    const nowInSeconds = now / 1000;
+
+    if (auroraMesh.material instanceof ShaderMaterial) {
+      auroraMesh.material.uniforms.uTime.value = nowInSeconds * 0.015;
+      auroraMesh.material.uniforms.lightDirection.value.copy(uniforms.lightDirection.value);
+      auroraMesh.material.uniforms.uMagneticNorth.value.copy(latLonToUnitVector(86.5, -161));
+      auroraMesh.material.uniforms.uMagneticSouth.value.copy(latLonToUnitVector(-64.5, 137));      
+    }
 
     const rotationY = getEarthRotationAngle();
-
     globe.rotation.y = rotationY;
     globeRaycastMesh.rotation.y = rotationY;
 
+    // Update real-time uniform for globe shaders
     uniforms.uTime.value = nowInSeconds;
-    uniforms.uTimeStars.value = nowInSeconds;
+
+    cloudElapsedTime += delta;
+
+    // Drift Direction Update
+    if (now - lastDriftChange > driftChangeInterval) {
+      const maxAngleOffset = MathUtils.degToRad(10); // small angle, stay eastward
+      const angleOffset = MathUtils.randFloatSpread(maxAngleOffset); // random between -5.0° and +5.0°
+      const eastward = new Vector2(1, 0); // pure east
+      targetDrift = eastward
+        .clone()
+        .rotateAround(new Vector2(0, 0), angleOffset);
+      lastDriftChange = now;
+    }
+
+    currentDrift.lerp(targetDrift, delta * driftLerpSpeed);
+    currentDrift.normalize();
+
+    // Speed Variation Update
+    if (now - lastSpeedVariationChange > speedVariationChangeInterval) {
+      cloudTargetVariation = (Math.random() * 2 - 1) * speedVariationStrength;
+      lastSpeedVariationChange = now;
+    }
+    cloudSpeedVariation = MathUtils.lerp(
+      cloudSpeedVariation,
+      cloudTargetVariation,
+      delta * speedLerpSpeed
+    );
+
+    const totalSpeed = cloudDriftBaseSpeed + cloudSpeedVariation;
+
+    // Pass cloud drift and time to shader
+    if (cloudSphere.material instanceof ShaderMaterial) {
+      cloudSphere.material.uniforms.uCloudTime.value = cloudElapsedTime;
+      cloudSphere.material.uniforms.uCloudDrift.value.copy(currentDrift);
+      cloudSphere.material.uniforms.uLightDirection.value.copy(
+        uniforms.lightDirection.value
+      );
+      cloudSphere.material.uniforms.uBaseDriftSpeed.value = totalSpeed;
+
+      // === LIGHTNING FLASH ===
+      // === Drift storm centers slightly ===
+      for (let center of stormCenters) {
+        center.x += MathUtils.randFloatSpread(stormDriftSpeed);
+        center.y += MathUtils.randFloatSpread(stormDriftSpeed);
+        if (center.x < 0) center.x += 1;
+        if (center.x > 1) center.x -= 1;
+        if (center.y < 0) center.y += 1;
+        if (center.y > 1) center.y -= 1;
+      }
+
+      const baseFlashChance = 0.02; // base 2%
+
+      for (let i = 0; i < MAX_FLASHES; i++) {
+        const randomChance = baseFlashChance * MathUtils.randFloat(0.7, 1.3);
+        if (Math.random() < randomChance) {
+          const center =
+            stormCenters[Math.floor(Math.random() * NUM_STORM_CENTERS)];
+          const jitter = new Vector2(
+            MathUtils.randFloatSpread(0.05),
+            MathUtils.randFloatSpread(0.05)
+          );
+          flashPoints[i].copy(center).add(jitter);
+
+          // Random strength (rarely bright)
+          flashStrengths[i] = Math.random() < 0.05 ? 2.0 : 1.0;
+        }
+
+        // Faster fade per frame
+        if (typeof flashStrengths[i] !== "number") flashStrengths[i] = 0;
+        flashStrengths[i] *= flashFadeSpeed;
+      }
+
+      // Send to shader
+      if (cloudSphere.material instanceof ShaderMaterial) {
+        const mat = cloudSphere.material as ShaderMaterial;
+        mat.uniforms.uFlashPoints.value = flashPoints;
+        mat.uniforms.uFlashStrengths.value = flashStrengths;
+        mat.uniforms.uNumFlashes.value = MAX_FLASHES;
+      }
+    }
 
     // Store rotationY globally for this frame
     let globeIntersection: Vector3 | null = null;
@@ -165,9 +287,11 @@ export function createAnimateLoop({
     } else {
       // No raycast, but if cursor was already on globe, update cursorWorldPos
       if (uniforms.uCursorOnGlobe.value) {
+        uniforms.uCursorOnGlobe.value = false;
         raycaster.setFromCamera(pointer, camera);
         const hit = raycaster.intersectObject(globeRaycastMesh, true)[0];
         if (hit) {
+          uniforms.uCursorOnGlobe.value = true;
           uniforms.cursorWorldPos.value.copy(hit.point.normalize());
         }
       }

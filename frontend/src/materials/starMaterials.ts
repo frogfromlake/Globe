@@ -34,7 +34,6 @@ export function createStarMaterial(
     uniforms: {
       uStarMap: { value: esoSkyMapTexture },
       uStarFade: { value: 0 },
-      uTimeStars: sharedUniforms.uTime,
       uStarOpacity: { value: CONFIG.stars.opacity },
     },
     side: BackSide,
