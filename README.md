@@ -52,11 +52,13 @@ Only by embracing our smallness can we act with purpose.
 
 ---
 
-## Textures
-Earth Day: https://visibleearth.nasa.gov/images/76487/june-blue-marble-next-generation
-Earth Night: https://www.visibleearth.nasa.gov/images/144898/earth-at-night-black-marble-2016-color-maps
-Earth Clouds: https://visibleearth.nasa.gov/images/57747/blue-marble-clouds/57749l
-Earth Topography: https://visibleearth.nasa.gov/images/73934/topography/84331l
+### Textures
+
+- Earth Day: [June Blue Marble (NASA)](https://visibleearth.nasa.gov/images/76487/june-blue-marble-next-generation)
+- Earth Night: [Earth at Night - Black Marble 2016](https://www.visibleearth.nasa.gov/images/144898/earth-at-night-black-marble-2016-color-maps)
+- Earth Clouds: [Blue Marble Clouds](https://visibleearth.nasa.gov/images/57747/blue-marble-clouds/57749l)
+- Earth Topography: [Earth Topography (NASA)](https://visibleearth.nasa.gov/images/73934/topography/84331l)
+
 ---
 
 ## Installation
