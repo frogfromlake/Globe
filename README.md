@@ -1,8 +1,8 @@
 # 🌍 OrbitalOne
 
 <p align="center">
-  <img src="./frontend/assets/preview1.png" alt="Preview 1" width="49%"/>
-  <img src="./frontend/assets/preview2.png" alt="Preview 2" width="49%"/>
+  <img src="./frontend/assets/earth_closeup.png" alt="Twilight on earth with canada (top), the united states (center right) and parts of the north pacific ocean (left) in the view" width="49%"/>
+  <img src="./frontend/assets/feature_preview.png" alt="The current state of the menu on the left, highlighted atlantic and germany in the center with the local and latest top news from germany in the news feed window on the right." width="49%"/>
 </p>
 
 **OrbitalOne** is a real-time 3D Earth visualization app powered by **TypeScript**, **Three.js**, and custom **GLSL shaders**. It blends beauty and function to deliver intuitive, extensible Earth-based data visualizations — including country borders, ocean overlays, live news, and more.
