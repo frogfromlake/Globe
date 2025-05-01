@@ -7,7 +7,7 @@
 
 **OrbitalOne** is a real-time 3D Earth visualization app powered by **TypeScript**, **Three.js**, and custom **GLSL shaders**. It blends beauty and function to deliver intuitive, extensible Earth-based data visualizations — including country borders, ocean overlays, live news, and more.
 
-⚠️ Heads up: This project is in early Alpha. Some features may break, glitch, or vanish mysteriously.
+⚠️ Heads up: This project is in early Alpha. Some features may break, glitch, or vanish mysteriously. It's also not fully optimized or responsive yet—expect occasional chaos.
 
 Live at: [https://orbitalone.space](https://orbitalone.space)
 
