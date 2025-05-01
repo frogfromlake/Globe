@@ -122,8 +122,15 @@ export async function startApp(updateSubtitle: (text: string) => void) {
   });
 
   // === Populate Scene with Core Meshes (temporary placeholder sky texture) ===
-  const { globe, cloudSphere, atmosphere, starSphere, globeRaycastMesh } =
-    setupSceneObjects(scene, uniforms, new Texture());
+  const {
+    globe,
+    cloudSphere,
+    atmosphere,
+    auroraMesh,
+    starSphere,
+    globeRaycastMesh,
+  } = setupSceneObjects(scene, uniforms, new Texture());
+
   starSphere.visible = false; // Hidden until esoSkyMap is ready
   cloudSphere.visible = false; // Hidden until cloud texture is ready
 
@@ -174,6 +181,7 @@ export async function startApp(updateSubtitle: (text: string) => void) {
     globe,
     cloudSphere,
     atmosphere,
+    auroraMesh,
     starSphere,
     globeRaycastMesh,
     uniforms,

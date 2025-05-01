@@ -32,6 +32,7 @@ interface AnimateParams {
   globe: Mesh;
   cloudSphere: Mesh;
   atmosphere: Mesh;
+  auroraMesh: Mesh;
   starSphere: Mesh;
   globeRaycastMesh: Mesh;
   uniforms: { [key: string]: any };
@@ -56,6 +57,7 @@ export function createAnimateLoop({
   globe,
   cloudSphere,
   atmosphere,
+  auroraMesh,
   starSphere,
   globeRaycastMesh,
   uniforms,
@@ -109,7 +111,7 @@ export function createAnimateLoop({
   const speedLerpSpeed = 0.04;
 
   // === Lightning Config ===
-  const MAX_FLASHES = 100;
+  const MAX_FLASHES = 80;
   const NUM_STORM_CENTERS = 30; // more storm systems (used to be 15)
   const baseFlashChance = 0.007; // flashes more rarely inside each storm (was 0.02)
   const stormDriftSpeed = 0.00002; // keep same slow drift
@@ -151,6 +153,13 @@ export function createAnimateLoop({
     const delta = (now - lastFrameTime) / 1000;
     lastFrameTime = now;
     const nowInSeconds = now / 1000;
+
+    if (auroraMesh.material instanceof ShaderMaterial) {
+      auroraMesh.material.uniforms.uTime.value = nowInSeconds;
+      auroraMesh.material.uniforms.lightDirection.value.copy(
+        uniforms.lightDirection.value
+      );
+    }
 
     const rotationY = getEarthRotationAngle();
     globe.rotation.y = rotationY;
@@ -226,6 +235,7 @@ export function createAnimateLoop({
         }
 
         // Faster fade per frame
+        if (typeof flashStrengths[i] !== "number") flashStrengths[i] = 0;
         flashStrengths[i] *= flashFadeSpeed;
       }
 

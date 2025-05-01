@@ -5,7 +5,7 @@ varying vec2 vUv;
 varying float vSunlightFactor;
 varying vec3 vWorldNormal;
 varying vec3 vViewDirection;
-#define MAX_FLASHES 100
+#define MAX_FLASHES 80
 
 uniform vec2 uFlashPoints[MAX_FLASHES];    // Tiny flash centers (in UV)
 uniform float uFlashStrengths[MAX_FLASHES]; // Strengths [0..1]

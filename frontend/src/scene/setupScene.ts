@@ -9,6 +9,7 @@ import {
   BackSide,
   AdditiveBlending,
   Texture,
+  Vector2,
 } from "three";
 
 import { CONFIG } from "../configs/config";
@@ -20,6 +21,8 @@ import {
   earthVertexShader,
 } from "../shaders/earthShaders";
 import { createCloudMaterial } from "../materials/cloudMaterial";
+import { createAuroraMaterial } from "../materials/auroraMaterial";
+import { latLonToUnitVector } from "../globe/geo";
 
 /**
  * Initializes and adds the main 3D globe, its atmosphere layer, star background, and raycast helper.
@@ -37,6 +40,7 @@ export function setupSceneObjects(
   globe: Mesh;
   cloudSphere: Mesh;
   atmosphere: Mesh;
+  auroraMesh: Mesh;
   starSphere: Mesh;
   globeRaycastMesh: Mesh;
 } {
@@ -86,6 +90,26 @@ export function setupSceneObjects(
   const atmosphere = new Mesh(atmosphereGeometry, atmosphereMaterial);
   scene.add(atmosphere);
 
+  // === Aurora Mesh ===
+  const auroraRadius = CONFIG.globe.radius * 1.005;
+  const auroraGeometry = new SphereGeometry(auroraRadius, 32, 32);
+  const auroraMaterial = createAuroraMaterial(
+    new Vector2(window.innerWidth, window.innerHeight)
+  );
+
+  // Magnetic poles (approximate WMM 2025)
+  const magneticNorth = latLonToUnitVector(86.5, -161);
+  const magneticSouth = latLonToUnitVector(-64.5, 137);
+
+  // Add to shader uniforms
+  auroraMaterial.uniforms.uMagneticNorth = { value: magneticNorth };
+  auroraMaterial.uniforms.uMagneticSouth = { value: magneticSouth };
+
+  const auroraMesh = new Mesh(auroraGeometry, auroraMaterial);
+  auroraMesh.renderOrder = 1.6;
+  auroraMesh.visible = true;
+  scene.add(auroraMesh);
+
   // === Star Sphere ===
   esoSkyMapTexture.wrapS = RepeatWrapping;
   esoSkyMapTexture.wrapT = RepeatWrapping;
@@ -117,5 +141,12 @@ export function setupSceneObjects(
   );
   scene.add(globeRaycastMesh);
 
-  return { globe, cloudSphere, atmosphere, starSphere, globeRaycastMesh };
+  return {
+    globe,
+    cloudSphere,
+    atmosphere,
+    auroraMesh,
+    starSphere,
+    globeRaycastMesh,
+  };
 }

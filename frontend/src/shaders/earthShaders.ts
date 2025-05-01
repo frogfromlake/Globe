@@ -9,6 +9,8 @@ import sVertexShader from "./stars.vert"; // Import the vertex shader for the st
 import sFragmentShader from "./stars.frag"; // Import the fragment shader for the stars.
 import cVertexShader from "./clouds.vert"; // Import the vertex shader for the clouds.
 import cFragmentShader from "./clouds.frag"; // Import the fragment shader for the clouds.
+import auFragmentShader from "./aurora.frag"; // Import the fragment shader for the clouds.
+import auVertexShader from "./aurora.vert"; // Import the fragment shader for the clouds.
 
 /**
  * Earth vertex shader.
@@ -57,3 +59,15 @@ export const cloudsVertexShader = cVertexShader;
  * Renders the cloud layer with transparency based on texture brightness.
  */
 export const cloudsFragmentShader = cFragmentShader;
+
+/**
+ * Aurora vertex shader.
+ * Renders the Aurora layer.
+ */
+export const auroraVertexShader = auVertexShader;
+
+/**
+ * Aurora fragment shader.
+ * Renders the Aurora layer.
+ */
+export const auroraFragmentShader = auFragmentShader;
