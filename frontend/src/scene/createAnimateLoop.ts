@@ -441,7 +441,7 @@ export function createAnimateLoop({
       currentHoveredId < 10000 &&
       !selectedCountryIds.has(currentHoveredId)
     ) {
-      update3DLabel(currentHoveredId, rotationY, camera, fadeIn);
+      update3DLabel(currentHoveredId, camera, fadeIn);
     } else if (
       currentHoveredId >= 10000 &&
       !selectedOceanIds.has(currentHoveredId)
@@ -453,7 +453,6 @@ export function createAnimateLoop({
           ocean.name,
           ocean.lat,
           ocean.lon,
-          rotationY,
           camera,
           fadeInOcean
         );
@@ -469,7 +468,6 @@ export function createAnimateLoop({
             ocean.name,
             ocean.lat,
             ocean.lon,
-            rotationY,
             camera,
             selectedOceanFadeIn[oceanIdToIndex[id]]
           );

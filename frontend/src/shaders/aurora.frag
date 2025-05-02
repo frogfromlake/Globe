@@ -97,12 +97,6 @@ void main() {
         alpha = southAlpha * southFade * ringSharpness;
     }
 
-    // --- Night side fade ---
-    float lightAmount = dot(pos, normalize(lightDirection));
-    // float nightFade = 1.0 - smoothstep(0.3, 0.6, lightAmount * 0.5 + 0.5);
-    float rawNightFade = 1.0 - smoothstep(0.3, 0.6, lightAmount * 0.5 + 0.5);
-    float nightFade = isNorth ? rawNightFade : 1.0; // south is always visible
-
     // --- Height fade (atmosphere shell) ---
     float heightFade = smoothstep(0.0, 0.06, length(vWorldPosition) - 1.0);
 
@@ -113,7 +107,7 @@ void main() {
     vec3 auroraColor = mix(coreColor, edgeColor, edgeBlend) * alpha;
 
     // --- Final alpha with blending curve ---
-    float finalAlpha = pow(alpha * nightFade * heightFade * 2.5, 1.2);
-
+    float finalAlpha = pow(alpha * heightFade * 2.5, 1.2);
+    
     gl_FragColor = vec4(auroraColor, finalAlpha);
 }

@@ -31,17 +31,15 @@ type LabelObject = {
   group: Group;
 };
 
-const labelGroup = new Group();
+export const countryLabelGroup = new Group();
 const labelObjects = new Map<number, LabelObject>();
 
-export function init3DLabels(scene: Scene, camera: PerspectiveCamera): void {
-  scene.add(labelGroup);
-
+export function init3DCountryLabels(camera: PerspectiveCamera): void {
   // === Pre-create all country labels ===
   for (const id of Object.keys(countryMeta)) {
     const countryId = parseInt(id);
     if (countryId > 0) {
-      update3DLabel(countryId, 0, camera, 0); // No rotation, invisible (fade=0)
+      update3DLabel(countryId, camera, 0); // No rotation, invisible (fade=0)
     }
   }
 }
@@ -113,7 +111,6 @@ export async function createTextSprite(
  */
 export async function update3DLabel(
   countryId: number,
-  rotationY: number,
   camera: Camera,
   fade: number
 ): Promise<void> {
@@ -138,7 +135,7 @@ export async function update3DLabel(
     line.renderOrder = 0;
     sprite.renderOrder = 1;
 
-    labelGroup.add(group);
+    countryLabelGroup.add(group);
     labelObjects.set(countryId, { sprite, line, group });
   }
 
@@ -152,13 +149,6 @@ export async function update3DLabel(
   );
   // Calculate position from lat/lon
   let center = new Vector3().setFromSphericalCoords(radius, phi, theta);
-
-  // Apply rotation and tilt
-  center.applyAxisAngle(new Vector3(0, 1, 0), rotationY); // Earth rotation
-  center.applyAxisAngle(
-    new Vector3(1, 0, 0),
-    CONFIG.geo.obliquityDegrees * CONFIG.geo.degToRad
-  ); // Earth axial tilt
 
   // Compute zoom-dependent offset and final label position
   const cameraDistance = camera.position.length();

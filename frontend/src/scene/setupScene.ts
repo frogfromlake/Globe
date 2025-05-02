@@ -24,6 +24,8 @@ import {
 } from "../shaders/earthShaders";
 import { createCloudMaterial } from "../materials/cloudMaterial";
 import { createAuroraMaterial } from "../materials/auroraMaterial";
+import { countryLabelGroup } from "../hoverLabel/countryLabels3D";
+import { oceanLabelGroup } from "../hoverLabel/oceanLabel3D";
 
 /**
  * Initializes and adds the main 3D globe, its atmosphere layer, star background, and raycast helper.
@@ -136,6 +138,8 @@ export function setupSceneObjects(
   const tiltGroup = new Group();
   tiltGroup.add(globe);
   tiltGroup.add(globeRaycastMesh);
+  tiltGroup.add(countryLabelGroup);
+  tiltGroup.add(oceanLabelGroup);
 
   // Tilt around the X axis to simulate Earth's axial tilt
   const tiltRadians = CONFIG.geo.obliquityDegrees * CONFIG.geo.degToRad;

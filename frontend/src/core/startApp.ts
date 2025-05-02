@@ -285,10 +285,12 @@ export async function startApp(
     );
 
     // === Load 3D Labels
-    const { init3DLabels } = await import("../hoverLabel/countryLabels3D");
+    const { init3DCountryLabels } = await import(
+      "../hoverLabel/countryLabels3D"
+    );
     const { init3DOceanLabels } = await import("../hoverLabel/oceanLabel3D");
-    init3DLabels(scene, camera);
-    init3DOceanLabels(scene, camera);
+    init3DCountryLabels(camera);
+    init3DOceanLabels(camera);
 
     // === Load News Panel
     const { initNewsPanel } = await import("../features/news/handleNewsPanel");

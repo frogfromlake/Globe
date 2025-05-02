@@ -27,21 +27,16 @@ type LabelObject = {
   group: Group;
 };
 
+export const oceanLabelGroup = new Group();
 const labelObjectsOcean = new Map<number, LabelObject>();
-const labelGroup = new Group();
 
-export function init3DOceanLabels(
-  scene: Scene,
-  camera: PerspectiveCamera
-): void {
-  scene.add(labelGroup);
-
+export function init3DOceanLabels(camera: PerspectiveCamera): void {
   // === Pre-create all ocean labels ===
   for (const idStr of Object.keys(CONFIG.oceanHover.oceanCenters)) {
     const id = parseInt(idStr);
     const ocean = CONFIG.oceanHover.oceanCenters[id];
     if (ocean) {
-      update3DOceanLabel(id, ocean.name, ocean.lat, ocean.lon, 0, camera, 0);
+      update3DOceanLabel(id, ocean.name, ocean.lat, ocean.lon, camera, 0);
     }
   }
 }
@@ -62,7 +57,6 @@ export async function update3DOceanLabel(
   name: string,
   lat: number,
   lon: number,
-  rotationY: number,
   camera: Camera,
   fade: number
 ): Promise<void> {
@@ -83,7 +77,7 @@ export async function update3DOceanLabel(
     line.renderOrder = 0;
     sprite.renderOrder = 1;
 
-    labelGroup.add(group);
+    oceanLabelGroup.add(group);
     labelObjectsOcean.set(oceanId, { sprite, line, group });
   }
 
@@ -97,13 +91,6 @@ export async function update3DOceanLabel(
 
   // Calculate position from lat/lon
   let center = new Vector3().setFromSphericalCoords(radius, phi, theta);
-
-  // Apply rotation and tilt
-  center.applyAxisAngle(new Vector3(0, 1, 0), rotationY); // Earth rotation
-  center.applyAxisAngle(
-    new Vector3(1, 0, 0),
-    CONFIG.geo.obliquityDegrees * CONFIG.geo.degToRad
-  ); // Earth axial tilt
 
   const cameraDistance = camera.position.length();
   const offset = MathUtils.mapLinear(
