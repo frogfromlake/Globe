@@ -10,6 +10,8 @@ import {
   MathUtils,
   DataTexture,
   Intersection,
+  Group,
+  Object3DEventMap,
 } from "three";
 
 import { CONFIG } from "../configs/config";
@@ -39,6 +41,7 @@ interface AnimateParams {
   auroraMesh: Mesh;
   starSphere: Mesh;
   globeRaycastMesh: Mesh;
+  tiltGroup: Group<Object3DEventMap>;
   uniforms: { [key: string]: any };
   camera: PerspectiveCamera;
   controls: any;
@@ -64,6 +67,7 @@ export function createAnimateLoop({
   auroraMesh,
   starSphere,
   globeRaycastMesh,
+  tiltGroup,
   uniforms,
   camera,
   controls,
@@ -172,8 +176,7 @@ export function createAnimateLoop({
     }
 
     const rotationY = getEarthRotationAngle();
-    globe.rotation.y = rotationY;
-    globeRaycastMesh.rotation.y = rotationY;
+    tiltGroup.rotation.y = rotationY;
 
     // Update real-time uniform for globe shaders
     uniforms.uTime.value = nowInSeconds;
@@ -283,8 +286,14 @@ export function createAnimateLoop({
         globeHit = hits[0];
         globeIntersection = hitPoint;
 
-        const longitude = Math.atan2(hitPoint.z, hitPoint.x);
-        const latitude = Math.asin(hitPoint.y);
+        // === UNDO axial tilt for UV logic ===
+        const tiltRad = CONFIG.geo.obliquityDegrees * CONFIG.geo.degToRad;
+        const unTilted = hitPoint
+          .clone()
+          .applyAxisAngle(new Vector3(1, 0, 0), -tiltRad);
+
+        const longitude = Math.atan2(unTilted.z, unTilted.x);
+        const latitude = Math.asin(unTilted.y);
 
         const correctedLongitude = longitude + rotationY;
         const u = MathUtils.euclideanModulo(
@@ -296,7 +305,7 @@ export function createAnimateLoop({
         currentUV = new Vector2(u, v);
 
         uniforms.uCursorOnGlobe.value = true;
-        uniforms.cursorWorldPos.value.copy(hitPoint);
+        uniforms.cursorWorldPos.value.copy(hitPoint); // Use actual point for rendering
       } else {
         globeHit = null;
         globeIntersection = null;

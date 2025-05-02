@@ -50,7 +50,7 @@ void main() {
     vec2 southUV = vec2(dot(pos, southTangent), dot(pos, southBitangent)) * 0.5 + 0.5;
 
     // --- Zoom and offset for texture ---
-    float auroraZoom = 0.7; // < 1 = zoom out, > 1 = zoom in
+    float auroraZoom = 0.6; // < 1 = zoom out, > 1 = zoom in
     vec2 auroraOffset = vec2(0.2, -0.07); // adjust to shift texture position
 
     northUV = (northUV - 0.5) / auroraZoom + 0.5 + auroraOffset;

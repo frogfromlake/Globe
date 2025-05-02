@@ -140,9 +140,12 @@ export function setupLocationSearch(
 
     const rotationY = getEarthRotationAngle();
 
+    const tiltRad = CONFIG.geo.obliquityDegrees * CONFIG.geo.degToRad;
+
     const targetDirection = new Vector3()
       .setFromSphericalCoords(radius, phi, theta)
-      .applyAxisAngle(new Vector3(0, 1, 0), rotationY)
+      .applyAxisAngle(new Vector3(0, 1, 0), rotationY) // Earth rotation
+      .applyAxisAngle(new Vector3(1, 0, 0), tiltRad) // Axial tilt
       .normalize();
 
     const currentDirection = camera.position

@@ -129,6 +129,7 @@ export async function startApp(
     auroraMesh,
     starSphere,
     globeRaycastMesh,
+    tiltGroup,
   } = setupSceneObjects(scene, uniforms, new Texture());
 
   starSphere.visible = false; // Hidden until esoSkyMap is ready
@@ -185,6 +186,7 @@ export async function startApp(
     auroraMesh,
     starSphere,
     globeRaycastMesh,
+    tiltGroup,
     uniforms,
     camera,
     controls,

@@ -95,6 +95,6 @@ export function getSunDirectionUTC(date: Date = new Date()): Vector3 {
   const y = Math.cos(obliquity) * Math.sin(λ * CONFIG.geo.degToRad);
   const z = Math.sin(obliquity) * Math.sin(λ * CONFIG.geo.degToRad);
 
-  // The direction of sunlight (opposite of the calculated coordinates)
-  return new Vector3(-x, -z, y).normalize();
+  // The direction of sunlight (opposite of the calculated coordinates);
+  return new Vector3(-x, z, y).normalize();
 }

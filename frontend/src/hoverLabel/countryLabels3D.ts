@@ -150,8 +150,15 @@ export async function update3DLabel(
     entry.lon,
     CONFIG.labels3D.markerRadius
   );
-  const center = new Vector3().setFromSphericalCoords(radius, phi, theta);
-  center.applyAxisAngle(new Vector3(0, 1, 0), rotationY);
+  // Calculate position from lat/lon
+  let center = new Vector3().setFromSphericalCoords(radius, phi, theta);
+
+  // Apply rotation and tilt
+  center.applyAxisAngle(new Vector3(0, 1, 0), rotationY); // Earth rotation
+  center.applyAxisAngle(
+    new Vector3(1, 0, 0),
+    CONFIG.geo.obliquityDegrees * CONFIG.geo.degToRad
+  ); // Earth axial tilt
 
   // Compute zoom-dependent offset and final label position
   const cameraDistance = camera.position.length();

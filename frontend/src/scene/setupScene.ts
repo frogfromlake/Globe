@@ -10,6 +10,8 @@ import {
   AdditiveBlending,
   Texture,
   Vector2,
+  Group,
+  Object3DEventMap,
 } from "three";
 
 import { CONFIG } from "../configs/config";
@@ -22,7 +24,6 @@ import {
 } from "../shaders/earthShaders";
 import { createCloudMaterial } from "../materials/cloudMaterial";
 import { createAuroraMaterial } from "../materials/auroraMaterial";
-import { latLonToUnitVector } from "../globe/geo";
 
 /**
  * Initializes and adds the main 3D globe, its atmosphere layer, star background, and raycast helper.
@@ -43,6 +44,7 @@ export function setupSceneObjects(
   auroraMesh: Mesh;
   starSphere: Mesh;
   globeRaycastMesh: Mesh;
+  tiltGroup: Group<Object3DEventMap>;
 } {
   // === Globe (Earth) ===
   const globeGeometry = new SphereGeometry(
@@ -130,6 +132,17 @@ export function setupSceneObjects(
   );
   scene.add(globeRaycastMesh);
 
+  // Add this after creating globe and raycast mesh
+  const tiltGroup = new Group();
+  tiltGroup.add(globe);
+  tiltGroup.add(globeRaycastMesh);
+
+  // Tilt around the X axis to simulate Earth's axial tilt
+  const tiltRadians = CONFIG.geo.obliquityDegrees * CONFIG.geo.degToRad;
+  tiltGroup.rotation.x = tiltRadians;
+
+  scene.add(tiltGroup);
+
   return {
     globe,
     cloudSphere,
@@ -137,5 +150,6 @@ export function setupSceneObjects(
     auroraMesh,
     starSphere,
     globeRaycastMesh,
+    tiltGroup,
   };
 }
