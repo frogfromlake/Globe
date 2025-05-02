@@ -286,14 +286,8 @@ export function createAnimateLoop({
         globeHit = hits[0];
         globeIntersection = hitPoint;
 
-        // === UNDO axial tilt for UV logic ===
-        const tiltRad = CONFIG.geo.obliquityDegrees * CONFIG.geo.degToRad;
-        const unTilted = hitPoint
-          .clone()
-          .applyAxisAngle(new Vector3(1, 0, 0), -tiltRad);
-
-        const longitude = Math.atan2(unTilted.z, unTilted.x);
-        const latitude = Math.asin(unTilted.y);
+        const longitude = Math.atan2(hitPoint.z, hitPoint.x);
+        const latitude = Math.asin(hitPoint.y);
 
         const correctedLongitude = longitude + rotationY;
         const u = MathUtils.euclideanModulo(

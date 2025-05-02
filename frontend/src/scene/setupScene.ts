@@ -141,10 +141,6 @@ export function setupSceneObjects(
   tiltGroup.add(countryLabelGroup);
   tiltGroup.add(oceanLabelGroup);
 
-  // Tilt around the X axis to simulate Earth's axial tilt
-  const tiltRadians = CONFIG.geo.obliquityDegrees * CONFIG.geo.degToRad;
-  tiltGroup.rotation.x = tiltRadians;
-
   scene.add(tiltGroup);
 
   return {

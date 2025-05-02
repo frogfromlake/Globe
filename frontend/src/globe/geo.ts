@@ -46,15 +46,16 @@ export function latLonToSphericalCoordsGeographic(
  * @returns The rotation angle in radians.
  */
 export function getEarthRotationAngle(date: Date = new Date()): number {
-  // Calculate the total number of seconds since midnight UTC of the current date
   const utcSeconds =
     date.getUTCHours() * 3600 +
     date.getUTCMinutes() * 60 +
     date.getUTCSeconds() +
     date.getUTCMilliseconds() / 1000;
 
-  // Normalize the seconds into a full rotation (2π radians)
-  return (utcSeconds / CONFIG.geo.secondsInDay) * Math.PI * 2;
+  const rotation = (utcSeconds / CONFIG.geo.secondsInDay) * Math.PI * 2;
+
+  // Offset rotation to align Earth's 0° longitude with the day texture
+  return rotation + CONFIG.geo.textureOffsetRadians;
 }
 
 /**
@@ -66,11 +67,9 @@ export function getEarthRotationAngle(date: Date = new Date()): number {
  * @returns A THREE.Vector3 representing the direction of the Sun (unit vector).
  */
 export function getSunDirectionUTC(date: Date = new Date()): Vector3 {
-  // Calculate days since J2000 epoch
   const daysSinceJ2000 =
     (date.getTime() - CONFIG.geo.j2000UTC) / CONFIG.geo.msPerDay;
 
-  // Calculate the mean longitude (L) and mean anomaly (g) of the Earth in its orbit
   const L =
     (CONFIG.geo.solar.meanLongitudeBase +
       CONFIG.geo.solar.meanLongitudePerDay * daysSinceJ2000) %
@@ -80,21 +79,18 @@ export function getSunDirectionUTC(date: Date = new Date()): Vector3 {
       CONFIG.geo.solar.meanAnomalyPerDay * daysSinceJ2000) %
     360;
 
-  // Calculate the Sun's ecliptic longitude (λ), incorporating the ecliptic corrections
   const λ =
     L +
     CONFIG.geo.solar.eclipticCorrection1 * Math.sin(g * CONFIG.geo.degToRad) +
     CONFIG.geo.solar.eclipticCorrection2 *
       Math.sin(2 * g * CONFIG.geo.degToRad);
 
-  // Earth's axial tilt (obliquity) in radians
   const obliquity = CONFIG.geo.obliquityDegrees * CONFIG.geo.degToRad;
 
-  // Convert ecliptic longitude to 3D cartesian coordinates
   const x = Math.cos(λ * CONFIG.geo.degToRad);
   const y = Math.cos(obliquity) * Math.sin(λ * CONFIG.geo.degToRad);
   const z = Math.sin(obliquity) * Math.sin(λ * CONFIG.geo.degToRad);
 
-  // The direction of sunlight (opposite of the calculated coordinates);
-  return new Vector3(-x, z, y).normalize();
+  // No negation: returns the real sunlight direction in space
+  return new Vector3(x, z, y).normalize();
 }

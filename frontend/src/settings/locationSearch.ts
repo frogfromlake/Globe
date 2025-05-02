@@ -94,7 +94,7 @@ export function setupLocationSearch(
         selectedFadeIn[id - 1] = 1;
 
         hideAll3DLabelsExcept([id]);
-        await update3DLabel(id, getEarthRotationAngle(), camera, 1);
+        await update3DLabel(id, camera, 1);
 
         const isoCode = countryMeta[id]?.iso;
         if (isoCode) {
@@ -122,7 +122,6 @@ export function setupLocationSearch(
             ocean.name,
             ocean.lat,
             ocean.lon,
-            getEarthRotationAngle(),
             camera,
             1
           );
@@ -140,12 +139,9 @@ export function setupLocationSearch(
 
     const rotationY = getEarthRotationAngle();
 
-    const tiltRad = CONFIG.geo.obliquityDegrees * CONFIG.geo.degToRad;
-
     const targetDirection = new Vector3()
       .setFromSphericalCoords(radius, phi, theta)
-      .applyAxisAngle(new Vector3(0, 1, 0), rotationY) // Earth rotation
-      .applyAxisAngle(new Vector3(1, 0, 0), tiltRad) // Axial tilt
+      .applyAxisAngle(new Vector3(0, 1, 0), rotationY) // Apply globe rotation
       .normalize();
 
     const currentDirection = camera.position

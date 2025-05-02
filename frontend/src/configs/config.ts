@@ -5,10 +5,13 @@ import {
   NearestFilter,
   NormalBlending,
   ClampToEdgeWrapping,
+  MathUtils,
 } from "three";
 import { oceanCenters } from "../data/oceanCenters";
 import { countryMeta } from "../data/countryMeta";
 import { oceanIdToIndex } from "../utils/oceanIdToIndex";
+
+const desiredOffsetDegrees = 90; // adjust based on texture alignment
 
 export const CONFIG = {
   /** Camera settings for perspective projection */
@@ -346,6 +349,10 @@ export const CONFIG = {
     /** Latitude and longitude offsets */
     latOffset: 90,
     lonOffset: 90,
+    /** Offset of the texture relative to Greenwich longitude, in degrees */
+    textureOffsetDegrees: desiredOffsetDegrees,
+    /** Same offset in radians (auto-converted below) */
+    textureOffsetRadians: 0, // placeholder
     /** Solar calculation constants */
     solar: {
       /** Base mean longitude of the sun at J2000 (°) */
@@ -363,3 +370,8 @@ export const CONFIG = {
     },
   },
 };
+
+// Assign computed radians after CONFIG definition
+CONFIG.geo.textureOffsetRadians = MathUtils.degToRad(
+  CONFIG.geo.textureOffsetDegrees
+);
