@@ -10,7 +10,8 @@ import gsap from "gsap";
 import {
   latLonToSphericalCoordsGeographic,
   getEarthRotationAngle,
-} from "../globe/geo";
+  getSolarLongitudeUTC,
+} from "../astronomy/geo";
 import { countryMeta } from "../data/countryMeta";
 import { oceanCenters } from "../data/oceanCenters";
 import { CONFIG } from "../configs/config";
@@ -22,6 +23,7 @@ import {
   hideAll3DOceanLabelsExcept,
   update3DOceanLabel,
 } from "../hoverLabel/oceanLabel3D";
+import { getSolarRotationY } from "../astronomy/sun";
 
 async function showNewsLazy(isoCode: string) {
   const { showNewsPanel } = await import("../features/news/handleNewsPanel");
@@ -137,11 +139,12 @@ export function setupLocationSearch(
       CONFIG.labels3D.markerRadius
     );
 
-    const rotationY = getEarthRotationAngle();
+    // const rotationY = getEarthRotationAngle();
+    const targetRotation = getSolarRotationY();
 
     const targetDirection = new Vector3()
       .setFromSphericalCoords(radius, phi, theta)
-      .applyAxisAngle(new Vector3(0, 1, 0), rotationY) // Apply globe rotation
+      .applyAxisAngle(new Vector3(0, 1, 0), targetRotation) // Apply globe rotation
       .normalize();
 
     const currentDirection = camera.position

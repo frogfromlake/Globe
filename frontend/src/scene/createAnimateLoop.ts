@@ -16,10 +16,10 @@ import {
 
 import { CONFIG } from "../configs/config";
 import {
-  getEarthRotationAngle,
+  getSolarLongitudeUTC,
   getSunDirectionUTC,
   latLonToUnitVector,
-} from "../globe/geo";
+} from "../astronomy/geo";
 import { updateHoveredCountry } from "../hoverLabel/countryHover";
 import { updateHoveredOcean } from "../hoverLabel/oceanHover";
 import {
@@ -33,6 +33,7 @@ import {
 import { oceanIdToIndex } from "../utils/oceanIdToIndex";
 import { interactionState } from "../state/interactionState";
 import { userHasMovedPointer } from "../interactions/pointerTracker";
+import { getRotatedSunDirection, getSolarRotationY } from "../astronomy/sun";
 
 interface AnimateParams {
   globe: Mesh;
@@ -120,8 +121,8 @@ export function createAnimateLoop({
 
   // === Lightning Config ===
   const MAX_FLASHES = 80;
-  const NUM_STORM_CENTERS = 30; // more storm systems (used to be 15)
-  const baseFlashChance = 0.007; // flashes more rarely inside each storm (was 0.02)
+  const NUM_STORM_CENTERS = 25; // more storm systems (used to be 15)
+  const baseFlashChance = 0.02; // chance a flashe occurs inside each storm (2%)
   const stormDriftSpeed = 0.00002; // keep same slow drift
   const flashFadeSpeed = 0.8; // faster fading (was 0.88)
 
@@ -164,19 +165,23 @@ export function createAnimateLoop({
 
     if (auroraMesh.material instanceof ShaderMaterial) {
       auroraMesh.material.uniforms.uTime.value = nowInSeconds * 0.015;
-      auroraMesh.material.uniforms.lightDirection.value.copy(
-        uniforms.lightDirection.value
-      );
-      auroraMesh.material.uniforms.uMagneticNorth.value.copy(
-        latLonToUnitVector(86.5, -161)
-      );
-      auroraMesh.material.uniforms.uMagneticSouth.value.copy(
-        latLonToUnitVector(-64.5, 137)
-      );
+      if (auroraMesh.material instanceof ShaderMaterial) {
+        auroraMesh.material.uniforms.lightDirection.value.copy(
+          uniforms.lightDirection.value
+        );
+        auroraMesh.material.uniforms.uMagneticNorth.value.copy(
+          latLonToUnitVector(86.5, -161)
+        );
+        auroraMesh.material.uniforms.uMagneticSouth.value.copy(
+          latLonToUnitVector(-64.5, 137)
+        );
+      }
     }
 
-    const rotationY = getEarthRotationAngle();
-    tiltGroup.rotation.y = rotationY;
+    // === Solar Alignment ===
+    // Compute the rotation angle needed to bring the subsolar longitude to the front (0° on globe)
+    const targetRotation = getSolarRotationY();
+    tiltGroup.rotation.y = targetRotation;
 
     // Update real-time uniform for globe shaders
     uniforms.uTime.value = nowInSeconds;
@@ -238,8 +243,6 @@ export function createAnimateLoop({
         if (center.y > 1) center.y -= 1;
       }
 
-      const baseFlashChance = 0.02; // base 2%
-
       for (let i = 0; i < MAX_FLASHES; i++) {
         const randomChance = baseFlashChance * MathUtils.randFloat(0.7, 1.3);
         if (Math.random() < randomChance) {
@@ -289,7 +292,7 @@ export function createAnimateLoop({
         const longitude = Math.atan2(hitPoint.z, hitPoint.x);
         const latitude = Math.asin(hitPoint.y);
 
-        const correctedLongitude = longitude + rotationY;
+        const correctedLongitude = longitude + targetRotation;
         const u = MathUtils.euclideanModulo(
           0.5 - correctedLongitude / (2.0 * Math.PI),
           1.0
@@ -341,7 +344,11 @@ export function createAnimateLoop({
     );
 
     atmosphereMaterial.uniforms.uCameraDistance.value = distance;
-    uniforms.lightDirection.value.copy(getSunDirectionUTC());
+    const rotatedSunDir = getRotatedSunDirection(targetRotation);
+
+    // Set it as the uniform
+    uniforms.lightDirection.value.copy(rotatedSunDir);
+
     atmosphereMaterial.uniforms.uLightDirection.value.copy(
       uniforms.lightDirection.value
     );

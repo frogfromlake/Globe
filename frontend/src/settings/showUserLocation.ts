@@ -4,7 +4,7 @@
  */
 
 import { Mesh, SphereGeometry, MeshBasicMaterial } from "three";
-import { latLonToSphericalCoordsGeographic } from "../globe/geo";
+import { latLonToSphericalCoordsGeographic } from "../astronomy/geo";
 import { CONFIG } from "../configs/config";
 
 /**

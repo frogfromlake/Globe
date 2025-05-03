@@ -55,7 +55,7 @@ export function getEarthRotationAngle(date: Date = new Date()): number {
   const rotation = (utcSeconds / CONFIG.geo.secondsInDay) * Math.PI * 2;
 
   // Offset rotation to align Earth's 0° longitude with the day texture
-  return rotation + CONFIG.geo.textureOffsetRadians;
+  return rotation; // No offset — texture alignment will now be handled via solar longitude
 }
 
 /**
@@ -93,4 +93,23 @@ export function getSunDirectionUTC(date: Date = new Date()): Vector3 {
 
   // No negation: returns the real sunlight direction in space
   return new Vector3(x, z, y).normalize();
+}
+
+/**
+ * Computes the Sun's subsolar longitude — the geographic longitude directly under the sun.
+ * Used to align the globe so the correct region faces the sun.
+ *
+ * @param date - The UTC date and time
+ * @returns The solar longitude in degrees (0–360)
+ */
+export function getSolarLongitudeUTC(date: Date = new Date()): number {
+  const daysSinceJ2000 =
+    (date.getTime() - CONFIG.geo.j2000UTC) / CONFIG.geo.msPerDay;
+
+  const L =
+    (CONFIG.geo.solar.meanLongitudeBase +
+      CONFIG.geo.solar.meanLongitudePerDay * daysSinceJ2000) %
+    360;
+
+  return L; // solar longitude in degrees
 }

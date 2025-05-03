@@ -19,7 +19,7 @@ import {
   PerspectiveCamera,
 } from "three";
 import { countryMeta } from "../data/countryMeta";
-import { latLonToSphericalCoordsGeographic } from "../globe/geo";
+import { latLonToSphericalCoordsGeographic } from "../astronomy/geo";
 import { CONFIG } from "../configs/config";
 import { createLabelLineMaterial } from "../materials/globeMaterials";
 import { Line2 } from "three/examples/jsm/lines/Line2.js";

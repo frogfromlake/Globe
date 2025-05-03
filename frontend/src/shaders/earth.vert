@@ -9,14 +9,8 @@ varying vec3 vViewDirection;
 void main() {
     vUv = uv;
 
-    // === Apply axial tilt (rotation around X-axis) ===
-    mat4 tiltMatrix = mat4(1.0, 0.0, 0.0, 0.0, 0.0, cos(obliquityRad), -sin(obliquityRad), 0.0, 0.0, sin(obliquityRad), cos(obliquityRad), 0.0, 0.0, 0.0, 0.0, 1.0);
-
-    vec4 tiltedPos = tiltMatrix * vec4(position, 1.0);
-    vec4 worldPos = modelMatrix * tiltedPos;
-
-    vec3 tiltedNormal = mat3(tiltMatrix) * normal;
-    vec3 baseNormal = normalize(mat3(modelMatrix) * tiltedNormal);
+    vec4 worldPos = modelMatrix * vec4(position, 1.0);
+    vec3 baseNormal = normalize(mat3(modelMatrix) * normal);
 
     float bump = texture2D(topographyMap, vUv).r;
     float height = (bump - 0.5) * bumpScale;
