@@ -32,6 +32,8 @@ function setLoadingSubtitle(text: string): void {
   }
 }
 
+setLoadingSubtitle("Initializing orbital launch sequence...");
+
 // Initialize and start the application
 startApp(setLoadingSubtitle).then(({ animate }) => {
   performance.mark("start-app-done");
@@ -56,16 +58,11 @@ startApp(setLoadingSubtitle).then(({ animate }) => {
     return;
   }
 
-  // Trigger fade-out transition of the loading screen
   loadingScreen.classList.add("fade-out");
+  appContainer.classList.add("visible");
 
-  // Wait for transition to complete before removing loading screen and showing the app
-  loadingScreen.addEventListener("transitionend", () => {
-    setTimeout(() => {
-      loadingScreen.remove();
-      appContainer.classList.add("visible");
-
-      animate();
-    }, 150);
-  });
+  setTimeout(() => {
+    loadingScreen.remove();
+    animate();
+  }, 600); // Just enough to finish the fade, no delay after that
 });
