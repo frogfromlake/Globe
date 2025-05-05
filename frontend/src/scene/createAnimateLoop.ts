@@ -15,7 +15,6 @@ import {
 } from "three";
 
 import { CONFIG } from "../configs/config";
-import { latLonToUnitVector } from "../astronomy/geo";
 import { updateHoveredCountry } from "../hoverLabel/countryHover";
 import { updateHoveredOcean } from "../hoverLabel/oceanHover";
 import {
@@ -29,8 +28,8 @@ import {
 import { oceanIdToIndex } from "../utils/oceanIdToIndex";
 import { interactionState } from "../state/interactionState";
 import { userHasMovedPointer } from "../interactions/pointerTracker";
-import { getSolarRotationY, getSunDirectionWorld } from "../astronomy/sun";
-import { createSubsolarMarker } from "../astronomy/debugMarkers";
+import { getSolarRotationY, getSunDirectionWorld } from "../astro/sun";
+import { latLonToUnitVector } from "../geo/coordinates";
 
 interface AnimateParams {
   globe: Mesh;

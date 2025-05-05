@@ -16,10 +16,10 @@ import {
 } from "three";
 import { createTextSprite } from "./countryLabels3D";
 import { CONFIG } from "../configs/config";
-import { latLonToSphericalCoordsGeographic } from "../astronomy/geo";
 import { createLabelLineMaterial } from "../materials/globeMaterials";
 import { LineGeometry } from "three/examples/jsm/lines/LineGeometry.js";
 import { Line2 } from "three/examples/jsm/lines/Line2.js";
+import { latLonToSphericalCoordsGeographic } from "../geo/coordinates";
 
 type LabelObject = {
   sprite: Sprite;

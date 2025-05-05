@@ -24,7 +24,7 @@ export const CONFIG = {
     far: 1000,
     /** Initial camera position in 3D space */
     initialPosition: {
-      x: 0,
+      x: 90,
       y: 0,
       z: 1.9, // Change this value to zoom in or out by default
     },

@@ -11,7 +11,7 @@ lerna-debug.log*
 frontend/public/textures/backups/
 frontend/node_modules
 frontend/dist
-
+frontend/src/tests
 # Backend
 backend/.env
 

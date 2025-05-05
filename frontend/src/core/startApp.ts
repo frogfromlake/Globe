@@ -23,7 +23,7 @@ import { initializeUniforms } from "../init/initializeUniforms";
 import { loadCountryIdMapTexture } from "../hoverLabel/countryHover";
 import { loadOceanIdMapTexture } from "../hoverLabel/oceanHover";
 import { setupGlobePointerEvents } from "../interactions/globePointerEvents";
-import { setupPointerMoveTracking } from "../interactions/pointerTracker";
+import { setupPointerMoveTracking, userHasMovedPointer } from "../interactions/pointerTracker";
 import { handleGlobeClick } from "../interactions/handleGlobeClick";
 
 import { setupSceneObjects } from "../scene/setupScene";
@@ -59,10 +59,7 @@ let hoverReady = false;
  * @param updateSubtitle - Callback for updating the loading screen subtitle
  * @returns Animation loop starter and a deferred hover activation function
  */
-export async function startApp(
-  updateSubtitle: (text: string) => void,
-  onGlobeFadeStart?: () => void // 👈 Add this optional callback
-) {
+export async function startApp(updateSubtitle: (text: string) => void) {
   // === State Stores for Country/Ocean Selection ===
   const selection = {
     countryIds: new Set<number>(),
@@ -143,6 +140,7 @@ export async function startApp(
       onHover: undefined, // Let animate() handle hover logic
       onClick: (hit) => {
         if (!hoverReady) return;
+        if (!userHasMovedPointer()) return; // Prevents selection on load
         if (hit) {
           handleGlobeClick(
             hit,

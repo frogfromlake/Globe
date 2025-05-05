@@ -1,10 +1,7 @@
 import { SphereGeometry, MeshBasicMaterial, Mesh, Vector3 } from "three";
-import {
-  getSubsolarPoint,
-  latLonToUnitVector,
-  latLonToSphericalCoordsGeographic,
-} from "./geo";
 import { CONFIG } from "../configs/config";
+import { getSubsolarPoint } from "../astro/solar";
+import { latLonToUnitVector, latLonToSphericalCoordsGeographic } from "../geo/coordinates";
 
 /**
  * Creates a yellow marker positioned at the current subsolar point.

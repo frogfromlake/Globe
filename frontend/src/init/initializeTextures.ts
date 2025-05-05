@@ -101,7 +101,7 @@ export async function loadVisualTextures(renderer: WebGLRenderer) {
     }),
     loader.loadAsync(CONFIG.textures.topographyMapPath).then((t) => {
       applyBaseMapSettings(t, renderer);
-      t.colorSpace = LinearSRGBColorSpace; // Important: bump maps are linear
+      t.colorSpace = LinearSRGBColorSpace;
       t.wrapS = ClampToEdgeWrapping;
       t.wrapT = ClampToEdgeWrapping;
       return t;
