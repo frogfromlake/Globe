@@ -6,16 +6,15 @@ import { latLonToUnitVector } from "../geo/coordinates";
 /**
  * Computes the Y-axis globe rotation so the subsolar point faces forward.
  */
-export function getSolarRotationY(): number {
-  const { lon: solarLon } = getSubsolarPoint(new Date());
-  const greenwichOffset = -Math.PI / 2;
-  return -solarLon * CONFIG.geo.degToRad + greenwichOffset;
+export function getSolarRotationY(date: Date = new Date()): number {
+  const { lon: solarLon } = getSubsolarPoint(date);
+  return -solarLon * CONFIG.geo.degToRad;
 }
 
 /**
  * Returns the world-space direction vector to the subsolar point.
  */
-export function getSunDirectionWorld(): Vector3 {
-  const { lat, lon } = getSubsolarPoint(new Date());
+export function getSunDirectionWorld(date: Date = new Date()): Vector3 {
+  const { lat, lon } = getSubsolarPoint(date);
   return latLonToUnitVector(lat, lon);
 }

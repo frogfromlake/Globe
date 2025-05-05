@@ -34,6 +34,18 @@ export const CONFIG = {
     autoTransitionDuration: 1.8,
   },
 
+  time: {
+    /** Multiplies the speed of simulated time in the animation loop */
+    simulationSpeed: 1,
+    // | `simulationSpeed` | Effect                            | Use Case                         |
+    // | ----------------- | --------------------------------- | -------------------------------- |
+    // | `1`               | **Real-time**                     | Actual Earth day/night cycle     |
+    // | `60`              | 1 real sec = 1 simulated minute   | Faster testing                   |
+    // | `1440`            | 1 real sec = 1 simulated 24h      | Day/night cycles in real-time    |
+    // | `86400`           | 1 real sec = 1 simulated day      | Lightning-fast day testing       |
+    // | `500000`          | 1 real sec = \~5.8 simulated days | Observe seasonal sun angles fast |
+  },
+
   /** Globe mesh geometry settings */
   globe: {
     /** Radius of the globe sphere */

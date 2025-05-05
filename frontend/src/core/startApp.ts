@@ -23,7 +23,10 @@ import { initializeUniforms } from "../init/initializeUniforms";
 import { loadCountryIdMapTexture } from "../hoverLabel/countryHover";
 import { loadOceanIdMapTexture } from "../hoverLabel/oceanHover";
 import { setupGlobePointerEvents } from "../interactions/globePointerEvents";
-import { setupPointerMoveTracking, userHasMovedPointer } from "../interactions/pointerTracker";
+import {
+  setupPointerMoveTracking,
+  userHasMovedPointer,
+} from "../interactions/pointerTracker";
 import { handleGlobeClick } from "../interactions/handleGlobeClick";
 
 import { setupSceneObjects } from "../scene/setupScene";
@@ -124,6 +127,7 @@ export async function startApp(updateSubtitle: (text: string) => void) {
     starSphere,
     globeRaycastMesh,
     tiltGroup,
+    subsolarMarker,
   } = setupSceneObjects(scene, uniforms, new Texture());
 
   starSphere.visible = false; // Hidden until esoSkyMap is ready
@@ -199,6 +203,7 @@ export async function startApp(updateSubtitle: (text: string) => void) {
     updateKeyboardRef,
     selectedCountryIds: selection.countryIds,
     selectedOceanIds: selection.oceanIds,
+    subsolarMarker,
   });
 
   // === Deferred Loading for Heavy Features ===
