@@ -7,62 +7,59 @@
  * - Set the loading subtitle text dynamically during the app boot sequence.
  */
 
-import { startApp } from "./core/startApp";
-/**
- * Injects the Vercel Analytics script into the document.
- */
-import { inject } from "@vercel/analytics";
-/**
- * Injects the Vercel Speed Insights script into the document.
- */
-import { injectSpeedInsights } from "@vercel/speed-insights";
+import { runTestScene } from "./tests/testScene";
 
-performance.mark("start-app-init");
+if (window.location.hash === "#test") {
+  runTestScene(); // ✅ Test mode: skip full app init
+} else {
+  // ✅ Use dynamic imports inside an async IIFE
+  (async () => {
+    const { startApp } = await import("./core/startApp");
+    const { inject } = await import("@vercel/analytics");
+    const { injectSpeedInsights } = await import("@vercel/speed-insights");
 
-/**
- * Updates the loading subtitle displayed during application initialization.
- *
- * @param text - The message to display in the subtitle element.
- */
-function setLoadingSubtitle(text: string): void {
-  const subtitle = document.querySelector(".subtitle") as HTMLElement | null;
-  if (subtitle) {
-    subtitle.textContent = text;
-    subtitle.classList.add("visible");
-  }
+    performance.mark("start-app-init");
+
+    function setLoadingSubtitle(text: string): void {
+      const subtitle = document.querySelector(
+        ".subtitle"
+      ) as HTMLElement | null;
+      if (subtitle) {
+        subtitle.textContent = text;
+        subtitle.classList.add("visible");
+      }
+    }
+
+    setLoadingSubtitle("Initializing orbital launch sequence...");
+
+    const { animate } = await startApp(setLoadingSubtitle);
+
+    performance.mark("start-app-done");
+    performance.measure("App Init", "start-app-init", "start-app-done");
+
+    const [entry] = performance.getEntriesByName("App Init");
+    console.log(
+      `📈 %cApp Init took ${entry.duration.toFixed(2)} ms`,
+      "color: #4caf50; font-weight: bold"
+    );
+
+    inject();
+    injectSpeedInsights();
+
+    const loadingScreen = document.getElementById("loading-screen");
+    const appContainer = document.getElementById("app-container");
+
+    if (!loadingScreen || !appContainer) {
+      console.error("[main.ts] Critical DOM elements missing.");
+      return;
+    }
+
+    loadingScreen.classList.add("fade-out");
+    appContainer.classList.add("visible");
+
+    setTimeout(() => {
+      loadingScreen.remove();
+      animate();
+    }, 600);
+  })();
 }
-
-setLoadingSubtitle("Initializing orbital launch sequence...");
-
-// Initialize and start the application
-startApp(setLoadingSubtitle).then(({ animate }) => {
-  performance.mark("start-app-done");
-
-  performance.measure("App Init", "start-app-init", "start-app-done");
-  const [entry] = performance.getEntriesByName("App Init");
-  console.log(
-    `📈 %cApp Init took ${entry.duration.toFixed(2)} ms`,
-    "color: #4caf50; font-weight: bold"
-  );
-
-  // Inject Vercel Analytics script
-  inject();
-  // Inject Vercel Speed Insights script
-  injectSpeedInsights();
-
-  const loadingScreen = document.getElementById("loading-screen");
-  const appContainer = document.getElementById("app-container");
-
-  if (!loadingScreen || !appContainer) {
-    console.error("[main.ts] Critical DOM elements missing.");
-    return;
-  }
-
-  loadingScreen.classList.add("fade-out");
-  appContainer.classList.add("visible");
-
-  setTimeout(() => {
-    loadingScreen.remove();
-    animate();
-  }, 600); // Just enough to finish the fade, no delay after that
-});

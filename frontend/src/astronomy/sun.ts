@@ -1,6 +1,6 @@
-// sun.ts
+// sun.ts (fixed)
 import { Vector3 } from "three";
-import { getSolarLongitudeUTC, getSunDirectionUTC } from "./geo";
+import { getSubsolarPoint, getSunDirectionUTC, latLonToUnitVector } from "./geo";
 import { CONFIG } from "../configs/config";
 
 /**
@@ -10,8 +10,11 @@ import { CONFIG } from "../configs/config";
  * @returns Rotation angle in radians (negative of subsolar longitude)
  */
 export function getSolarRotationY(): number {
-  const solarLon = getSolarLongitudeUTC();
-  return -solarLon * CONFIG.geo.degToRad;
+  const { lon: solarLon } = getSubsolarPoint(new Date());
+
+  const greenwichOffset = -Math.PI / 2;
+
+  return -solarLon * CONFIG.geo.degToRad + greenwichOffset;
 }
 
 /**
@@ -24,4 +27,14 @@ export function getSolarRotationY(): number {
 export function getRotatedSunDirection(rotationY: number): Vector3 {
   const sunDir = getSunDirectionUTC();
   return sunDir.clone().applyAxisAngle(new Vector3(0, 1, 0), -rotationY);
+}
+
+/**
+ * Returns the direction vector pointing to the subsolar point in world space,
+ * correctly accounting for Earth tilt and Y-rotation.
+ */
+export function getSunDirectionWorld(): Vector3 {
+  const { lat, lon } = getSubsolarPoint(new Date());
+  const subsolarVec = latLonToUnitVector(lat, lon); // unit vector from globe center to subsolar point
+  return subsolarVec;
 }

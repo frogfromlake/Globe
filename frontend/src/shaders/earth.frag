@@ -56,7 +56,7 @@ void main() {
     float normalized = intensity * 0.5 + 0.5; 
     
     // Apply a smooth step to sharpen the transition between day and night.
-    float sharpened = smoothstep(0.48, 0.52, normalized);
+    float sharpened = smoothstep(0.46, 0.51, normalized);
 
     // Sample the day and night textures.
     vec4 dayColor = texture2D(dayTexture, vUv); // The color from the day texture.
