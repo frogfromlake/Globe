@@ -24,6 +24,24 @@ html, body {
   overflow: hidden;
 }
 
+.sim-clock {
+  position: absolute;
+  bottom: 2.5rem;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 1.9rem;
+  font-weight: 500;
+  font-family: 'Inter', sans-serif;
+  font-variant-numeric: tabular-nums;
+  color: rgba(246, 251, 255, 0.234);
+  white-space: nowrap;
+  min-width: 30ch;
+  text-align: center;
+  pointer-events: none;
+  user-select: none;
+  z-index: 20;
+}
+
 canvas {
   display: block;
 }
@@ -259,7 +277,7 @@ canvas {
 #country-search {
   position: absolute;
   top: 1.65rem;
-  left: 4.25rem; /* leaves space next to the sidebar toggle */
+  left: 3.07rem;
   z-index: 25;
 
   width: 16rem;
@@ -273,6 +291,7 @@ canvas {
   backdrop-filter: blur(1px);
   outline: none;
   transition: background 0.2s ease, box-shadow 0.2s ease;
+  transform: scale(0.90);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
   font-family: inherit;
 }

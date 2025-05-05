@@ -9,7 +9,6 @@ import {
   BackSide,
   AdditiveBlending,
   Texture,
-  Vector2,
   Group,
   Object3DEventMap,
 } from "three";
@@ -29,7 +28,7 @@ import { oceanLabelGroup } from "../hoverLabel/oceanLabel3D";
 
 import {
   createPrimeMeridianMarker,
-  createSubsolarMarker,
+  createSubsolarMarkerMesh,
 } from "../utils/debugMarkers";
 
 /**
@@ -52,6 +51,7 @@ export function setupSceneObjects(
   starSphere: Mesh;
   globeRaycastMesh: Mesh;
   tiltGroup: Group<Object3DEventMap>;
+  subsolarMarker: Mesh;
 } {
   // === Globe (Earth) ===
   const globeGeometry = new SphereGeometry(
@@ -79,7 +79,6 @@ export function setupSceneObjects(
   const cloudSphere = new Mesh(cloudGeometry, cloudMaterial);
   cloudSphere.renderOrder = 1.5;
   cloudSphere.visible = false;
-  scene.add(cloudSphere);
 
   // === Atmosphere ===
   const atmosphereRadius = CONFIG.globe.radius * 1.027;
@@ -100,13 +99,13 @@ export function setupSceneObjects(
   scene.add(atmosphere);
 
   // === Aurora Mesh ===
-  const auroraRadius = CONFIG.globe.radius * 1.015;
-  const auroraGeometry = new SphereGeometry(auroraRadius, 64, 64);
-  const auroraMaterial = createAuroraMaterial(
-    new Vector2(window.innerWidth, window.innerHeight)
-  );
-  const auroraMesh = new Mesh(auroraGeometry, auroraMaterial);
-  scene.add(auroraMesh);
+  // const auroraRadius = CONFIG.globe.radius * 1.015;
+  // const auroraGeometry = new SphereGeometry(auroraRadius, 64, 64);
+  // const auroraMaterial = createAuroraMaterial(
+  //   new Vector2(window.innerWidth, window.innerHeight)
+  // );
+  // const auroraMesh = new Mesh(auroraGeometry, auroraMaterial);
+  const auroraMesh = new Mesh();
 
   // === Star Sphere ===
   esoSkyMapTexture.wrapS = RepeatWrapping;
@@ -144,10 +143,13 @@ export function setupSceneObjects(
   tiltGroup.add(globeRaycastMesh);
   tiltGroup.add(countryLabelGroup);
   tiltGroup.add(oceanLabelGroup);
+  tiltGroup.add(cloudSphere);
 
-  // DEBUG MARKERS
-  // tiltGroup.add(createPrimeMeridianMarker());
-  // tiltGroup.add(createSubsolarMarker());
+  // DEBUG MARKERS#
+  const primeMeridianMarker = createPrimeMeridianMarker();
+  tiltGroup.add(primeMeridianMarker);
+  const subsolarMarker = createSubsolarMarkerMesh();
+  tiltGroup.add(subsolarMarker);
 
   scene.add(tiltGroup);
 
@@ -159,5 +161,6 @@ export function setupSceneObjects(
     starSphere,
     globeRaycastMesh,
     tiltGroup,
+    subsolarMarker,
   };
 }

@@ -1,24 +1,23 @@
 import { SphereGeometry, MeshBasicMaterial, Mesh, Vector3 } from "three";
 import { CONFIG } from "../configs/config";
 import { getSubsolarPoint } from "../astro/solar";
-import { latLonToUnitVector, latLonToSphericalCoordsGeographic } from "../geo/coordinates";
+import {
+  latLonToUnitVector,
+  latLonToSphericalCoordsGeographic,
+} from "../geo/coordinates";
 
-/**
- * Creates a yellow marker positioned at the current subsolar point.
- * Useful for debugging daylight calculations.
- */
-export function createSubsolarMarker(): Mesh {
+export function createSubsolarMarkerMesh(): Mesh {
   const geometry = new SphereGeometry(0.01, 16, 16);
   const material = new MeshBasicMaterial({ color: 0xffff00 }); // Yellow
-  const marker = new Mesh(geometry, material);
+  return new Mesh(geometry, material);
+}
 
-  const { lat, lon } = getSubsolarPoint();
+export function updateSubsolarMarkerPosition(marker: Mesh, date: Date): void {
+  const { lat, lon } = getSubsolarPoint(date);
   const pos = latLonToUnitVector(lat, lon).multiplyScalar(
     CONFIG.globe.radius * 1.01
   );
   marker.position.copy(pos);
-
-  return marker;
 }
 
 /**
