@@ -19,7 +19,7 @@ import {
   auroraFragmentShader,
 } from "../shaders/earthShaders";
 import { CONFIG } from "../configs/config";
-import { latLonToUnitVector } from "../astronomy/geo";
+import { latLonToUnitVector } from "../geo/coordinates";
 
 /**
  * Creates a ShaderMaterial for rendering volumetric auroras using raymarching techniques.

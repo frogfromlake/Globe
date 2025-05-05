@@ -7,7 +7,6 @@
 import { Vector3, MathUtils, Camera } from "three";
 import gsap from "gsap";
 
-import { latLonToSphericalCoordsGeographic } from "../astronomy/geo";
 import { countryMeta } from "../data/countryMeta";
 import { oceanCenters } from "../data/oceanCenters";
 import { CONFIG } from "../configs/config";
@@ -19,7 +18,8 @@ import {
   hideAll3DOceanLabelsExcept,
   update3DOceanLabel,
 } from "../hoverLabel/oceanLabel3D";
-import { getSolarRotationY } from "../astronomy/sun";
+import { getSolarRotationY } from "../astro/sun";
+import { latLonToSphericalCoordsGeographic } from "../geo/coordinates";
 
 async function showNewsLazy(isoCode: string) {
   const { showNewsPanel } = await import("../features/news/handleNewsPanel");

@@ -80,7 +80,9 @@ export function setupGlobePointerEvents(
     pointer.x = (e.clientX / window.innerWidth) * 2 - 1;
     pointer.y = -(e.clientY / window.innerHeight) * 2 + 1;
 
-    // mark pointer moved
-    // if (onHover) onHover(undefined);
+    raycaster.setFromCamera(pointer, camera);
+    const hit = raycaster.intersectObject(globe, true)[0];
+
+    if (onHover) onHover(hit); // Will be undefined if nothing is hit
   });
 }

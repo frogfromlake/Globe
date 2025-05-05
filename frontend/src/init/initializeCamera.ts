@@ -1,16 +1,11 @@
-/**
- * initializeCamera.ts
- * Initializes and returns a PerspectiveCamera based on global configuration.
- * Handles camera FOV, aspect ratio, clipping planes, and starting position.
- */
-
-import { PerspectiveCamera } from "three";
+import { PerspectiveCamera, Vector3 } from "three";
 import { CONFIG } from "../configs/config";
+import { latLonToSphericalCoordsGeographic } from "../geo/coordinates";
+import { getSolarRotationY } from "../astro/sun";
 
 /**
- * Creates and configures the main perspective camera for the scene.
- *
- * @returns {THREE.PerspectiveCamera} A configured Three.js PerspectiveCamera instance.
+ * Creates and configures the main perspective camera for the scene,
+ * ensuring it looks at the Prime Meridian considering Earth's rotation.
  */
 export function initializeCamera(): PerspectiveCamera {
   const {
@@ -22,16 +17,22 @@ export function initializeCamera(): PerspectiveCamera {
   } = CONFIG.camera;
 
   const aspect = window.innerWidth / window.innerHeight;
-
   const camera = new PerspectiveCamera(fov, aspect, near, far);
 
-  // Apply initial camera position with optional FOV-based distance scaling
-  camera.position.set(
-    initialPosition.x * fovDistanceMultiplier,
-    initialPosition.y * fovDistanceMultiplier,
-    initialPosition.z * fovDistanceMultiplier
-  );
+  const distance = initialPosition.z * fovDistanceMultiplier;
 
+  // Get spherical coords for (lat=0, lon=0)
+  const { phi, theta } = latLonToSphericalCoordsGeographic(0, 0, 0);
+
+  // Compute raw position vector
+  const position = new Vector3().setFromSphericalCoords(distance, phi, theta);
+
+  // Apply globe's rotation to camera position so it matches what the viewer sees
+  const rotationY = getSolarRotationY();
+  position.applyAxisAngle(new Vector3(0, 1, 0), rotationY);
+
+  camera.position.copy(position);
+  camera.lookAt(0, 0, 0);
   camera.updateProjectionMatrix();
 
   return camera;
