@@ -75,9 +75,6 @@ export async function startApp(
     oceanData: new Uint8Array(),
   };
 
-  // === Function references for dynamic features
-  // let updateKeyboard: (delta: number) => void = () => undefined;
-
   // === Pointer & Raycasting ===
   const raycaster = new Raycaster();
   const pointer = new Vector2();
@@ -143,7 +140,7 @@ export async function startApp(
     pointer,
     camera,
     {
-      onHover: undefined, // <<< important! Let animate() handle hover logic!
+      onHover: undefined, // Let animate() handle hover logic
       onClick: (hit) => {
         if (!hoverReady) return;
         if (hit) {
@@ -318,7 +315,6 @@ export async function startApp(
     }
   }, 0); // after one tick
 
-  // === Expose startHoverSystem for main.ts to call after loading screen
   // === Load Country & Ocean ID Maps (triggers subtitle updates)
   await runWithLoadingMessage(
     loadingMessages.countryTextures,

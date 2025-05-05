@@ -26,6 +26,11 @@ import { createCloudMaterial } from "../materials/cloudMaterial";
 import { createAuroraMaterial } from "../materials/auroraMaterial";
 import { countryLabelGroup } from "../hoverLabel/countryLabels3D";
 import { oceanLabelGroup } from "../hoverLabel/oceanLabel3D";
+import { latLonToSphericalCoordsGeographic } from "../astronomy/geo";
+import {
+  createPrimeMeridianMarker,
+  createSubsolarMarker,
+} from "../astronomy/debugMarkers";
 
 /**
  * Initializes and adds the main 3D globe, its atmosphere layer, star background, and raycast helper.
@@ -134,12 +139,13 @@ export function setupSceneObjects(
   );
   scene.add(globeRaycastMesh);
 
-  // Add this after creating globe and raycast mesh
   const tiltGroup = new Group();
   tiltGroup.add(globe);
   tiltGroup.add(globeRaycastMesh);
   tiltGroup.add(countryLabelGroup);
   tiltGroup.add(oceanLabelGroup);
+  tiltGroup.add(createPrimeMeridianMarker());
+  tiltGroup.add(createSubsolarMarker());
 
   scene.add(tiltGroup);
 

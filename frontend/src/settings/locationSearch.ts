@@ -7,11 +7,7 @@
 import { Vector3, MathUtils, Camera } from "three";
 import gsap from "gsap";
 
-import {
-  latLonToSphericalCoordsGeographic,
-  getEarthRotationAngle,
-  getSolarLongitudeUTC,
-} from "../astronomy/geo";
+import { latLonToSphericalCoordsGeographic } from "../astronomy/geo";
 import { countryMeta } from "../data/countryMeta";
 import { oceanCenters } from "../data/oceanCenters";
 import { CONFIG } from "../configs/config";
@@ -139,7 +135,6 @@ export function setupLocationSearch(
       CONFIG.labels3D.markerRadius
     );
 
-    // const rotationY = getEarthRotationAngle();
     const targetRotation = getSolarRotationY();
 
     const targetDirection = new Vector3()

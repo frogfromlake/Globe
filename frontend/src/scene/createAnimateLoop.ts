@@ -15,11 +15,7 @@ import {
 } from "three";
 
 import { CONFIG } from "../configs/config";
-import {
-  getSolarLongitudeUTC,
-  getSunDirectionUTC,
-  latLonToUnitVector,
-} from "../astronomy/geo";
+import { latLonToUnitVector } from "../astronomy/geo";
 import { updateHoveredCountry } from "../hoverLabel/countryHover";
 import { updateHoveredOcean } from "../hoverLabel/oceanHover";
 import {
@@ -33,7 +29,8 @@ import {
 import { oceanIdToIndex } from "../utils/oceanIdToIndex";
 import { interactionState } from "../state/interactionState";
 import { userHasMovedPointer } from "../interactions/pointerTracker";
-import { getRotatedSunDirection, getSolarRotationY } from "../astronomy/sun";
+import { getSolarRotationY, getSunDirectionWorld } from "../astronomy/sun";
+import { createSubsolarMarker } from "../astronomy/debugMarkers";
 
 interface AnimateParams {
   globe: Mesh;
@@ -344,10 +341,12 @@ export function createAnimateLoop({
     );
 
     atmosphereMaterial.uniforms.uCameraDistance.value = distance;
-    const rotatedSunDir = getRotatedSunDirection(targetRotation);
 
-    // Set it as the uniform
-    uniforms.lightDirection.value.copy(rotatedSunDir);
+    const sunDirWorld = getSunDirectionWorld();
+    const sunDirWithTilt = sunDirWorld
+      .clone()
+      .applyQuaternion(tiltGroup.quaternion); // Apply the globe’s tilt
+    uniforms.lightDirection.value.copy(sunDirWithTilt);
 
     atmosphereMaterial.uniforms.uLightDirection.value.copy(
       uniforms.lightDirection.value

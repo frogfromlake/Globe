@@ -11,7 +11,7 @@ import { oceanCenters } from "../data/oceanCenters";
 import { countryMeta } from "../data/countryMeta";
 import { oceanIdToIndex } from "../utils/oceanIdToIndex";
 
-const desiredOffsetDegrees = 90; // adjust based on texture alignment
+const desiredOffsetDegrees = 0; // adjust based on texture alignment
 
 export const CONFIG = {
   /** Camera settings for perspective projection */
