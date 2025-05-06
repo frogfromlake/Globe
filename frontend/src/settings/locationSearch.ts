@@ -20,6 +20,7 @@ import {
 } from "../hoverLabel/oceanLabel3D";
 import { getSolarRotationY } from "../astro/sun";
 import { latLonToSphericalCoordsGeographic } from "../geo/coordinates";
+import Fuse from "fuse.js";
 
 async function showNewsLazy(isoCode: string) {
   const { showNewsPanel } = await import("../features/news/handleNewsPanel");
@@ -53,23 +54,131 @@ export function setupLocationSearch(
     string,
     { id: number; type: "country" | "ocean" }
   >();
-  const transitionDuration = CONFIG.camera.autoTransitionDuration;
+  const displayNames: string[] = [];
 
   for (const [id, data] of Object.entries(countryMeta)) {
-    nameToIdMap.set(data.name.toLowerCase(), {
-      id: Number(id),
-      type: "country",
-    });
+    nameToIdMap.set(data.name, { id: Number(id), type: "country" });
+    displayNames.push(data.name);
   }
   for (const [id, data] of Object.entries(oceanCenters)) {
-    nameToIdMap.set(data.name.toLowerCase(), { id: Number(id), type: "ocean" });
+    nameToIdMap.set(data.name, { id: Number(id), type: "ocean" });
+    displayNames.push(data.name);
   }
 
+  const lookupMap = new Map(
+    Array.from(nameToIdMap.entries()).map(([name, data]) => [
+      name.toLowerCase(),
+      data,
+    ])
+  );
+
+  const fuse = new Fuse(displayNames, {
+    threshold: 0.35,
+    distance: 100,
+  });
+
+  const suggestionsList = document.getElementById(
+    "suggestions"
+  ) as HTMLUListElement;
+
+  inputLocation.addEventListener("input", () => {
+    const query = inputLocation.value.trim();
+    suggestionsList.innerHTML = "";
+
+    if (!query) {
+      suggestionsList.classList.add("hidden");
+      return;
+    }
+
+    const results = fuse.search(query, { limit: 5 });
+    if (results.length === 0) {
+      suggestionsList.classList.add("hidden");
+      return;
+    }
+
+    activeIndex = -1;
+
+    for (const { item } of results) {
+      const li = document.createElement("li");
+      li.textContent = item;
+      li.addEventListener("mousedown", () => {
+        inputLocation.value = item;
+        suggestionsList.classList.add("hidden");
+        inputLocation.dispatchEvent(new Event("change"));
+      });
+      suggestionsList.appendChild(li);
+    }
+
+    suggestionsList.classList.remove("hidden");
+  });
+
+  let activeIndex = -1;
+
+  inputLocation.addEventListener("keydown", (e) => {
+    const items = suggestionsList.querySelectorAll("li");
+    if (!items.length) return;
+
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      activeIndex = (activeIndex + 1) % items.length;
+      updateActiveItem(items);
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      activeIndex = (activeIndex - 1 + items.length) % items.length;
+      updateActiveItem(items);
+    } else if (e.key === "Enter") {
+      if (activeIndex >= 0 && activeIndex < items.length) {
+        e.preventDefault();
+        const selected = items[activeIndex] as HTMLElement;
+        inputLocation.value = selected.textContent || "";
+        suggestionsList.classList.add("hidden");
+        inputLocation.dispatchEvent(new Event("change"));
+      }
+    }
+  });
+
+  function updateActiveItem(items: NodeListOf<HTMLLIElement>) {
+    items.forEach((item, index) => {
+      item.classList.toggle("active", index === activeIndex);
+    });
+  }
+
+  // Hide on outside click
+  document.addEventListener("click", (e) => {
+    if (
+      e.target !== inputLocation &&
+      !suggestionsList.contains(e.target as Node)
+    ) {
+      suggestionsList.classList.add("hidden");
+    }
+  });
+
+  const datalist = document.getElementById(
+    "location-options"
+  ) as HTMLDataListElement;
+  if (datalist) {
+    for (const name of displayNames.sort()) {
+      const option = document.createElement("option");
+      option.value = name;
+      datalist.appendChild(option);
+    }
+  }
+
+  const transitionDuration = 2;
+
   inputLocation?.addEventListener("change", async () => {
-    const query = inputLocation.value.trim().toLowerCase();
+    const query = inputLocation.value.trim();
     if (!query) return;
 
-    const result = nameToIdMap.get(query);
+    let result = lookupMap.get(query.toLowerCase());
+    if (!result) {
+      const fuseResult = fuse.search(query);
+      if (fuseResult.length > 0) {
+        const bestMatch = fuseResult[0].item;
+        result = nameToIdMap.get(bestMatch);
+      }
+    }
+
     if (!result) {
       console.warn("Location not found:", query);
       return;
@@ -139,7 +248,7 @@ export function setupLocationSearch(
 
     const targetDirection = new Vector3()
       .setFromSphericalCoords(radius, phi, theta)
-      .applyAxisAngle(new Vector3(0, 1, 0), targetRotation) // Apply globe rotation
+      .applyAxisAngle(new Vector3(0, 1, 0), targetRotation)
       .normalize();
 
     const currentDirection = camera.position
@@ -150,7 +259,6 @@ export function setupLocationSearch(
     const defaultDistance = CONFIG.camera.initialPosition.z ?? originalDistance;
     const shouldZoom = originalDistance < defaultDistance * 0.98;
 
-    // === Animate camera rotation and zoom ===
     const tmp = { t: 0 };
     gsap.to(tmp, {
       t: 1,
@@ -177,7 +285,6 @@ export function setupLocationSearch(
       },
     });
 
-    // === Keep orbiting around globe center ===
     gsap.to(controls.target, {
       x: 0,
       y: 0,

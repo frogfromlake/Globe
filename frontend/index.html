@@ -29,15 +29,19 @@
   </div>
 
   <div id="app-container" class="hidden">
-    <!-- Country search input: now outside the sidebar -->
-    <input
-      id="country-search"
-      class="country-search"
-      type="search"
-      placeholder=" Search country or ocean..."
-      autocomplete="on"
-    />
 
+    <!-- Country search input: now outside the sidebar -->
+    <div class="search-wrapper">
+      <input
+        id="country-search"
+        class="country-search"
+        type="search"
+        placeholder="Search country or ocean..."
+        autocomplete="off"
+      />
+      <ul id="suggestions" class="suggestions hidden"></ul>
+    </div>    
+  
     <!-- Sidebar toggle button (hamburger icon in a circle) -->
     <div id="sidebar-toggle" class="sidebar-toggle">
       <div class="bar"></div>
@@ -45,6 +49,8 @@
       <div class="bar"></div>
     </div>
 
+    <div id="sim-clock" class="sim-clock">Loading UTC time...</div>
+    
     <!-- Sidebar menu -->
     <div id="sidebar" class="sidebar">
 
@@ -88,8 +94,6 @@
 
       <div id="news-content" class="news-content"></div>
     </div>
-
-    <div id="sim-clock" class="sim-clock">Loading UTC time...</div>
 
     <canvas id="globe"></canvas>
   </div>

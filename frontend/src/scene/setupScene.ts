@@ -146,10 +146,12 @@ export function setupSceneObjects(
   tiltGroup.add(cloudSphere);
 
   // DEBUG MARKERS#
-  const primeMeridianMarker = createPrimeMeridianMarker();
-  tiltGroup.add(primeMeridianMarker);
-  const subsolarMarker = createSubsolarMarkerMesh();
-  tiltGroup.add(subsolarMarker);
+  // const primeMeridianMarker = createPrimeMeridianMarker();
+  // tiltGroup.add(primeMeridianMarker);
+  // const subsolarMarker = createSubsolarMarkerMesh();
+  // tiltGroup.add(subsolarMarker);
+  // const subsolarMarker = createSubsolarMarkerMesh();
+  const subsolarMarker = new Mesh();
 
   scene.add(tiltGroup);
 
