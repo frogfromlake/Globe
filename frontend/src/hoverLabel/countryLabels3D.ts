@@ -61,6 +61,7 @@ export async function createTextSprite(
   const canvas = document.createElement("canvas");
   const ctx = canvas.getContext("2d")!;
   const { canvasFontSize, fontFamily, glow, spriteScale } = CONFIG.labels3D;
+  await document.fonts.load(`normal 400 ${canvasFontSize}px '${fontFamily}'`);
 
   ctx.font = `${canvasFontSize}px '${fontFamily}', sans-serif`;
   const textWidth = ctx.measureText(message).width;
