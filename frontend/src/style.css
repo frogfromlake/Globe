@@ -257,16 +257,24 @@ canvas {
 
 #sim-clock {
   position: absolute;
-  width: 16rem;
+  width: 22rem; /* accommodate long date + time */
+  text-align: center;
+  font-feature-settings: "tnum"; /* optional for tabular numbers if supported */
+  font-variant-numeric: tabular-nums;
   top: 1.5rem;
-  left: 3rem;
-  font-size: 0.85rem;
+  left: 3.35rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: clip;
+  font-size: 0.8rem;
   color: #a5c8e7;
   padding: 0.25rem 0.6rem;
   z-index: 30;
-  font-family: 'Inter', sans-serif;
+  font-family: 'Inter', monospace;
   pointer-events: none;
   user-select: none;
+  text-align: left;
+  letter-spacing: 0.1px;
 }
 
 /* Fixed country search input (top-left corner) */

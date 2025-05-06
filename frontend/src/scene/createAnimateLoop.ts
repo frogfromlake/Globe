@@ -191,7 +191,7 @@ export function createAnimateLoop({
     const m = String(date.getUTCMinutes()).padStart(2, "0");
     const s = String(date.getUTCSeconds()).padStart(2, "0");
 
-    return `${day}, ${d} ${month} ${year}, ${h}:${m}:${s} UTC`;
+    return `${day}, ${d} ${month} ${year}, ${h}:${m}:${s}\u00A0UTC`;
   }
 
   function animate(): void {
