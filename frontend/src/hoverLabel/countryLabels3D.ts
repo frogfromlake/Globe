@@ -20,7 +20,7 @@ import {
 } from "three";
 import { countryMeta } from "../data/countryMeta";
 import { CONFIG } from "../configs/config";
-import { createLabelLineMaterial } from "../materials/globeMaterials";
+import { createLabelLineMaterial, createLabelSpriteMaterial } from "../materials/globeMaterials";
 import { Line2 } from "three/examples/jsm/lines/Line2.js";
 import { LineGeometry } from "three/examples/jsm/lines/LineGeometry.js";
 import { latLonToSphericalCoordsGeographic } from "../geo/coordinates";
@@ -56,12 +56,15 @@ export async function createTextSprite(
   message: string,
   isOcean: boolean
 ): Promise<Sprite> {
+  const { canvasFontSize, fontFamily, glow, spriteScale } = CONFIG.labels3D;
+
+  // Ensure font is loaded and ready before rendering to canvas
   await document.fonts.ready;
+  await document.fonts.load(`normal 400 ${canvasFontSize}px '${fontFamily}'`);
+  await new Promise(requestAnimationFrame); // Important for Chromium timing
 
   const canvas = document.createElement("canvas");
   const ctx = canvas.getContext("2d")!;
-  const { canvasFontSize, fontFamily, glow, spriteScale } = CONFIG.labels3D;
-  await document.fonts.load(`normal 400 ${canvasFontSize}px '${fontFamily}'`);
 
   ctx.font = `${canvasFontSize}px '${fontFamily}', sans-serif`;
   const textWidth = ctx.measureText(message).width;
@@ -79,21 +82,7 @@ export async function createTextSprite(
   texture.minFilter = LinearFilter;
   texture.needsUpdate = true;
 
-  // Use labelColor from configuration (ocean or country)
-  const labelColor = isOcean
-    ? CONFIG.labels3D.ocean.labelColor
-    : CONFIG.labels3D.country.labelColor;
-
-  const material = new SpriteMaterial({
-    map: texture,
-    transparent: true,
-    opacity: 0,
-    depthWrite: true,
-    depthTest: true,
-    alphaTest: 0.5,
-    color: new Color(labelColor),
-  });
-
+  const material = createLabelSpriteMaterial(texture, isOcean);
   const sprite = new Sprite(material);
   const aspect = canvas.width / canvas.height;
   sprite.scale.set(aspect * spriteScale, spriteScale, 1);

@@ -39,14 +39,14 @@ export function createLabelSpriteMaterial(
 ): SpriteMaterial {
   const labelColor = isOcean
     ? CONFIG.labels3D.ocean.labelColor
-    : CONFIG.labels3D.country.labelColor; // Use the correct label color based on the type
+    : CONFIG.labels3D.country.labelColor;
 
   return new SpriteMaterial({
     map: texture,
     transparent: true,
     opacity: 0,
     depthWrite: false,
-    color: new Color(labelColor), // Set the label color here
+    color: new Color(labelColor),
   });
 }
 
