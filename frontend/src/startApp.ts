@@ -15,30 +15,30 @@ import {
   ShaderMaterial,
 } from "three";
 
-import { initializeCamera } from '@/core/earth/init/initializeCamera';
-import { initializeRenderer } from '@/core/earth/init/initializeRenderer';
-import { initializeScene } from '@/core/earth/init/initializeScene';
-import { initializeUniforms } from '@/core/earth/init/initializeUniforms';
+import { initializeCamera } from "@/core/earth/init/initializeCamera";
+import { initializeRenderer } from "@/core/earth/init/initializeRenderer";
+import { initializeScene } from "@/core/earth/init/initializeScene";
+import { initializeUniforms } from "@/core/earth/init/initializeUniforms";
 
-import { loadCountryIdMapTexture } from '@/core/earth/interactivity/countryHover';
-import { loadOceanIdMapTexture } from '@/core/earth/interactivity/oceanHover';
-import { setupGlobePointerEvents } from '@/core/earth/controls/globePointerEvents';
+import { loadCountryIdMapTexture } from "@/core/earth/interactivity/countryHover";
+import { loadOceanIdMapTexture } from "@/core/earth/interactivity/oceanHover";
+import { setupGlobePointerEvents } from "@/core/earth/controls/globePointerEvents";
 import {
   setupPointerMoveTracking,
   userHasMovedPointer,
-} from '@/core/earth/controls/pointerTracker';
-import { handleGlobeClick } from '@/core/earth/controls/handleGlobeClick';
+} from "@/core/earth/controls/pointerTracker";
+import { handleGlobeClick } from "@/core/earth/controls/handleGlobeClick";
 
-import { setupSceneObjects } from '@/core/scene/setupScene';
-import { createAnimateLoop } from '@/core/animation/createAnimateLoop';
+import { setupSceneObjects } from "@/core/scene/setupScene";
+import { createAnimateLoop } from "@/core/animation/createAnimateLoop";
 import {
   loadingMessages,
   runWithLoadingMessage,
-} from '@/core/loadingScreen/showLoadingScreen';
+} from "@/core/loadingScreen/showLoadingScreen";
 import {
   loadCoreTextures,
   loadVisualTextures,
-} from '@/core/earth/init/initializeTextures';
+} from "@/core/earth/init/initializeTextures";
 
 // === Fallback texture: flat gray ===
 const fallbackTexture = new DataTexture(
@@ -220,8 +220,6 @@ export async function startApp(updateSubtitle: (text: string) => void) {
         // === Assign Earth Day/Night Textures
         uniforms.dayTexture.value = dayTexture;
         uniforms.nightTexture.value = nightTexture;
-
-        // === Assign Topography Texture (for bump mapping)
         uniforms.topographyMap.value = topographyTexture;
 
         // === Force globe material(s) to update
@@ -255,13 +253,10 @@ export async function startApp(updateSubtitle: (text: string) => void) {
           }, 300);
         }
 
-        // === Handle Cloud Sphere (assign texture to custom cloud material)
-        if (cloudTexture) {
-          if (cloudSphere.material instanceof ShaderMaterial) {
-            const cloudMat = cloudSphere.material;
-            cloudMat.uniforms.uCloudMap.value = cloudTexture;
-            cloudMat.needsUpdate = true;
-          }
+        // === Handle Cloud Sphere
+        if (cloudTexture && cloudSphere.material instanceof ShaderMaterial) {
+          cloudSphere.material.uniforms.uCloudMap.value = cloudTexture;
+          cloudSphere.material.needsUpdate = true;
           cloudSphere.visible = true;
         }
 
@@ -288,12 +283,16 @@ export async function startApp(updateSubtitle: (text: string) => void) {
     const { init3DCountryLabels } = await import(
       "./core/earth/interactivity/countryLabels3D"
     );
-    const { init3DOceanLabels } = await import("./core/earth/interactivity/oceanLabel3D");
+    const { init3DOceanLabels } = await import(
+      "./core/earth/interactivity/oceanLabel3D"
+    );
     init3DCountryLabels(camera);
     init3DOceanLabels(camera);
 
     // === Load News Panel
-    const { initNewsPanel } = await import("./features/panels/news/handleNewsPanel");
+    const { initNewsPanel } = await import(
+      "./features/panels/news/handleNewsPanel"
+    );
     initNewsPanel(selection.countryIds, selection.countryFlags);
 
     // === Load Keyboard Controls
@@ -302,6 +301,7 @@ export async function startApp(updateSubtitle: (text: string) => void) {
     );
     updateKeyboardRef.fn = setupKeyboardControls(camera, controls);
 
+    // === Load Admin Panel (Dev Only)
     if (import.meta.env.DEV) {
       const modules = import.meta.glob("../features/news/setupAdminPanel.ts");
       const load = modules["../features/news/setupAdminPanel.ts"];
@@ -316,21 +316,20 @@ export async function startApp(updateSubtitle: (text: string) => void) {
           });
       }
     }
-  }, 0); // after one tick
+  }, 0);
 
-  // === Load Country & Ocean ID Maps (triggers subtitle updates)
-  await runWithLoadingMessage(
-    loadingMessages.countryTextures,
-    updateSubtitle,
-    loadCountryIdMapTexture
+  // Load label systems
+  const { init3DCountryLabels } = await import(
+    "./core/earth/interactivity/countryLabels3D"
   );
-  await runWithLoadingMessage(
-    loadingMessages.oceanTextures,
-    updateSubtitle,
-    loadOceanIdMapTexture
+  const { init3DOceanLabels } = await import(
+    "./core/earth/interactivity/oceanLabel3D"
   );
+  init3DCountryLabels(camera);
+  init3DOceanLabels(camera);
 
   hoverReady = true;
+
   return { animate };
 }
 
