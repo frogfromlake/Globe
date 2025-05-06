@@ -7,9 +7,9 @@ import {
   ClampToEdgeWrapping,
   MathUtils,
 } from "three";
-import { oceanCenters } from "../data/oceanCenters";
-import { countryMeta } from "../data/countryMeta";
-import { oceanIdToIndex } from "../utils/oceanIdToIndex";
+import { oceanCenters } from '@/core/data/oceanCenters';
+import { countryMeta } from '@/core/data/countryMeta';
+import { oceanIdToIndex } from '@/utils/oceanIdToIndex';
 
 const desiredOffsetDegrees = 0; // adjust based on texture alignment
 
@@ -232,7 +232,7 @@ export const CONFIG = {
     /** Number of segments (horizontal/vertical) used to generate the sphere geometry */
     markerSegments: 16,
     /** Marker color */
-    markerColor: 0x00ff00,
+    markerColor: 0x00ffff,
     /** Options passed to `navigator.geolocation.getCurrentPosition()` */
     geolocationOptions: {
       enableHighAccuracy: true,

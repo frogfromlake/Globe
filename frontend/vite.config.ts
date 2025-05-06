@@ -1,6 +1,7 @@
 import { defineConfig } from "vite";
 import glsl from "vite-plugin-glsl";
 import { visualizer } from "rollup-plugin-visualizer";
+import path from "path";
 
 const isAnalyze = process.env.npm_lifecycle_event === "analyze";
 
@@ -10,6 +11,11 @@ export default defineConfig({
       include: ["**/*.vert", "**/*.frag"],
     }),
   ],
+  resolve: {
+    alias: {
+      "@": path.resolve(__dirname, "src"),
+    },
+  },
   base: "./",
   build: {
     sourcemap: true,

@@ -7,6 +7,10 @@
     "resolveJsonModule": true,         // Allow importing JSON files directly
     "outDir": "./dist",                // Output directory for compiled files
     "rootDir": "./src",                // Input directory for TypeScript files
+    "baseUrl": "./src",
+    "paths": {
+      "@/*": ["*"]
+    },
     "strict": true,                    // Enable strict type checking
     "skipLibCheck": true,              // Skip checking library files
     "forceConsistentCasingInFileNames": true, // Ensure consistent casing in imports

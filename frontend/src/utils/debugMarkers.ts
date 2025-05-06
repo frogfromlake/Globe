@@ -1,10 +1,10 @@
 import { SphereGeometry, MeshBasicMaterial, Mesh, Vector3 } from "three";
-import { CONFIG } from "../configs/config";
-import { getSubsolarPoint } from "../astro/solar";
+import { CONFIG } from '@/configs/config';
+import { getSubsolarPoint } from '@/core/earth/lighting/subsolarPoint';
 import {
   latLonToUnitVector,
   latLonToSphericalCoordsGeographic,
-} from "../geo/coordinates";
+} from '@/core/earth/geo/coordinates';
 
 export function createSubsolarMarkerMesh(): Mesh {
   const geometry = new SphereGeometry(0.01, 16, 16);

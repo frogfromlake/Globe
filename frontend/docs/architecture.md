@@ -10,8 +10,8 @@ This document outlines the structured multi-phase boot process that ensures fast
 - **Defer Heavy Visuals** — Load day/night/sky maps after the scene is visible
 - **Modular Loading** — Separate concerns for clarity and maintainability
 - **Staged Interactivity** — Only enable hover after ID maps and canvases are fully ready
-- **User Feedback** — Communicate progress using loading subtitles with humor
-- **Visual Polish** — Fade in final textures and background sky for a cinematic experience
+- **User Feedback** — Communicate progress using loading subtitles
+- **Visual Polish** — Fade in final textures and background sky for a cinematic feeling
 
 ---
 
