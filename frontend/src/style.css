@@ -342,7 +342,7 @@ canvas {
   color: #c9e5ff;
   font-size: 0.9rem;
   cursor: pointer;
-  transition: background 0.2s ease;
+  transition: background 0.15s ease;
 }
 
 .suggestions li.active {

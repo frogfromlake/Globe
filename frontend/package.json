@@ -8,10 +8,11 @@
     "build": "vite build",
     "preview": "vite preview",
     "analyze": "vite build",
-    "generate:crgbmap": "tsx src/dev/generateCountryIdMapRgb.ts",
-    "generate:orgbmap": "tsx src/dev/generateOceanIdMapPacked.ts",
-    "generate:oceancentroids": "tsx src/dev/generateOceanCenters.ts",
-    "generate:countryData": "tsx src/dev/generateCountryMeta.ts"
+    "generate:crgbmap": "tsx src/core/data/dev/generateCountryIdMapRgb.ts",
+    "generate:orgbmap": "tsx src/core/data/dev/generateOceanIdMapPacked.ts",
+    "generate:oceancentroids": "tsx src/core/data/dev/generateOceanCenters.ts",
+    "generate:countryData": "tsx src/core/data/dev/generateCountryMeta.ts",
+    "update:aliasimports": "tsx src/core/data/dev/aliasImports.ts"
   },
   "devDependencies": {
     "@types/d3-geo": "^3.1.0",

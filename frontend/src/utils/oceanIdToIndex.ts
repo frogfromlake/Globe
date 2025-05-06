@@ -1,4 +1,4 @@
-import { oceanCenters } from "../data/oceanCenters";
+import { oceanCenters } from '@/core/data/oceanCenters';
 
 // Create a mapping from ocean ID to its index in the sorted list of ocean centers
 export const oceanIdToIndex: Record<number, number> = Object.fromEntries(

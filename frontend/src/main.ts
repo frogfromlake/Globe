@@ -8,7 +8,7 @@
  */
 
 (async () => {
-  const { startApp } = await import("./core/startApp");
+  const { startApp } = await import("./startApp");
   const { inject } = await import("@vercel/analytics");
   const { injectSpeedInsights } = await import("@vercel/speed-insights");
 
