@@ -406,6 +406,14 @@ export function createAnimateLoop({
         newHoveredId = -1;
         currentHoveredOceanId = -1;
       }
+    } else {
+      currentHoveredId = -1;
+      currentHoveredOceanId = -1;
+
+      uniforms.hoveredCountryId.value = 0;
+      uniforms.hoveredOceanId.value = 0;
+      uniforms.highlightFadeIn.value = 0;
+      uniforms.highlightFadeOut.value = 0;
     }
 
     // --- Hover State Transitions ---
