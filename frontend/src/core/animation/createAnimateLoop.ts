@@ -101,6 +101,7 @@ export function createAnimateLoop({
   let lastRaycastTime = 0;
   const raycastInterval = 100;
   let currentUV: Vector2 | null = null;
+  let flashlightWorldPos: Vector3 | null = null;
 
   const atmosphereMaterial = atmosphere.material as ShaderMaterial;
   const zoomRange = CONFIG.zoom.max - CONFIG.zoom.min;
@@ -323,19 +324,30 @@ export function createAnimateLoop({
 
     // Store rotationY globally for this frame
     let globeIntersection: Vector3 | null = null;
-    let globeHit: Intersection | null = null;
 
-    // Only raycast every 'raycastInterval' ms
-    const enoughTimePassed = now - lastRaycastTime > raycastInterval;
-    if (userHasMovedPointer() && enoughTimePassed) {
+    const pointerActive = userHasMovedPointer();
+    const doRaycast = pointerActive && now - lastRaycastTime > raycastInterval;
+
+    // === Flashlight raycast (always runs, unthrottled, for smooth movement) ===
+    raycaster.setFromCamera(pointer, camera);
+    const hitForFlashlight = raycaster.intersectObject(globeRaycastMesh, false);
+    if (hitForFlashlight.length > 0) {
+      flashlightWorldPos = hitForFlashlight[0].point.clone().normalize();
+      uniforms.cursorWorldPos.value.copy(flashlightWorldPos);
+      uniforms.uCursorOnGlobe.value = true;
+    } else {
+      flashlightWorldPos = null;
+      uniforms.uCursorOnGlobe.value = false;
+    }
+
+    if (doRaycast) {
       lastRaycastTime = now;
 
       raycaster.setFromCamera(pointer, camera);
-      const hits = raycaster.intersectObject(globeRaycastMesh, true);
+      const hits = raycaster.intersectObject(globeRaycastMesh, false); // false = no recursion
 
       if (hits.length > 0) {
         const hitPoint = hits[0].point.clone().normalize();
-        globeHit = hits[0];
         globeIntersection = hitPoint;
 
         const longitude = Math.atan2(hitPoint.z, hitPoint.x);
@@ -349,29 +361,14 @@ export function createAnimateLoop({
         const v = MathUtils.clamp(0.5 + latitude / Math.PI, 0, 1);
 
         currentUV = new Vector2(u, v);
-
         uniforms.uCursorOnGlobe.value = true;
-        uniforms.cursorWorldPos.value.copy(hitPoint); // Use actual point for rendering
       } else {
-        globeHit = null;
-        globeIntersection = null;
         currentUV = null;
-      }
-    } else {
-      // No raycast, but if cursor was already on globe, update cursorWorldPos
-      if (uniforms.uCursorOnGlobe.value) {
         uniforms.uCursorOnGlobe.value = false;
-        raycaster.setFromCamera(pointer, camera);
-        const hit = raycaster.intersectObject(globeRaycastMesh, true)[0];
-        if (hit) {
-          uniforms.uCursorOnGlobe.value = true;
-          uniforms.cursorWorldPos.value.copy(hit.point.normalize());
-        }
       }
-    }
-
-    if (globeIntersection) {
-      uniforms.cursorWorldPos.value.copy(globeIntersection);
+    } else if (!pointerActive) {
+      currentUV = null;
+      uniforms.uCursorOnGlobe.value = false;
     }
 
     // Atmosphere + Rotation Speed Updates

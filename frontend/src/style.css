@@ -261,12 +261,12 @@ canvas {
   text-align: center;
   font-feature-settings: "tnum"; /* optional for tabular numbers if supported */
   font-variant-numeric: tabular-nums;
-  top: 1.5rem;
-  left: 3.35rem;
+  top: 1.0rem;
+  left: 1.0rem;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: clip;
-  font-size: 0.8rem;
+  font-size: 0.85rem;
   color: #a5c8e7;
   padding: 0.25rem 0.6rem;
   z-index: 30;

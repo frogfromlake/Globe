@@ -8,16 +8,16 @@ import {
 import {
   cloudsVertexShader,
   cloudsFragmentShader,
-} from '@/core/earth/shaders/earthShaders';
+} from "@/core/earth/shaders/earthShaders";
 
 /**
- * Creates a ShaderMaterial for the cloud sphere with soft cloud edges and drifting.
+ * Creates a ShaderMaterial for the cloud sphere with soft cloud edges, drifting, and lightning flashes.
  *
- * @param cloudTexture - Optional placeholder or loaded cloud texture.
- * @returns A ShaderMaterial configured for the animated cloud layer.
+ * @param cloudTexture - Optional loaded or fallback cloud texture.
+ * @returns A performant ShaderMaterial configured for the animated cloud layer.
  */
-export function createCloudMaterial(cloudTexture?: Texture) {
-  const MAX_FLASHES = 100; // Same as in shader
+export function createCloudMaterial(cloudTexture?: Texture): ShaderMaterial {
+  const MAX_FLASHES = 100;
 
   if (cloudTexture) {
     cloudTexture.wrapS = RepeatWrapping;
@@ -29,6 +29,9 @@ export function createCloudMaterial(cloudTexture?: Texture) {
     fragmentShader: cloudsFragmentShader,
     transparent: true,
     depthWrite: false,
+    fog: false,
+    lights: false,
+    toneMapped: false,
     uniforms: {
       uCloudMap: { value: cloudTexture || null },
       uCloudFade: { value: 0.0 },

@@ -1,7 +1,6 @@
 /**
  * @file oceanLabel3D.ts
- * @description Manages creation, updates, and visibility of 3D ocean labels and their connecting lines.
- * Labels appear as glowing sprites with connectors, dynamically positioned and scaled based on camera distance.
+ * @description Manages ocean label creation, scaling, and visibility using 3D sprites and connector lines.
  */
 
 import {
@@ -11,15 +10,14 @@ import {
   Camera,
   MathUtils,
   Object3D,
-  Scene,
   PerspectiveCamera,
 } from "three";
-import { createTextSprite } from '@/core/earth/interactivity/countryLabels3D';
-import { CONFIG } from '@/configs/config';
-import { createLabelLineMaterial } from '@/core/earth/materials/labelMaterial';
-import { LineGeometry } from "three/examples/jsm/lines/LineGeometry.js";
-import { Line2 } from "three/examples/jsm/lines/Line2.js";
-import { latLonToSphericalCoordsGeographic } from '@/core/earth/geo/coordinates';
+import { createTextSprite } from "@/core/earth/interactivity/countryLabels3D";
+import { CONFIG } from "@/configs/config";
+import { createLabelLineMaterial } from "@/core/earth/materials/labelMaterial";
+import { LineGeometry } from "three/examples/jsm/lines/LineGeometry";
+import { Line2 } from "three/examples/jsm/lines/Line2";
+import { latLonToSphericalCoordsGeographic } from "@/core/earth/geo/coordinates";
 
 type LabelObject = {
   sprite: Sprite;
@@ -30,27 +28,27 @@ type LabelObject = {
 export const oceanLabelGroup = new Group();
 const labelObjectsOcean = new Map<number, LabelObject>();
 
+/**
+ * Pre-initializes all ocean labels based on configured label metadata.
+ */
 export function init3DOceanLabels(camera: PerspectiveCamera): void {
-  // === Pre-create all ocean labels ===
   for (const idStr of Object.keys(CONFIG.oceanHover.oceanCenters)) {
     const id = parseInt(idStr);
     const ocean = CONFIG.oceanHover.oceanCenters[id];
-    if (ocean) {
+    if (ocean)
       update3DOceanLabel(id, ocean.name, ocean.lat, ocean.lon, camera, 0);
-    }
   }
 }
 
 /**
- * Updates or creates a 3D label for an ocean, positioned above the surface with a connector line.
- * Automatically handles dynamic scaling, placement, and opacity fading based on camera zoom and visibility.
+ * Updates or creates a 3D label for the given ocean using camera-aware scale and position.
  *
- * @param name - Ocean name, used as a unique label key.
- * @param lat - Latitude of the ocean label anchor point.
- * @param lon - Longitude of the ocean label anchor point.
- * @param rotationY - Y-axis rotation of the globe.
- * @param camera - The active Three.js camera (used for zoom-based scaling).
- * @param fade - Alpha fade (0 to 1) for the label and its connector line.
+ * @param oceanId - Unique RGB-derived ocean ID
+ * @param name - Display name for the label
+ * @param lat - Latitude in degrees
+ * @param lon - Longitude in degrees
+ * @param camera - Current camera (for zoom-based sizing)
+ * @param fade - Opacity from 0.0 to 1.0
  */
 export async function update3DOceanLabel(
   oceanId: number,
@@ -62,18 +60,12 @@ export async function update3DOceanLabel(
 ): Promise<void> {
   if (!labelObjectsOcean.has(oceanId)) {
     const sprite = await createTextSprite(name, true);
-
-    const geometry = new LineGeometry();
-    geometry.setPositions([0, 0, 0, 0, 0, 0]);
-
-    const lineMaterial = createLabelLineMaterial(true);
-    const line = new Line2(geometry, lineMaterial);
+    const geometry = new LineGeometry().setPositions([0, 0, 0, 0, 0, 0]);
+    const line = new Line2(geometry, createLabelLineMaterial(true));
     line.computeLineDistances();
 
     const group = new Group();
-    group.add(sprite);
-    group.add(line as unknown as Object3D);
-
+    group.add(sprite, line as Object3D);
     line.renderOrder = 0;
     sprite.renderOrder = 1;
 
@@ -82,15 +74,13 @@ export async function update3DOceanLabel(
   }
 
   const { sprite, line, group } = labelObjectsOcean.get(oceanId)!;
-
   const { phi, theta, radius } = latLonToSphericalCoordsGeographic(
     lat,
     lon,
     CONFIG.labels3D.markerRadius
   );
-
-  // Calculate position from lat/lon
-  let center = new Vector3().setFromSphericalCoords(radius, phi, theta);
+  const center = new Vector3().setFromSphericalCoords(radius, phi, theta);
+  const direction = center.clone().normalize();
 
   const cameraDistance = camera.position.length();
   const offset = MathUtils.mapLinear(
@@ -101,17 +91,12 @@ export async function update3DOceanLabel(
     CONFIG.labels3D.offsetRange.max
   );
 
-  const direction = center.clone().normalize();
   const labelPos = center.clone().add(direction.multiplyScalar(offset));
-
-  // === Sprite positioning ===
   sprite.position.copy(labelPos);
   sprite.material.opacity = fade;
 
-  // === Sprite scale based on camera zoom ===
-  const baseScale = CONFIG.labels3D.spriteScale;
   const canvas = sprite.material.map?.image as HTMLCanvasElement;
-  const aspect = canvas.width / canvas.height || 2.5;
+  const aspect = canvas?.width / canvas?.height || 2.5;
   const scaleFactor = MathUtils.mapLinear(
     cameraDistance,
     CONFIG.labels3D.zoomRange.min,
@@ -120,26 +105,23 @@ export async function update3DOceanLabel(
     5.0
   );
 
+  const baseScale = CONFIG.labels3D.spriteScale;
   sprite.scale.set(
     aspect * baseScale * scaleFactor,
     baseScale * scaleFactor,
     1
   );
-
-  // === Line direction: always from center to label ===
-  const dir = labelPos.clone().sub(center);
-  const labelIsAbove = dir.dot(labelPos.clone().normalize()) > 0;
-
-  const top = labelIsAbove ? labelPos : center;
-  const bottom = labelIsAbove ? center : labelPos;
+  sprite.lookAt(camera.position); // Makes sure it faces the camera
+  group.rotation.set(0, 0, 0);
+  group.quaternion.identity(); // Prevent distortion from parent rotation
 
   (line.geometry as LineGeometry).setPositions([
-    bottom.x,
-    bottom.y,
-    bottom.z,
-    top.x,
-    top.y,
-    top.z,
+    center.x,
+    center.y,
+    center.z,
+    labelPos.x,
+    labelPos.y,
+    labelPos.z,
   ]);
   line.computeLineDistances();
 
@@ -150,17 +132,16 @@ export async function update3DOceanLabel(
   group.visible = fade > 0.01;
 }
 
-/**
- * Hides all currently rendered ocean labels from the scene.
- * Typically called when resetting or deselecting oceans.
- */
+/** Hides all 3D ocean labels from the scene. */
 export function hideAll3DOceanLabels(): void {
-  for (const { group } of labelObjectsOcean.values()) {
-    group.visible = false;
-  }
+  for (const { group } of labelObjectsOcean.values()) group.visible = false;
 }
 
-export function hideAll3DOceanLabelsExcept(idsToKeep: number[] = []) {
+/**
+ * Shows only labels for the specified ocean IDs.
+ * @param idsToKeep - Array of ocean IDs to remain visible.
+ */
+export function hideAll3DOceanLabelsExcept(idsToKeep: number[] = []): void {
   for (const [id, { group }] of labelObjectsOcean.entries()) {
     group.visible = idsToKeep.includes(id);
   }

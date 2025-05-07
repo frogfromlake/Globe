@@ -1,17 +1,16 @@
 /**
- * initializeRenderer.ts
- * Sets up the WebGL renderer for the application using configuration options.
- * Binds to the target canvas, sets resolution, color space, and handles resizing.
+ * @file initializeRenderer.ts
+ * @description Sets up the WebGL renderer with performance-conscious defaults and resize behavior.
  */
 
-import { WebGLRenderer, PerspectiveCamera } from "three";
-import { CONFIG } from '@/configs/config';
+import { WebGLRenderer, PerspectiveCamera, NoToneMapping } from "three";
+import { CONFIG } from "@/configs/config";
 
 /**
- * Initializes the WebGL renderer for the 3D globe scene.
+ * Initializes a WebGLRenderer with adaptive pixel ratio and resize handling.
  *
- * @param camera - The perspective camera, used to update aspect ratio on resize.
- * @returns {WebGLRenderer} The configured WebGLRenderer instance.
+ * @param camera - Perspective camera to sync with viewport aspect.
+ * @returns Configured WebGLRenderer instance.
  */
 export function initializeRenderer(camera: PerspectiveCamera): WebGLRenderer {
   const canvas = document.getElementById(
@@ -21,25 +20,37 @@ export function initializeRenderer(camera: PerspectiveCamera): WebGLRenderer {
   const renderer = new WebGLRenderer({
     canvas,
     antialias: CONFIG.renderer.antialias,
+    powerPreference: "high-performance", // Hints to use GPU where possible
+    alpha: false, // Unless you explicitly need canvas transparency
+    stencil: false, // Disable unless you're using advanced masking
+    depth: true, // Keep if needed for 3D depth (true by default)
+    preserveDrawingBuffer: false, // Only needed for screenshots
   });
 
-  renderer.debug.checkShaderErrors = CONFIG.renderer.checkShaderErrors;
+  // Disable dev-only checks in production
+  renderer.debug.checkShaderErrors = !!CONFIG.renderer.checkShaderErrors;
+
+  // Color space handling (sRGB correct output)
   renderer.outputColorSpace = CONFIG.renderer.outputColorSpace;
 
-  // Set initial render size and pixel ratio
-  renderer.setSize(window.innerWidth, window.innerHeight);
+  // Disable tone mapping unless you need HDR
+  renderer.toneMapping = NoToneMapping;
 
+  // Configure resolution
   const pixelRatio =
     CONFIG.renderer.pixelRatio === "device"
-      ? window.devicePixelRatio
+      ? Math.min(window.devicePixelRatio, CONFIG.renderer.maxPixelRatio || 2)
       : CONFIG.renderer.pixelRatio;
   renderer.setPixelRatio(pixelRatio);
+  renderer.setSize(window.innerWidth, window.innerHeight);
 
-  // Handle window resize: update renderer and camera projection
+  // Resize logic
   window.addEventListener("resize", () => {
-    camera.aspect = window.innerWidth / window.innerHeight;
+    const width = window.innerWidth;
+    const height = window.innerHeight;
+    camera.aspect = width / height;
     camera.updateProjectionMatrix();
-    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setSize(width, height);
   });
 
   return renderer;

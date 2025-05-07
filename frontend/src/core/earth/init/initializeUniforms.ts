@@ -1,23 +1,12 @@
-/**
- * initializeUniforms.ts
- * Initializes all GLSL shader uniforms and selection buffers for country and ocean highlighting.
- */
-
 import { Texture, Vector2, Vector3 } from "three";
-import type { GlobeUniforms } from '@/core/earth/shaders/uniforms';
-import { createSelectionTexture } from '@/core/earth/interactivity/countryHover';
-import { createSelectionOceanTexture } from '@/core/earth/interactivity/oceanHover';
-import { CONFIG } from '@/configs/config';
+import type { GlobeUniforms } from "@/core/earth/shaders/uniforms";
+import { createSelectionTexture } from "@/core/earth/interactivity/countryHover";
+import { createSelectionOceanTexture } from "@/core/earth/interactivity/oceanHover";
+import { CONFIG } from "@/configs/config";
 
 /**
- * Initializes the complete uniform structure and all required selection buffers
- * for the country and ocean interaction systems.
- *
- * @param dayTexture - Diffuse Earth daytime texture
- * @param nightTexture - Emissive nighttime texture with city lights
- * @param countryIdMapTexture - RGB map where each country's ID is encoded in pixel color
- * @param oceanIdMapTexture - RGB map for ocean region IDs
- * @returns Uniforms and selection state arrays for countries and oceans
+ * Initializes the shared uniform structure and selection buffers
+ * used across core shaders in the OrbitalOne visualization.
  */
 export function initializeUniforms(
   dayTexture: Texture,
@@ -43,10 +32,7 @@ export function initializeUniforms(
   );
   const maxId = Math.max(maxCountryId, maxOceanId);
 
-  /**
-   * Ensures a selection array has the correct size.
-   * Expands and preserves values if needed.
-   */
+  /** Ensures a buffer has the correct size. */
   const ensureSize = <T extends Uint8Array | Float32Array>(
     arr: T,
     length: number
@@ -77,7 +63,7 @@ export function initializeUniforms(
     maxId + 1
   );
 
-  // === Shader Uniforms ===
+  // === Shared Shader Uniforms ===
   const {
     defaultHoveredId,
     cityLightStrength,

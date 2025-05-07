@@ -1,39 +1,39 @@
+/**
+ * @file initializeCamera.ts
+ * @description Creates and configures the main perspective camera for the 3D globe scene.
+ * Ensures it points toward the Prime Meridian, adjusted by simulated solar rotation.
+ */
+
 import { PerspectiveCamera, Vector3 } from "three";
-import { CONFIG } from '@/configs/config';
-import { latLonToSphericalCoordsGeographic } from '@/core/earth/geo/coordinates';
-import { getSolarRotationY } from '@/core/earth/lighting/sunDirection';
+import { CONFIG } from "@/configs/config";
+import { latLonToSphericalCoordsGeographic } from "@/core/earth/geo/coordinates";
+import { getSolarRotationY } from "@/core/earth/lighting/sunDirection";
 
 /**
- * Creates and configures the main perspective camera for the scene,
- * ensuring it looks at the Prime Meridian considering Earth's rotation.
+ * Initializes the PerspectiveCamera positioned to view the globe from above the equator,
+ * aligned with Earth's rotation and solar simulation.
+ *
+ * @returns A configured PerspectiveCamera instance.
  */
 export function initializeCamera(): PerspectiveCamera {
-  const {
-    fov,
-    near,
-    far,
-    initialPosition,
-    fovDistanceMultiplier = 1,
-  } = CONFIG.camera;
+  const { fov, near, far, initialPosition, fovDistanceMultiplier } =
+    CONFIG.camera;
 
   const aspect = window.innerWidth / window.innerHeight;
   const camera = new PerspectiveCamera(fov, aspect, near, far);
 
+  // Calculate camera distance based on initial Z and FOV multiplier
   const distance = initialPosition.z * fovDistanceMultiplier;
 
-  // Get spherical coords for (lat=0, lon=0)
+  // Convert (lat=0, lon=0) to spherical coordinates
   const { phi, theta } = latLonToSphericalCoordsGeographic(0, 0, 0);
 
-  // Compute raw position vector
+  // Calculate position vector and apply simulated Earth rotation
   const position = new Vector3().setFromSphericalCoords(distance, phi, theta);
-
-  // Apply globe's rotation to camera position so it matches what the viewer sees
-  const rotationY = getSolarRotationY();
-  position.applyAxisAngle(new Vector3(0, 1, 0), rotationY);
+  position.applyAxisAngle(new Vector3(0, 1, 0), getSolarRotationY());
 
   camera.position.copy(position);
   camera.lookAt(0, 0, 0);
-  camera.updateProjectionMatrix();
 
   return camera;
 }
