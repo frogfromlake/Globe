@@ -520,16 +520,26 @@ export function createAnimateLoop({
       delta
     );
 
-    uniforms.hoveredCountryId.value =
-      currentHoveredId < 10000 ? currentHoveredId : 0;
-    uniforms.hoveredOceanId.value =
-      currentHoveredId >= 10000 ? currentHoveredId : 0;
-    uniforms.previousHoveredId.value = previousHoveredId;
-    uniforms.previousHoveredOceanId.value = previousHoveredOceanId;
-    uniforms.highlightFadeIn.value =
-      currentHoveredId >= 10000 ? fadeInOcean : fadeIn;
-    uniforms.highlightFadeOut.value =
-      currentHoveredId >= 10000 ? fadeOutOcean : fadeOut;
+    if (hoverReadyRef.current) {
+      uniforms.hoveredCountryId.value =
+        currentHoveredId < 10000 ? currentHoveredId : 0;
+      uniforms.hoveredOceanId.value =
+        currentHoveredId >= 10000 ? currentHoveredId : 0;
+      uniforms.previousHoveredId.value = previousHoveredId;
+      uniforms.previousHoveredOceanId.value = previousHoveredOceanId;
+      uniforms.highlightFadeIn.value =
+        currentHoveredId >= 10000 ? fadeInOcean : fadeIn;
+      uniforms.highlightFadeOut.value =
+        currentHoveredId >= 10000 ? fadeOutOcean : fadeOut;
+    } else {
+      uniforms.hoveredCountryId.value = 0;
+      uniforms.hoveredOceanId.value = 0;
+      uniforms.previousHoveredId.value = 0;
+      uniforms.previousHoveredOceanId.value = 0;
+      uniforms.highlightFadeIn.value = 0;
+      uniforms.highlightFadeOut.value = 0;
+    }
+
     uniforms.cameraDirection.value.copy(camera.position).normalize();
 
     if (getBackgroundMode()) {
