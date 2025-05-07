@@ -70,6 +70,7 @@ export function enhanceSceneObjects(
   const cloudSphere = new Mesh(cloudGeometry, cloudMaterial);
   cloudSphere.renderOrder = 1.5;
   cloudSphere.visible = false;
+  cloudSphere.frustumCulled = false;
   tiltGroup.add(cloudSphere);
 
   // === Star Sphere ===
@@ -81,6 +82,7 @@ export function enhanceSceneObjects(
   );
   const starMaterial = createStarMaterial(esoSkyMapTexture, uniforms);
   const starSphere = new Mesh(starGeometry, starMaterial);
+  starSphere.frustumCulled = false;
   starSphere.renderOrder = -1;
   scene.add(starSphere);
 
@@ -92,6 +94,7 @@ export function enhanceSceneObjects(
   // );
   // const auroraMesh = new Mesh(auroraGeometry, auroraMaterial);
   const auroraMesh = new Mesh();
+  auroraMesh.frustumCulled = false;
 
   // === Debug Markers ===
   //   const primeMeridianMarker = createPrimeMeridianMarker();

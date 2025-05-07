@@ -208,7 +208,7 @@ export async function startApp(updateSubtitle: (text: string) => void) {
   uniforms.uCursorOnGlobe.value = false;
   uniforms.cursorWorldPos.value.set(0, 0, 0);
 
-  requestAnimationFrame(animate);
+  renderer.setAnimationLoop(animate);
 
   starSphere.visible = false;
   cloudSphere.visible = false;

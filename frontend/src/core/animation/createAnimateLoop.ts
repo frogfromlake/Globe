@@ -173,8 +173,6 @@ export function createAnimateLoop({
   const simClockEl = document.getElementById("sim-clock") as HTMLDivElement;
 
   function animate(): void {
-    requestAnimationFrame(animate);
-
     const now = performance.now();
     const delta = (now - lastFrameTime) / 1000;
     lastFrameTime = now;
