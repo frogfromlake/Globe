@@ -9,7 +9,6 @@ import {
   Vector3,
   MathUtils,
   DataTexture,
-  Intersection,
   Group,
   Object3DEventMap,
 } from "three";
@@ -34,6 +33,7 @@ import {
 } from "@/core/earth/lighting/sunDirection";
 import { latLonToUnitVector } from "@/core/earth/geo/coordinates";
 import { updateSubsolarMarkerPosition } from "@/utils/debugMarkers";
+import { formatUTCFull } from "@/utils/formatClockUtc";
 
 interface AnimateParams {
   globe: Mesh;
@@ -88,7 +88,8 @@ export function createAnimateLoop({
   selectedCountryIds,
   selectedOceanIds,
   subsolarMarker,
-}: AnimateParams): () => void {
+  hoverReadyRef,
+}: AnimateParams & { hoverReadyRef: { current: boolean } }): () => void {
   let fadeIn = 0,
     fadeOut = 0;
   let fadeInOcean = 0,
@@ -104,6 +105,16 @@ export function createAnimateLoop({
   let flashlightWorldPos: Vector3 | null = null;
 
   const atmosphereMaterial = atmosphere.material as ShaderMaterial;
+  function resetInitialHighlightUniforms() {
+    uniforms.hoveredCountryId.value = 0;
+    uniforms.previousHoveredId.value = 0;
+    uniforms.hoveredOceanId.value = 0;
+    uniforms.previousHoveredOceanId.value = 0;
+    uniforms.highlightFadeIn.value = 0;
+    uniforms.highlightFadeOut.value = 0;
+  }
+  resetInitialHighlightUniforms();
+
   const zoomRange = CONFIG.zoom.max - CONFIG.zoom.min;
 
   // === Cloud Movement Config ===
@@ -160,43 +171,6 @@ export function createAnimateLoop({
 
   let simulationTime = Date.now(); // milliseconds
   const simClockEl = document.getElementById("sim-clock") as HTMLDivElement;
-
-  function formatUTCFull(date: Date): string {
-    const dayNames = [
-      "Sunday",
-      "Monday",
-      "Tuesday",
-      "Wednesday",
-      "Thursday",
-      "Friday",
-      "Saturday",
-    ];
-    const monthNames = [
-      "Jan",
-      "Feb",
-      "Mar",
-      "Apr",
-      "May",
-      "Jun",
-      "Jul",
-      "Aug",
-      "Sep",
-      "Oct",
-      "Nov",
-      "Dec",
-    ];
-
-    const day = dayNames[date.getUTCDay()];
-    const d = date.getUTCDate();
-    const month = monthNames[date.getUTCMonth()];
-    const year = date.getUTCFullYear();
-
-    const h = String(date.getUTCHours()).padStart(2, "0");
-    const m = String(date.getUTCMinutes()).padStart(2, "0");
-    const s = String(date.getUTCSeconds()).padStart(2, "0");
-
-    return `${day}, ${d} ${month} ${year}, ${h}:${m}:${s}\u00A0UTC`;
-  }
 
   function animate(): void {
     requestAnimationFrame(animate);
@@ -407,7 +381,7 @@ export function createAnimateLoop({
 
     // Country / Ocean Hover Updates
     let newHoveredId = -1;
-    if (userHasMovedPointer() && currentUV) {
+    if (hoverReadyRef.current && userHasMovedPointer() && currentUV) {
       type HoverResult = { id: number; position: Vector3 | null };
       let countryResult: HoverResult = { id: -1, position: null };
       let oceanResult: HoverResult = { id: -1, position: null };

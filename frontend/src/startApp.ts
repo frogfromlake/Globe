@@ -13,7 +13,6 @@ import {
   Vector2,
   Texture,
   ShaderMaterial,
-  Mesh,
 } from "three";
 
 import { initializeCamera } from "@/core/earth/init/initializeCamera";
@@ -37,7 +36,6 @@ import {
 import { loadCoreTextures } from "@/core/earth/init/initializeTextures";
 import { enhanceSceneObjects } from "./core/scene/enhanceSceneObjects";
 import { setupCoreSceneObjects } from "./core/scene/setupCoreSceneObjects";
-import { disposeMaterial } from "./core/earth/materials/disposeMaterial";
 
 if (typeof window.requestIdleCallback !== "function") {
   window.requestIdleCallback = function (
@@ -72,7 +70,7 @@ fallbackTexture.magFilter = NearestFilter;
 fallbackTexture.needsUpdate = true;
 
 // Hover interactivity is disabled until RGB ID maps are ready
-let hoverReady = false;
+const hoverReadyRef = { current: false };
 
 /**
  * Bootstraps the entire OrbitalOne app with full 3D scene, interactivity,
@@ -197,7 +195,18 @@ export async function startApp(updateSubtitle: (text: string) => void) {
     selectedCountryIds: selection.countryIds,
     selectedOceanIds: selection.oceanIds,
     subsolarMarker,
+    hoverReadyRef,
   });
+
+  // Ensure no initial hover or selection state
+  uniforms.hoveredCountryId.value = 0;
+  uniforms.hoveredOceanId.value = 0;
+  uniforms.previousHoveredId.value = 0;
+  uniforms.previousHoveredOceanId.value = 0;
+  uniforms.highlightFadeIn.value = 0;
+  uniforms.highlightFadeOut.value = 0;
+  uniforms.uCursorOnGlobe.value = false;
+  uniforms.cursorWorldPos.value.set(0, 0, 0);
 
   requestAnimationFrame(animate);
 
@@ -214,7 +223,7 @@ export async function startApp(updateSubtitle: (text: string) => void) {
     {
       onHover: undefined,
       onClick: (hit) => {
-        if (!hoverReady) return;
+        if (!hoverReadyRef.current) return;
         if (!userHasMovedPointer()) return;
         if (hit) {
           handleGlobeClick(
@@ -367,9 +376,17 @@ export async function startApp(updateSubtitle: (text: string) => void) {
 
   // === Defer hover activation to next idle frame
   requestIdleCallback(function setHoverReady() {
-    hoverReady = true;
+    hoverReadyRef.current = true;
     performance.mark("hover-ready-activated");
   });
+
+  // Zero out selection masks
+  selection.countryFlags.fill(0);
+  selection.countryFadeIn.fill(0);
+  selection.countryData.fill(0);
+  selection.oceanFlags.fill(0);
+  selection.oceanFadeIn.fill(0);
+  selection.oceanData.fill(0);
 
   return { animate };
 }
