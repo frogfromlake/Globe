@@ -1,29 +1,25 @@
-/**
- * @file countryLabels3D.ts
- * @description Manages creation, updates, and visibility for 3D country labels and their connector lines.
- * Labels are rendered as glowing sprites with dynamically scaled lines based on camera distance.
- */
-
 import {
   Sprite,
   Group,
-  SpriteMaterial,
   CanvasTexture,
-  Scene,
   Vector3,
   Camera,
   MathUtils,
-  Color,
+  PerspectiveCamera,
   LinearFilter,
   Object3D,
-  PerspectiveCamera,
+  SpriteMaterial,
+  Vector2,
 } from "three";
-import { countryMeta } from '@/core/data/countryMeta';
-import { CONFIG } from '@/configs/config';
-import { createLabelLineMaterial, createLabelSpriteMaterial } from '@/core/earth/materials/labelMaterial';
+import { countryMeta } from "@/core/data/countryMeta";
+import { CONFIG } from "@/configs/config";
+import {
+  createLabelLineMaterial,
+  createLabelSpriteMaterial,
+} from "@/core/earth/materials/labelMaterial";
 import { Line2 } from "three/examples/jsm/lines/Line2.js";
 import { LineGeometry } from "three/examples/jsm/lines/LineGeometry.js";
-import { latLonToSphericalCoordsGeographic } from '@/core/earth/geo/coordinates';
+import { latLonToSphericalCoordsGeographic } from "@/core/earth/geo/coordinates";
 
 type LabelObject = {
   sprite: Sprite;
@@ -33,6 +29,17 @@ type LabelObject = {
 
 export const countryLabelGroup = new Group();
 const labelObjects = new Map<number, LabelObject>();
+
+let fontLoaded = false;
+async function loadFontIfNeeded(): Promise<void> {
+  if (!fontLoaded) {
+    await document.fonts.ready;
+    await document.fonts.load(
+      `normal 400 ${CONFIG.labels3D.canvasFontSize}px '${CONFIG.labels3D.fontFamily}'`
+    );
+    fontLoaded = true;
+  }
+}
 
 export function init3DCountryLabels(camera: PerspectiveCamera): void {
   // === Pre-create all country labels ===
@@ -58,19 +65,24 @@ export async function createTextSprite(
 ): Promise<Sprite> {
   const { canvasFontSize, fontFamily, glow, spriteScale } = CONFIG.labels3D;
 
-  // Ensure font is loaded and ready before rendering to canvas
+  // --- Ensure font is fully available before measuring ---
   await document.fonts.ready;
   await document.fonts.load(`normal 400 ${canvasFontSize}px '${fontFamily}'`);
-  await new Promise(requestAnimationFrame); // Important for Chromium timing
+  await new Promise(requestAnimationFrame); // sync w/ layout
+  await new Promise(requestAnimationFrame); // extra frame ensures stability on Chromium
 
   const canvas = document.createElement("canvas");
   const ctx = canvas.getContext("2d")!;
-
   ctx.font = `${canvasFontSize}px '${fontFamily}', sans-serif`;
-  const textWidth = ctx.measureText(message).width;
-  canvas.width = textWidth;
-  canvas.height = canvasFontSize * 3.5;
 
+  // --- Measure text and apply a fallback minimum size ---
+  const textWidth = ctx.measureText(message).width || 1;
+  const height = canvasFontSize * 3.5;
+
+  canvas.width = Math.max(2, textWidth);
+  canvas.height = Math.max(2, height);
+
+  // Reapply styles *after* sizing to avoid clearing
   ctx.font = `${canvasFontSize}px '${fontFamily}', sans-serif`;
   ctx.textBaseline = "top";
   ctx.shadowColor = glow.shadowColor;
@@ -84,30 +96,24 @@ export async function createTextSprite(
 
   const material = createLabelSpriteMaterial(texture, isOcean);
   const sprite = new Sprite(material);
-  const aspect = canvas.width / canvas.height;
-  sprite.scale.set(aspect * spriteScale, spriteScale, 1);
+  const aspect = canvas.width / canvas.height || 2.5;
 
+  sprite.scale.set(aspect * spriteScale, spriteScale, 1);
   return sprite;
 }
 
 /**
- * Creates or updates a 3D label for a given country ID.
- * Handles label positioning, scaling, and opacity based on globe rotation and camera distance.
- *
- * @param countryId - The numeric country ID associated with the label.
- * @param rotationY - Current Y-axis rotation of the globe (used to rotate label position).
- * @param camera - The active Three.js camera for distance-based scaling.
- * @param fade - Alpha fade value (0 to 1) controlling label opacity.
+ * Creates or updates the label for a given country.
  */
 export async function update3DLabel(
   countryId: number,
   camera: Camera,
-  fade: number
+  fade: number,
+  resolution: Vector2 = new Vector2(window.innerWidth, window.innerHeight)
 ): Promise<void> {
   const entry = countryMeta[countryId];
   if (!entry) return;
 
-  // Create the label if it doesn't exist
   if (!labelObjects.has(countryId)) {
     const sprite = await createTextSprite(entry.name, false);
     const geometry = new LineGeometry();
@@ -120,8 +126,6 @@ export async function update3DLabel(
     const group = new Group();
     group.add(sprite);
     group.add(line as unknown as Object3D);
-
-    // Enforce correct render order
     line.renderOrder = 0;
     sprite.renderOrder = 1;
 
@@ -131,16 +135,13 @@ export async function update3DLabel(
 
   const { sprite, line, group } = labelObjects.get(countryId)!;
 
-  // Compute center on globe surface
   const { phi, theta, radius } = latLonToSphericalCoordsGeographic(
     entry.lat,
     entry.lon,
     CONFIG.labels3D.markerRadius
   );
-  // Calculate position from lat/lon
-  let center = new Vector3().setFromSphericalCoords(radius, phi, theta);
+  const center = new Vector3().setFromSphericalCoords(radius, phi, theta);
 
-  // Compute zoom-dependent offset and final label position
   const cameraDistance = camera.position.length();
   const offset = MathUtils.mapLinear(
     cameraDistance,
@@ -153,11 +154,9 @@ export async function update3DLabel(
   const direction = center.clone().normalize();
   const labelPos = center.clone().add(direction.multiplyScalar(offset));
 
-  // Apply position to sprite and make sure it's at the end of the line
   sprite.position.copy(labelPos);
   sprite.material.opacity = fade;
 
-  // Update sprite scale based on zoom
   const baseScale = CONFIG.labels3D.spriteScale;
   const canvas = sprite.material.map?.image as HTMLCanvasElement;
   const aspect = canvas.width / canvas.height || 2.5;
@@ -174,13 +173,12 @@ export async function update3DLabel(
     baseScale * scaleFactor,
     1
   );
+  sprite.lookAt(camera.position); // Ensures label always faces camera
+  group.rotation.set(0, 0, 0);
+  group.quaternion.identity(); // Prevent any inherited rotation
 
-  // Update the line to go from center to the label position
-  const dir = labelPos.clone().sub(center);
-  const labelIsAbove = dir.dot(labelPos.clone().normalize()) > 0;
-
-  const top = labelIsAbove ? labelPos : center;
-  const bottom = labelIsAbove ? center : labelPos;
+  const top = labelPos;
+  const bottom = center;
 
   (line.geometry as LineGeometry).setPositions([
     bottom.x,
@@ -190,24 +188,24 @@ export async function update3DLabel(
     top.y,
     top.z,
   ]);
-
   line.computeLineDistances();
 
-  // Set material resolution and fade
   const mat = line.material as any;
   mat.opacity = fade;
-  mat.resolution.set(window.innerWidth, window.innerHeight);
+  mat.resolution.copy(resolution);
 
-  group.visible = fade > 0.01;
+  const shouldBeVisible = fade > 0.01;
+  if (group.visible !== shouldBeVisible) {
+    group.visible = shouldBeVisible;
+  }
 }
 
 /**
- * Hides all country labels except those in the specified list of IDs.
- *
- * @param idsToKeep - An array of country IDs whose labels should remain visible.
+ * Hides all country labels except those in the given list.
  */
 export function hideAll3DLabelsExcept(idsToKeep: number[] = []): void {
   for (const [id, { group }] of labelObjects.entries()) {
-    group.visible = idsToKeep.includes(id);
+    const shouldShow = idsToKeep.includes(id);
+    if (group.visible !== shouldShow) group.visible = shouldShow;
   }
 }

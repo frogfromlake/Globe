@@ -1,48 +1,43 @@
+/**
+ * @file oceanHover.ts
+ * @description Handles pixel-precise hover detection for oceans using an offscreen canvas and RGB ID map.
+ */
+
 import {
   Vector2,
-  Raycaster,
-  Camera,
-  Mesh,
   Vector3,
   DataTexture,
   RedFormat,
   UnsignedByteType,
-  Intersection,
 } from "three";
-import { CONFIG } from '@/configs/config';
+import { CONFIG } from "@/configs/config";
 
-// Internal state for ocean ID map decoding via canvas
-let oceanIdMapCanvas: HTMLCanvasElement | null = null;
+// === Internal state for offscreen ocean ID decoding ===
+let oceanIdCanvas: HTMLCanvasElement | null = null;
 let oceanIdCtx: CanvasRenderingContext2D | null = null;
-let oceanIdPixelData: Uint8ClampedArray | null = null;
+let oceanIdData: Uint8ClampedArray | null = null;
 let oceanImageLoaded = false;
 
 /**
- * Loads the ocean ID map image into an offscreen canvas for pixel decoding.
+ * Loads the ocean ID map image into an offscreen canvas and caches pixel data for fast lookup.
  */
 export async function loadOceanIdMapTexture(): Promise<void> {
   await new Promise<void>((resolve) => {
-    const image = new Image();
-    image.src = CONFIG.textures.oceanIdMapPath;
-    image.onload = () => {
-      oceanIdMapCanvas = document.createElement("canvas");
-      oceanIdMapCanvas.width = image.width;
-      oceanIdMapCanvas.height = image.height;
-      oceanIdCtx = oceanIdMapCanvas.getContext("2d", {
+    const img = new Image();
+    img.src = CONFIG.textures.oceanIdMapPath;
+    img.onload = () => {
+      oceanIdCanvas = document.createElement("canvas");
+      oceanIdCanvas.width = img.width;
+      oceanIdCanvas.height = img.height;
+
+      oceanIdCtx = oceanIdCanvas.getContext("2d", {
         willReadFrequently: true,
       });
-      oceanIdCtx?.drawImage(image, 0, 0);
+      if (!oceanIdCtx) return;
 
-      // Grab pixel data once
-      const imageData = oceanIdCtx?.getImageData(
-        0,
-        0,
-        oceanIdMapCanvas.width,
-        oceanIdMapCanvas.height
-      );
-      if (imageData) {
-        oceanIdPixelData = imageData.data;
-      }
+      oceanIdCtx.drawImage(img, 0, 0);
+      const imageData = oceanIdCtx.getImageData(0, 0, img.width, img.height);
+      oceanIdData = imageData.data;
 
       oceanImageLoaded = true;
       resolve();
@@ -51,66 +46,61 @@ export async function loadOceanIdMapTexture(): Promise<void> {
 }
 
 /**
- * Retrieves an ocean ID from a given UV coordinate on the loaded ocean ID map.
- * Returns -1 if the map is not yet loaded or invalid.
+ * Decodes a 24-bit ocean ID from the given UV coordinate.
  *
- * @param uv - UV coordinates of the pointer on the globe
- * @returns The 24-bit ocean ID derived from RGB values
+ * @param uv - UV coordinate on the globe's surface.
+ * @returns The decoded 24-bit ocean ID, or -1 if not available.
  */
 export function getOceanIdAtUV(uv: Vector2): number {
-  if (!oceanImageLoaded || !oceanIdMapCanvas || !oceanIdPixelData) return -1;
+  if (!oceanImageLoaded || !oceanIdCanvas || !oceanIdData) return -1;
 
-  const x = Math.floor(uv.x * oceanIdMapCanvas.width);
-  const y = Math.floor((1.0 - uv.y) * oceanIdMapCanvas.height);
+  const x = Math.floor(uv.x * oceanIdCanvas.width);
+  const y = Math.floor((1.0 - uv.y) * oceanIdCanvas.height);
 
-  const index = (y * oceanIdMapCanvas.width + x) * 4; // 4 bytes per pixel (RGBA)
+  if (x < 0 || x >= oceanIdCanvas.width || y < 0 || y >= oceanIdCanvas.height)
+    return -1;
 
-  // Read RGB and reconstruct the 24-bit ID
-  const r = oceanIdPixelData[index];
-  const g = oceanIdPixelData[index + 1];
-  const b = oceanIdPixelData[index + 2];
+  const idx = (y * oceanIdCanvas.width + x) * 4;
+  const r = oceanIdData[idx];
+  const g = oceanIdData[idx + 1];
+  const b = oceanIdData[idx + 2];
 
   return (r << 16) | (g << 8) | b;
 }
 
 /**
- * Determines the currently hovered ocean based on UV coordinates.
+ * Returns the currently hovered ocean based on the UV coordinate.
  *
- * @param uv - The UV coordinates from the globe surface.
- * @returns The hovered ocean ID and null for position (not used).
+ * @param uv - UV coordinate on the globe.
+ * @returns An object containing the ocean ID and a null position placeholder.
  */
 export function updateHoveredOcean(uv: Vector2): {
   id: number;
   position: Vector3 | null;
 } {
-  if (!oceanImageLoaded || !oceanIdMapCanvas || !oceanIdPixelData) {
-    return { id: -1, position: null };
-  }
-
-  const id = getOceanIdAtUV(uv);
-  return { id, position: null };
+  return {
+    id: getOceanIdAtUV(uv),
+    position: null,
+  };
 }
 
 /**
- * Creates and returns a 1D selection texture for ocean IDs.
- * Each texel maps to an ocean ID and is used for selection highlighting in shaders.
+ * Creates a 1D selection texture for ocean highlights.
+ * Used in shaders to render selected ocean highlights.
  *
- * @returns A configured DataTexture for GLSL use
+ * @returns A new DataTexture to be passed as a shader uniform.
  */
 export function createSelectionOceanTexture(): DataTexture {
-  const data = new Uint8Array(CONFIG.oceanHover.maxOceanCount);
-  const texture = new DataTexture(
-    data,
-    CONFIG.oceanHover.maxOceanCount,
-    1,
-    RedFormat,
-    UnsignedByteType
-  );
+  const width = CONFIG.oceanHover.maxOceanCount;
+  const data = new Uint8Array(width);
+  const texture = new DataTexture(data, width, 1, RedFormat, UnsignedByteType);
 
-  texture.minFilter = CONFIG.oceanHover.selectionTexture.minFilter;
-  texture.magFilter = CONFIG.oceanHover.selectionTexture.magFilter;
-  texture.wrapS = CONFIG.oceanHover.selectionTexture.wrapS;
-  texture.wrapT = CONFIG.oceanHover.selectionTexture.wrapT;
+  const { minFilter, magFilter, wrapS, wrapT } =
+    CONFIG.oceanHover.selectionTexture;
+  texture.minFilter = minFilter;
+  texture.magFilter = magFilter;
+  texture.wrapS = wrapS;
+  texture.wrapT = wrapT;
   texture.needsUpdate = true;
 
   return texture;

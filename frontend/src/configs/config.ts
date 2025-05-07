@@ -7,9 +7,9 @@ import {
   ClampToEdgeWrapping,
   MathUtils,
 } from "three";
-import { oceanCenters } from '@/core/data/oceanCenters';
-import { countryMeta } from '@/core/data/countryMeta';
-import { oceanIdToIndex } from '@/utils/oceanIdToIndex';
+import { oceanCenters } from "@/core/data/oceanCenters";
+import { countryMeta } from "@/core/data/countryMeta";
+import { oceanIdToIndex } from "@/utils/oceanIdToIndex";
 
 const desiredOffsetDegrees = 0; // adjust based on texture alignment
 
@@ -171,6 +171,8 @@ export const CONFIG = {
     outputColorSpace: SRGBColorSpace,
     /** Pixel ratio to use for rendering; set to 'device' to auto-detect */
     pixelRatio: "device" as "device" | number,
+    /** cap high-DPI rendering */
+    maxPixelRatio: 2,
   },
 
   /** Texture file paths and settings */

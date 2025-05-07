@@ -8,7 +8,6 @@ import {
   ClampToEdgeWrapping,
   LinearFilter,
   LinearMipMapLinearFilter,
-  RepeatWrapping,
   ShaderMaterial,
   TextureLoader,
   Vector2,
@@ -17,20 +16,21 @@ import {
 import {
   auroraVertexShader,
   auroraFragmentShader,
-} from '@/core/earth/shaders/earthShaders';
-import { CONFIG } from '@/configs/config';
-import { latLonToUnitVector } from '@/core/earth/geo/coordinates';
+} from "@/core/earth/shaders/earthShaders";
+import { CONFIG } from "@/configs/config";
+import { latLonToUnitVector } from "@/core/earth/geo/coordinates";
 
 /**
- * Creates a ShaderMaterial for rendering volumetric auroras using raymarching techniques.
- * The shader computes dynamic, shimmering curtains based on view rays and time.
+ * Creates a ShaderMaterial for rendering raymarched auroras with dynamic waving bands.
+ * This shader simulates polar auroras using noise-based animation and magnetic pole alignment.
  *
- * @param resolution - The current render resolution (used for dithering and noise).
- * @returns A ShaderMaterial ready for use on a polar aurora mesh.
+ * @param resolution - The current render resolution, used for dithering/noise scaling.
+ * @returns A high-quality ShaderMaterial for polar aurora effects.
  */
-export function createAuroraMaterial(resolution: Vector2) {
+export function createAuroraMaterial(resolution: Vector2): ShaderMaterial {
   const texture = new TextureLoader().load(CONFIG.textures.auroraNoisePath);
-  texture.wrapS = texture.wrapT = ClampToEdgeWrapping;
+  texture.wrapS = ClampToEdgeWrapping;
+  texture.wrapT = ClampToEdgeWrapping;
   texture.minFilter = LinearMipMapLinearFilter;
   texture.magFilter = LinearFilter;
   texture.generateMipmaps = false;
@@ -38,9 +38,12 @@ export function createAuroraMaterial(resolution: Vector2) {
   return new ShaderMaterial({
     vertexShader: auroraVertexShader,
     fragmentShader: auroraFragmentShader,
-    transparent: true,
     blending: AdditiveBlending,
+    transparent: true,
     depthWrite: false,
+    fog: false,
+    lights: false,
+    toneMapped: false,
     uniforms: {
       uTime: { value: 0.0 },
       uAuroraMap: { value: texture },

@@ -10,7 +10,7 @@ import {
   WebGLRenderer,
 } from "three";
 
-import { CONFIG } from '@/configs/config';
+import { CONFIG } from "@/configs/config";
 
 /**
  * Initializes the Three.js scene and camera controls.
@@ -23,24 +23,22 @@ export async function initializeScene(
   camera: PerspectiveCamera,
   renderer: WebGLRenderer
 ) {
-  // Dynamically import OrbitControls only when needed
+  // Lazy-load OrbitControls to reduce upfront bundle size
   const { OrbitControls } = await import(
     "three/examples/jsm/controls/OrbitControls"
   );
 
-  // Create the main scene
+  // === Create and configure scene ===
   const scene = new Scene();
+  scene.name = "OrbitalOneRootScene";
 
-  // Add directional lighting to the scene
-  const light = new DirectionalLight(
-    CONFIG.lighting.directionalLight.color,
-    CONFIG.lighting.directionalLight.intensity
-  );
-  const { x, y, z } = CONFIG.lighting.directionalLight.position;
-  light.position.set(x, y, z);
+  // === Directional sunlight ===
+  const { color, intensity, position } = CONFIG.lighting.directionalLight;
+  const light = new DirectionalLight(color, intensity);
+  light.position.set(position.x, position.y, position.z);
   scene.add(light);
 
-  // Configure orbit-style camera controls
+  // === OrbitControls for user camera manipulation ===
   const controls = new OrbitControls(camera, renderer.domElement);
   controls.enableZoom = true;
   controls.enablePan = false;
@@ -52,7 +50,7 @@ export async function initializeScene(
   controls.minDistance = CONFIG.zoom.min;
   controls.maxDistance = CONFIG.zoom.max;
 
-  controls.update();
+  controls.update(); // Ensure initial sync with camera
 
   return { scene, controls };
 }

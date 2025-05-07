@@ -2,43 +2,46 @@ import { Texture, SpriteMaterial, Color, Vector2 } from "three";
 import { Line2 } from "three/examples/jsm/lines/Line2";
 import { LineGeometry } from "three/examples/jsm/lines/LineGeometry";
 import { LineMaterial } from "three/examples/jsm/lines/LineMaterial";
-import { CONFIG } from '@/configs/config';
+import { CONFIG } from "@/configs/config";
 
 /**
- * Creates a transparent material for glowing 2D label sprites.
- * @param texture - The texture to be used for the label sprite.
- * @param isOcean - Boolean flag to distinguish between ocean and country labels for color adjustment.
+ * Creates a transparent, glowing SpriteMaterial for country or ocean labels.
+ *
+ * @param texture - The texture used for the sprite label.
+ * @param isOcean - If true, uses ocean-specific styling; otherwise, uses country styling.
+ * @returns A SpriteMaterial with predefined styling.
  */
 export function createLabelSpriteMaterial(
   texture: Texture,
   isOcean: boolean
 ): SpriteMaterial {
-  const labelColor = isOcean
-    ? CONFIG.labels3D.ocean.labelColor
-    : CONFIG.labels3D.country.labelColor;
+  const labelColor = new Color(
+    isOcean
+      ? CONFIG.labels3D.ocean.labelColor
+      : CONFIG.labels3D.country.labelColor
+  );
 
   return new SpriteMaterial({
     map: texture,
     transparent: true,
     opacity: 0,
     depthWrite: false,
-    color: new Color(labelColor),
+    color: labelColor,
   });
 }
 
 /**
- * Creates a line material for label connector lines based on type (country or ocean).
- * @param isOcean - Boolean flag to distinguish between ocean and country labels
+ * Creates a screen-resolution-aware LineMaterial for label connector lines.
+ *
+ * @param isOcean - If true, uses ocean-specific styling; otherwise, uses country styling.
+ * @returns A LineMaterial compatible with Line2.
  */
 export function createLabelLineMaterial(isOcean: boolean): LineMaterial {
-  const color = isOcean
-    ? CONFIG.labels3D.ocean.lineColor
-    : CONFIG.labels3D.country.lineColor; // Choose color based on type
+  const config = isOcean ? CONFIG.labels3D.ocean : CONFIG.labels3D.country;
+
   return new LineMaterial({
-    color: color,
-    linewidth: isOcean
-      ? CONFIG.labels3D.ocean.lineWidth
-      : CONFIG.labels3D.country.lineWidth, // Choose line width based on type
+    color: config.lineColor,
+    linewidth: config.lineWidth,
     transparent: true,
     opacity: 0,
     depthWrite: false,
@@ -47,14 +50,16 @@ export function createLabelLineMaterial(isOcean: boolean): LineMaterial {
 }
 
 /**
- * Utility for creating a Line2 instance with default geometry and material.
- * @param isOcean - Boolean flag to distinguish between ocean and country labels
+ * Creates a new Line2 instance with default geometry and appropriate material.
+ *
+ * @param isOcean - If true, creates an ocean-style line; otherwise, a country-style line.
+ * @returns A Line2 with default positions and material.
  */
 export function createLabelLine(isOcean: boolean): Line2 {
   const geometry = new LineGeometry();
-  geometry.setPositions([0, 0, 0, 0, 0, 0]);
-  const material = createLabelLineMaterial(isOcean); // Pass the flag here for correct line material
+  geometry.setPositions([0, 0, 0, 0, 0, 0]); // Two 3D points (x1, y1, z1, x2, y2, z2)
+  const material = createLabelLineMaterial(isOcean);
   const line = new Line2(geometry, material);
-  line.computeLineDistances();
+  line.computeLineDistances(); // Enables proper dashed line rendering if needed
   return line;
 }
