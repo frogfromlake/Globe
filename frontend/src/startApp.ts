@@ -378,6 +378,7 @@ export async function startApp(updateSubtitle: (text: string) => void) {
   // === Defer hover activation until user interacts
   onPointerInteraction(() => {
     hoverReadyRef.current = true;
+    uniforms.uHoverEnabled.value = true;
     performance.mark("hover-ready-activated");
   });
 

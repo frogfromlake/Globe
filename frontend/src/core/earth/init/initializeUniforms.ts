@@ -103,6 +103,7 @@ export function initializeUniforms(
     uOceanCount: { value: oceanCount },
     topographyMap: { value: null },
     bumpScale: { value: 1.0 },
+    uHoverEnabled: { value: false },
   };
 
   return {

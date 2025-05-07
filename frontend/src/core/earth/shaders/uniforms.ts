@@ -33,6 +33,7 @@ export interface GlobeUniforms {
   uOceanCount: IUniform<number>;
   topographyMap: IUniform<Texture | null>;
   bumpScale: IUniform<number>;
+  uHoverEnabled: IUniform<boolean>;
 
   /** Dynamic uniform extension point */
   [uniform: string]: IUniform<any>;

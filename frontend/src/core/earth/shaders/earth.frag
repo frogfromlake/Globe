@@ -34,6 +34,7 @@ uniform vec2 cursorUV;                           // The UV coordinates of the cu
 
 uniform bool uFlashlightEnabled;                 // Whether the flashlight effect is enabled, based on user input.
 uniform bool uCursorOnGlobe;                     // Whether the cursor is on the globe, used to trigger cursor-based effects.
+uniform bool uHoverEnabled;
 
 varying vec2 vUv;                                // The UV coordinates of the current fragment, passed from the vertex shader.
 varying vec3 vWorldNormal;                       // The normal vector at the current fragment, passed from the vertex shader.
@@ -181,40 +182,42 @@ void main() {
 
     // === Highlight Effects for Hovered and Selected Regions ===
     
-    if (isHovered) {
-        // Apply highlight when a country is hovered.
-        
-        float glow = fresnel * pulse;
-        vec3 halo = highlightColor * glow * highlightFadeIn * 0.6;
-        finalColor = mix(finalColor, highlightColor, 0.4 * highlightFadeIn);
-        finalColor += halo;
-    }
+    if (uHoverEnabled) {
+        if (isHovered) {
+            // Apply highlight when a country is hovered.
+            
+            float glow = fresnel * pulse;
+            vec3 halo = highlightColor * glow * highlightFadeIn * 0.6;
+            finalColor = mix(finalColor, highlightColor, 0.4 * highlightFadeIn);
+            finalColor += halo;
+        }
 
-    if (isOceanHovered) {
-        // Apply highlight when an ocean is hovered.
-        
-        float glow = fresnel * pulse;
-        vec3 halo = oceanHighlightColor * glow * highlightFadeIn * 0.6;
-        finalColor = mix(finalColor, oceanHighlightColor, 0.15 * highlightFadeIn);
-        finalColor += halo;
-    }
+        if (isOceanHovered) {
+            // Apply highlight when an ocean is hovered.
+            
+            float glow = fresnel * pulse;
+            vec3 halo = oceanHighlightColor * glow * highlightFadeIn * 0.6;
+            finalColor = mix(finalColor, oceanHighlightColor, 0.15 * highlightFadeIn);
+            finalColor += halo;
+        }
 
-    if (isPrevious) {
-        // Apply highlight for previously hovered countries.
-        
-        float glow = fresnel * pulse;
-        vec3 halo = highlightColor * glow * highlightFadeOut * 0.6;
-        finalColor = mix(finalColor, highlightColor, 0.15 * highlightFadeOut);
-        finalColor += halo;
-    }
+        if (isPrevious) {
+            // Apply highlight for previously hovered countries.
+            
+            float glow = fresnel * pulse;
+            vec3 halo = highlightColor * glow * highlightFadeOut * 0.6;
+            finalColor = mix(finalColor, highlightColor, 0.15 * highlightFadeOut);
+            finalColor += halo;
+        }
 
-    if (isPreviousOcean) {
-        // Apply highlight for previously hovered oceans.
-        
-        float glow = fresnel * pulse;
-        vec3 halo = oceanHighlightColor * glow * highlightFadeOut * 0.6;
-        finalColor = mix(finalColor, oceanHighlightColor, 0.15 * highlightFadeOut);
-        finalColor += halo;
+        if (isPreviousOcean) {
+            // Apply highlight for previously hovered oceans.
+            
+            float glow = fresnel * pulse;
+            vec3 halo = oceanHighlightColor * glow * highlightFadeOut * 0.6;
+            finalColor = mix(finalColor, oceanHighlightColor, 0.15 * highlightFadeOut);
+            finalColor += halo;
+        }
     }
 
     // === Selection Effects for Highlighted Countries and Oceans ===
