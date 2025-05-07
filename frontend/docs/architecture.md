@@ -1,70 +1,72 @@
 # OrbitalOne Boot Architecture Overview
 
-This document outlines the structured multi-phase boot process that ensures fast, responsive startup while supporting high-resolution visuals and rich interactivity.
+This document outlines the structured multi-phase boot process that prioritizes perceptual performance, ensuring users see and feel progress early — from initial render to full interactivity and high-resolution visuals.
 
 ---
 
 ## Core Design Philosophy
 
-- **Prioritize First Render** — Get the globe interactive as early as possible
-- **Defer Heavy Visuals** — Load day/night/sky maps after the scene is visible
-- **Modular Loading** — Separate concerns for clarity and maintainability
-- **Staged Interactivity** — Only enable hover after ID maps and canvases are fully ready
-- **User Feedback** — Communicate progress using loading subtitles
-- **Visual Polish** — Fade in final textures and background sky for a cinematic feeling
+* **First Paint First** — Render something meaningful (even low-res) as fast as possible
+* **Progressive Enhancement** — Refine visuals and features step by step
+* **Chunked Execution** — Break up long tasks to reduce main-thread blocking
+* **Modular Loading** — Each phase handles a distinct task to aid maintainability
+* **Deferred Interactivity** — Activate hover/click only after ID maps and canvases are ready
+* **Lazy Visual Load** — Defer high-res visuals and atmospheric effects to idle time
+* **Cinematic Transition** — Visual textures and backgrounds fade in smoothly
+* **Clear User Feedback** — Communicate loading stages via subtitle messages
 
 ---
 
-### Boot Flow Breakdown
+## Boot Flow Breakdown
 
 ```mermaid
 graph TD
   A[main.ts] --> B[startApp()]
-  B --> C[Load Core ID Textures (country & ocean)]
-  C --> D[Initialize Scene, Uniforms, Raycasting, UI]
-  D --> E[Load Labels & Panels with loading messages]
-  E --> F[Create Meshes: Globe, Atmosphere, Stars]
-  F --> G[Return { animate, startHoverSystem }]
-  G --> H[main.ts waits for loading screen fade]
-  H --> I[startHoverSystem()]
-  I --> J[Load canvas-based RGB ID maps]
-  J --> K[Enable hover interaction (hoverReady = true)]
-  K --> L[Call animate()]
-  D --> M[loadVisualTextures() in parallel]
-  M --> N[Assign day/night/sky to uniforms]
-  N --> O[Begin day/night texture fade-in]
-  N --> P[Begin delayed star background fade-in]
+  B --> C[Initialize Camera, Renderer, Fallback Globe]
+  C --> D[setupSceneObjects()]
+  D --> E[Render Once for First Paint]
+  E --> F[loadCoreTextures() (ID Maps)]
+  F --> G[initializeUniforms()]
+  G --> H[runWithLoadingMessage() → Labels, Panels]
+  H --> I[idleCallback: loadAtmosphere + News Panel]
+  I --> J[idleCallback: loadVisualTextures() (day/night/cloud/sky)]
+  J --> K[idleCallback: assign uniforms + fadeInTextures()]
+  K --> L[idleCallback: fade in star background]
+  L --> M[idleCallback: startHoverSystem()]
+  M --> N[idleCallback: Load RGB ID canvas maps]
+  N --> O[Enable hover (hoverReady = true)]
+  O --> P[Call animate()]
 ```
 
 ---
 
-### Boot Phases
+## Boot Phases
 
-| Phase | Task | Details |
-|-------|------|---------|
-| **0** | `main.ts` entry | Begins boot process, sets up loading UI |
-| **1** | `startApp()` | Sets up all base systems and returns `animate`, `startHoverSystem` |
-| **2** | `loadCoreTextures()` | Loads low-weight ID textures (country + ocean) |
-| **3** | `initializeUniforms()` | Initializes shaders with fallback textures and selection data |
-| **4** | `runWithLoadingMessage()` steps | Labels → Atmosphere → NewsPanel |
-| **5** | `setupSceneObjects()` | Adds globe, glow atmosphere, and background star sphere with shader |
-| **6** | `loadVisualTextures()` (async) | Loads high-res day, night, and star textures in background |
-| **7** | `assign uniforms + fadeInTextures()` | Day/night textures assigned and fade-in started |
-| **8** | `delay star fade` | Star texture appears only after short delay and fades in via `uStarFade` |
-| **9** | `main.ts` fade transition | Hides loader, makes app visible |
-| **10** | `startHoverSystem()` | Loads offscreen canvas-based RGB ID maps |
-| **11** | `hoverReady = true` | Activates interactivity |
-| **12** | `animate()` begins | Starts render loop with stable state |
-
----
-
-### Benefits of This Architecture
-
-- **Fast First Paint** (fallback textures + deferred loading)
-- **Cinematic Visual Entry** (stars fade in subtly, globe fades from black)
-- **Stable Hover System** (ID map logic isolated and only activated when ready)
-- **High Interactivity + Performance** (nothing blocks user feedback or responsiveness)
-- **Highly Maintainable** (each phase is modular and independently testable)
-- **Future-Proof** (easy to slot in overlays, space weather, network effects, etc.)
+| Phase  | Task                              | Purpose                                                              |
+| ------ | --------------------------------- | -------------------------------------------------------------------- |
+| **0**  | `main.ts` entry                   | Mount canvas, show minimal loading screen                            |
+| **1**  | `startApp()`                      | Setup renderer, camera, fallback globe                               |
+| **2**  | `setupSceneObjects()`             | Add globe mesh, atmosphere shell (deferred), star sphere             |
+| **3**  | `renderOnce()`                    | Immediate first paint — fallback globe (gray/black)                  |
+| **4**  | `loadCoreTextures()`              | Load lightweight country & ocean ID maps                             |
+| **5**  | `initializeUniforms()`            | Setup selection shaders and buffers (non-blocking)                   |
+| **6**  | `runWithLoadingMessage()`         | Load essential UI: 3D label scaffolds, base panels                   |
+| **7**  | *(idle)* `loadAtmosphere()`       | Load and apply atmosphere shader only when thread is idle            |
+| **8**  | *(idle)* `loadVisualTextures()`   | Fetch high-res textures (day/night/cloud/sky) without blocking paint |
+| **9**  | *(idle)* `fadeInTextures()`       | Gradual visual blend-in, async assignments                           |
+| **10** | *(idle)* `fadeInStarBackground()` | Soft star sphere fade after globe is stable                          |
+| **11** | *(idle)* `startHoverSystem()`     | Load raycasting logic and large RGB ID canvas maps                   |
+| **12** | *(idle)* `hoverReady = true`      | Enable user interactivity (hover/select)                             |
+| **13** | `animate()`                       | Begin render loop once all systems are ready                         |
 
 ---
+
+## Benefits of This Architecture
+
+* **Ultra-Fast First Paint** — Minimal blocking until fallback globe is visible
+* **Decreased Blocking Time** — Core features are split and deferred using `requestIdleCallback`
+* **Smooth Visual Progression** — Visual and interactive elements fade in organically
+* **Deferred Interactivity** — Complex systems load only after perceptual readiness
+* **Chunked Logic** — Long main-thread tasks are broken across idle frames
+* **Tiny Initial Footprint** — No high-res visuals or shaders before first paint
+* **Scalable** — Ready for future overlays (e.g. data maps, real-time telemetry)
