@@ -189,8 +189,6 @@ export const CONFIG = {
     esoSkyMapPath: "/textures/eso_sky.webp",
     /** Path to the clouds map */
     cloudsMapPath: "/textures/earth_clouds_8k.webp",
-    /** Path to the bump map */
-    topographyMapPath: "/textures/earth_topography_8k.webp",
     /** Path to the aurora noise texture */
     auroraNoisePath: "/textures/auroraNoise.webp",
     /** Min filter for day/night textures */

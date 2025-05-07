@@ -1,5 +1,4 @@
-uniform sampler2D topographyMap;
-uniform float bumpScale;
+
 uniform float obliquityRad;
 
 varying vec2 vUv;
@@ -12,9 +11,7 @@ void main() {
     vec4 worldPos = modelMatrix * vec4(position, 1.0);
     vec3 baseNormal = normalize(mat3(modelMatrix) * normal);
 
-    float bump = texture2D(topographyMap, vUv).r;
-    float height = (bump - 0.5) * bumpScale;
-    vec3 displacedNormal = normalize(baseNormal + baseNormal * height);
+    vec3 displacedNormal = normalize(baseNormal + baseNormal);
 
     vWorldNormal = displacedNormal;
 

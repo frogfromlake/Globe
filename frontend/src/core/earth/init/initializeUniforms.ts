@@ -101,7 +101,6 @@ export function initializeUniforms(
     uStarFade: { value: 0.0 },
     uCountryCount: { value: countryCount },
     uOceanCount: { value: oceanCount },
-    topographyMap: { value: null },
     bumpScale: { value: 1.0 },
     uHoverEnabled: { value: false },
   };

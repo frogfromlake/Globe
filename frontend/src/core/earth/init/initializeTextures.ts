@@ -92,12 +92,3 @@ export async function loadCloudTexture(renderer: WebGLRenderer) {
   t.wrapT = ClampToEdgeWrapping;
   return t;
 }
-
-export async function loadTopographyTexture(renderer: WebGLRenderer) {
-  const t = await loader.loadAsync(CONFIG.textures.topographyMapPath);
-  applyBaseMapSettings(t, renderer);
-  t.colorSpace = LinearSRGBColorSpace;
-  t.wrapS = ClampToEdgeWrapping;
-  t.wrapT = ClampToEdgeWrapping;
-  return t;
-}

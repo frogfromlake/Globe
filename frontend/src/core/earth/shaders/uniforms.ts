@@ -31,7 +31,6 @@ export interface GlobeUniforms {
   uStarFade: IUniform<number>;
   uCountryCount: IUniform<number>;
   uOceanCount: IUniform<number>;
-  topographyMap: IUniform<Texture | null>;
   bumpScale: IUniform<number>;
   uHoverEnabled: IUniform<boolean>;
 

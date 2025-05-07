@@ -73,6 +73,12 @@ fallbackTexture.needsUpdate = true;
 // Hover interactivity is disabled until RGB ID maps are ready
 const hoverReadyRef = { current: false };
 
+// Inside startApp function
+let resolveEssentialTextures: () => void;
+const waitForEssentialTextures = new Promise<void>((resolve) => {
+  resolveEssentialTextures = resolve;
+});
+
 /**
  * Bootstraps the entire OrbitalOne app with full 3D scene, interactivity,
  * and feature initialization.
@@ -92,6 +98,11 @@ export async function startApp(updateSubtitle: (text: string) => void) {
     countryData: new Uint8Array(),
     oceanData: new Uint8Array(),
   };
+
+  let resolveEssentialTextures: () => void;
+  const waitForEssentialTextures = new Promise<void>((resolve) => {
+    resolveEssentialTextures = resolve;
+  });
 
   // === Pointer & Raycasting ===
   const raycaster = new Raycaster();
@@ -246,78 +257,66 @@ export async function startApp(updateSubtitle: (text: string) => void) {
 
     const texMod = await import("@/core/earth/init/initializeTextures");
 
-    // Load Day Texture
-    requestIdleCallback(async () => {
-      uniforms.dayTexture.value = await texMod.loadDayTexture(renderer);
-      if (globe.material) {
-        if (Array.isArray(globe.material)) {
-          globe.material.forEach((mat) => (mat.needsUpdate = true));
-        } else {
-          globe.material.needsUpdate = true;
-        }
-      }
-    });
+    // Load essential textures FIRST, then resolve startup
+    const day = texMod.loadDayTexture(renderer);
+    const night = texMod.loadNightTexture(renderer);
 
-    // Load Night Texture
-    requestIdleCallback(async () => {
-      uniforms.nightTexture.value = await texMod.loadNightTexture(renderer);
-    });
+    uniforms.dayTexture.value = await day;
+    uniforms.nightTexture.value = await night;
 
-    // Load Topography
-    requestIdleCallback(async () => {
-      uniforms.topographyMap.value = await texMod.loadTopographyTexture(
-        renderer
-      );
-    });
-
-    // Load Sky Map and fade it in
-    requestIdleCallback(async () => {
-      const esoSkyMapTexture = await texMod.loadSkyMapTexture();
-      if (starSphere.material instanceof ShaderMaterial) {
-        const starMaterial = starSphere.material;
-        starMaterial.uniforms.uStarMap.value = esoSkyMapTexture;
-        starMaterial.needsUpdate = true;
-
-        requestIdleCallback(function fadeInStarSphere() {
-          starSphere.visible = true;
-          let starFade = 0;
-          let lastStarTime = performance.now();
-          const fade = (now = performance.now()) => {
-            const delta = (now - lastStarTime) / 1000;
-            lastStarTime = now;
-            starFade += delta * 0.1;
-            starMaterial.uniforms.uStarFade.value = Math.min(starFade, 1);
-            starMaterial.needsUpdate = true;
-            if (starFade < 1) requestAnimationFrame(fade);
-          };
-          fade();
-        });
-      }
-    });
-
-    // Load Clouds and fade them in
-    requestIdleCallback(async () => {
-      const cloudTexture = await texMod.loadCloudTexture(renderer);
-      if (cloudTexture && cloudSphere.material instanceof ShaderMaterial) {
-        cloudSphere.material.uniforms.uCloudMap.value = cloudTexture;
-        cloudSphere.material.needsUpdate = true;
-        cloudSphere.visible = true;
-      }
-
-      let fade = 0;
-      let last = performance.now();
-      const fadeInTextures = (now = performance.now()) => {
-        const delta = (now - last) / 1000;
-        last = now;
-        fade += delta * 0.2;
-        uniforms.uTextureFade.value = Math.min(fade, 1);
-        if (cloudSphere.material instanceof ShaderMaterial) {
-          cloudSphere.material.uniforms.uCloudFade.value = Math.min(fade, 1);
-        }
-        if (fade < 1) requestAnimationFrame(fadeInTextures);
+    if (globe.material) {
+      const updateMat = (mat: any) => {
+        mat.needsUpdate = true;
       };
-      fadeInTextures();
-    });
+      Array.isArray(globe.material)
+        ? globe.material.forEach(updateMat)
+        : updateMat(globe.material);
+    }
+
+    resolveEssentialTextures(); // Startup is visually ready now
+
+    // Load star map and fade in
+    const esoSkyMapTexture = await texMod.loadSkyMapTexture();
+    if (starSphere.material instanceof ShaderMaterial) {
+      const starMaterial = starSphere.material;
+      starMaterial.uniforms.uStarMap.value = esoSkyMapTexture;
+      starMaterial.needsUpdate = true;
+
+      starSphere.visible = true;
+      let starFade = 0;
+      let lastStarTime = performance.now();
+      const fade = (now = performance.now()) => {
+        const delta = (now - lastStarTime) / 1000;
+        lastStarTime = now;
+        starFade += delta * 0.1;
+        starMaterial.uniforms.uStarFade.value = Math.min(starFade, 1);
+        starMaterial.needsUpdate = true;
+        if (starFade < 1) requestAnimationFrame(fade);
+      };
+      fade();
+    }
+
+    // Load clouds and fade in
+    const cloudTexture = await texMod.loadCloudTexture(renderer);
+    if (cloudTexture && cloudSphere.material instanceof ShaderMaterial) {
+      cloudSphere.material.uniforms.uCloudMap.value = cloudTexture;
+      cloudSphere.material.needsUpdate = true;
+      cloudSphere.visible = true;
+    }
+
+    let fade = 0;
+    let last = performance.now();
+    const fadeInTextures = (now = performance.now()) => {
+      const delta = (now - last) / 1000;
+      last = now;
+      fade += delta * 0.2;
+      uniforms.uTextureFade.value = Math.min(fade, 1);
+      if (cloudSphere.material instanceof ShaderMaterial) {
+        cloudSphere.material.uniforms.uCloudFade.value = Math.min(fade, 1);
+      }
+      if (fade < 1) requestAnimationFrame(fadeInTextures);
+    };
+    fadeInTextures();
   });
 
   // === Schedule each feature module during idle time
@@ -390,7 +389,7 @@ export async function startApp(updateSubtitle: (text: string) => void) {
   selection.oceanFadeIn.fill(0);
   selection.oceanData.fill(0);
 
-  return { animate };
+  return { animate, waitForEssentialTextures };
 }
 
 /**

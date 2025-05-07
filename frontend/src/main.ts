@@ -1,12 +1,10 @@
 /**
  * Entry point of the OrbitalOne application.
- *
  * Responsibilities:
  * - Initialize and start the core 3D Earth visualization.
  * - Manage loading screen transitions.
- * - Set the loading subtitle text dynamically during the app boot sequence.
+ * - Set the loading subtitle text dynamically during app boot.
  */
-
 (async () => {
   const { startApp } = await import("./startApp");
   const { inject } = await import("@vercel/analytics");
@@ -24,7 +22,11 @@
 
   setLoadingSubtitle("Initializing orbital launch sequence...");
 
-  const { animate } = await startApp(setLoadingSubtitle);
+  const { animate, waitForEssentialTextures } = await startApp(
+    setLoadingSubtitle
+  );
+
+  await waitForEssentialTextures; // Ensure visuals are ready before fade-out
 
   performance.mark("start-app-done");
   performance.measure("App Init", "start-app-init", "start-app-done");
