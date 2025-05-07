@@ -1,3 +1,4 @@
+// vite.config.ts
 import { defineConfig } from "vite";
 import glsl from "vite-plugin-glsl";
 import { visualizer } from "rollup-plugin-visualizer";
@@ -18,18 +19,19 @@ export default defineConfig({
   },
   base: "./",
   build: {
-    sourcemap: true,
-    minify: isAnalyze ? "terser" : "esbuild",
+    target: "esnext", // modern JS features, no downleveling
+    sourcemap: isAnalyze, // disable maps unless analyzing
+
     outDir: "dist",
+    minify: isAnalyze ? "terser" : "esbuild",
     rollupOptions: {
       output: {
         manualChunks(id) {
-          // Auto-split big external libraries by folder name
           if (id.includes("node_modules")) {
             if (id.includes("three")) return "vendor-three";
             if (id.includes("gsap")) return "vendor-gsap";
             if (id.includes("three/examples")) return "vendor-examples";
-            return "vendor"; // Default bucket for any other node_modules
+            return "vendor";
           }
         },
       },
@@ -43,7 +45,6 @@ export default defineConfig({
             }),
           ]
         : [],
-      external: ["src/dev/*"],
     },
   },
 });
