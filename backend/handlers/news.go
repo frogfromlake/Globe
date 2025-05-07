@@ -57,8 +57,11 @@ func NewsHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Encode and send article list
+	// Set headers for caching and response type
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Cache-Control", "public, max-age=60")
+
+	// Encode and send article list
 	if err := json.NewEncoder(w).Encode(articles); err != nil {
 		log.Printf("❌ Failed to encode response for %s: %v\n", countryCode, err)
 		http.Error(w, "Internal server error", http.StatusInternalServerError)

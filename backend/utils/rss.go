@@ -4,11 +4,11 @@ import (
 	"errors"
 	"log"
 	"net/http"
+	"sync"
 	"time"
 
 	"github.com/frogfromlake/Orbitalone/backend/feeds"
 	"github.com/frogfromlake/Orbitalone/backend/localization"
-
 	"github.com/mmcdole/gofeed"
 	"github.com/patrickmn/go-cache"
 )
@@ -45,6 +45,12 @@ type NewsArticle struct {
 	Source              string `json:"source"`
 }
 
+// Temporary blacklist for feeds that failed recently
+var failedFeeds = cache.New(30*time.Minute, 10*time.Minute)
+
+// Prevents stampede on cache miss by locking per-feed URL
+var fetchLocks sync.Map // map[string]*sync.Mutex
+
 // GetNewsByCountry fetches RSS feeds for a country and optionally translates them.
 func GetNewsByCountry(code string, translate bool) ([]NewsArticle, error) {
 	feedURLs, err := feeds.GetFeeds(code)
@@ -60,74 +66,106 @@ func GetNewsByCountry(code string, translate bool) ([]NewsArticle, error) {
 		log.Printf("⚠️ No DeepL mapping for %s – falling back to original", code)
 	}
 
-	var all []NewsArticle
+	var (
+		mu        sync.Mutex
+		wg        sync.WaitGroup
+		all       []NewsArticle
+		semaphore = make(chan struct{}, 4) // max 4 concurrent fetches
+		limit     = 10
+	)
+
 	for _, url := range feedURLs {
-		if len(all) >= 10 {
-			break
-		}
+		wg.Add(1)
+		go func(url string) {
+			defer wg.Done()
+			semaphore <- struct{}{}
+			defer func() { <-semaphore }()
 
-		var articles []NewsArticle
-
-		cacheKey := url
-		if translate {
-			cacheKey += "|translated"
-		}
-
-		log.Printf("🧪 Checking cache: %s (translate=%v)", cacheKey, translate)
-
-		if cached, found := feedCache.Get(cacheKey); found {
-			articles = cached.([]NewsArticle)
-		} else {
-			feed, err := parser.ParseURL(url)
-			if err != nil {
-				log.Printf("⚠️ Failed to parse %s: %v", url, err)
-				continue
+			if _, blacklisted := failedFeeds.Get(url); blacklisted {
+				log.Printf("🚫 Skipping blacklisted feed: %s", url)
+				return
 			}
 
-			for _, item := range feed.Items {
-				if len(articles) >= 5 || len(all)+len(articles) >= 10 {
-					break
-				}
+			cacheKey := url
+			if translate {
+				cacheKey += "|translated"
+			}
 
-				originalTitle := item.Title
-				originalDesc := item.Description
-				title := originalTitle
-				desc := originalDesc
+			var articles []NewsArticle
+			if cached, found := feedCache.Get(cacheKey); found {
+				articles = cached.([]NewsArticle)
+			} else {
+				// Prevent cache stampede
+				lockRaw, _ := fetchLocks.LoadOrStore(cacheKey, &sync.Mutex{})
+				lock := lockRaw.(*sync.Mutex)
 
-				if translate && hasMapping && lang != "EN" {
-					log.Printf("🌍 Translating %s (%s)", originalTitle, lang)
-					if translated, err := localization.TranslateText(originalTitle, lang); err == nil {
-						title = translated
+				lock.Lock()
+				defer lock.Unlock()
+
+				// Re-check cache inside the lock (double-check)
+				if cached, found := feedCache.Get(cacheKey); found {
+					articles = cached.([]NewsArticle)
+				} else {
+					start := time.Now()
+					feed, err := parser.ParseURL(url)
+					if err != nil {
+						log.Printf("⚠️ Failed to parse %s: %v", url, err)
+						failedFeeds.Set(url, true, cache.DefaultExpiration)
+						return
 					}
-					if originalDesc != "" {
-						if translatedDesc, err := localization.TranslateText(originalDesc, lang); err == nil {
-							desc = translatedDesc
+					log.Printf("⏱ Feed %s parsed in %v", url, time.Since(start))
+
+					for _, item := range feed.Items {
+						if len(articles) >= 5 {
+							break
 						}
-					}
-				}
 
-				articles = append(articles, NewsArticle{
-					Title:               title,
-					OriginalTitle:       originalTitle,
-					Link:                item.Link,
-					Description:         desc,
-					OriginalDescription: originalDesc,
-					Published:           item.Published,
-					Source:              feed.Title,
-				})
+						origTitle := item.Title
+						origDesc := item.Description
+						title := origTitle
+						desc := origDesc
+
+						if translate && hasMapping && lang != "EN" {
+							if t, err := localization.TranslateText(origTitle, lang); err == nil {
+								title = t
+							}
+							if origDesc != "" {
+								if tDesc, err := localization.TranslateText(origDesc, lang); err == nil {
+									desc = tDesc
+								}
+							}
+						}
+
+						articles = append(articles, NewsArticle{
+							Title:               title,
+							OriginalTitle:       origTitle,
+							Link:                item.Link,
+							Description:         desc,
+							OriginalDescription: origDesc,
+							Published:           item.Published,
+							Source:              feed.Title,
+						})
+					}
+
+					feedCache.Set(cacheKey, articles, cache.DefaultExpiration)
+				}
 			}
 
-			//
-			feedCache.Set(cacheKey, articles, cache.DefaultExpiration)
-		}
+			mu.Lock()
+			defer mu.Unlock()
 
-		remaining := 10 - len(all)
-		if len(articles) > remaining {
-			all = append(all, articles[:remaining]...)
-		} else {
-			all = append(all, articles...)
-		}
+			if len(all) >= limit {
+				return
+			}
+			remaining := limit - len(all)
+			if len(articles) > remaining {
+				all = append(all, articles[:remaining]...)
+			} else {
+				all = append(all, articles...)
+			}
+		}(url)
 	}
+	wg.Wait()
 
 	log.Printf("📦 Total articles collected for %s: %d", code, len(all))
 	return all, nil

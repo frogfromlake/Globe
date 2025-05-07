@@ -7,25 +7,30 @@
 import { Vector3, MathUtils, Camera } from "three";
 import gsap from "gsap";
 
-import { countryMeta } from '@/core/data/countryMeta';
-import { oceanCenters } from '@/core/data/oceanCenters';
-import { CONFIG } from '@/configs/config';
+import { countryMeta } from "@/core/data/countryMeta";
+import { oceanCenters } from "@/core/data/oceanCenters";
+import { CONFIG } from "@/configs/config";
 import {
   hideAll3DLabelsExcept,
   update3DLabel,
-} from '@/core/earth/interactivity/countryLabels3D';
+} from "@/core/earth/interactivity/countryLabels3D";
 import {
   hideAll3DOceanLabelsExcept,
   update3DOceanLabel,
-} from '@/core/earth/interactivity/oceanLabel3D';
-import { getSolarRotationY } from '@/core/earth/lighting/sunDirection';
-import { latLonToSphericalCoordsGeographic } from '@/core/earth/geo/coordinates';
+} from "@/core/earth/interactivity/oceanLabel3D";
+import { getSolarRotationY } from "@/core/earth/lighting/sunDirection";
+import { latLonToSphericalCoordsGeographic } from "@/core/earth/geo/coordinates";
 import Fuse from "fuse.js";
 
 async function showNewsLazy(isoCode: string) {
-  const { showNewsPanel } = await import("@/features/panels/news/handleNewsPanel");
+  const { showNewsPanel } = await import(
+    "@/features/panels/news/handleNewsPanel"
+  );
   await showNewsPanel(isoCode);
 }
+
+let cameraTween: gsap.core.Tween | null = null;
+let targetTween: gsap.core.Tween | null = null;
 
 /**
  * Initializes the location search input field.
@@ -166,6 +171,14 @@ export function setupLocationSearch(
 
   const transitionDuration = 2;
 
+  // Prevent camera fighting by canceling animation on user interaction
+  controls.addEventListener("start", () => {
+    cameraTween?.kill();
+    targetTween?.kill();
+    cameraTween = null;
+    targetTween = null;
+  });
+
   inputLocation?.addEventListener("change", async () => {
     const query = inputLocation.value.trim();
     if (!query) return;
@@ -260,7 +273,7 @@ export function setupLocationSearch(
     const shouldZoom = originalDistance < defaultDistance * 0.98;
 
     const tmp = { t: 0 };
-    gsap.to(tmp, {
+    cameraTween = gsap.to(tmp, {
       t: 1,
       duration: transitionDuration,
       ease: "power2.inOut",
@@ -285,7 +298,7 @@ export function setupLocationSearch(
       },
     });
 
-    gsap.to(controls.target, {
+    targetTween = gsap.to(controls.target, {
       x: 0,
       y: 0,
       z: 0,
