@@ -24,6 +24,7 @@ import { loadCountryIdMapTexture } from "@/core/earth/interactivity/countryHover
 import { loadOceanIdMapTexture } from "@/core/earth/interactivity/oceanHover";
 import { setupGlobePointerEvents } from "@/core/earth/controls/globePointerEvents";
 import {
+  onPointerInteraction,
   setupPointerMoveTracking,
   userHasMovedPointer,
 } from "@/core/earth/controls/pointerTracker";
@@ -374,8 +375,8 @@ export async function startApp(updateSubtitle: (text: string) => void) {
     loadOceanIdMapTexture
   );
 
-  // === Defer hover activation to next idle frame
-  requestIdleCallback(function setHoverReady() {
+  // === Defer hover activation until user interacts
+  onPointerInteraction(() => {
     hoverReadyRef.current = true;
     performance.mark("hover-ready-activated");
   });

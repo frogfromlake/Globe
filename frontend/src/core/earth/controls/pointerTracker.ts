@@ -1,31 +1,34 @@
-/**
- * @file pointerTracker.ts
- * @description Tracks whether the user has interacted with the globe via pointer or touch.
- */
-
 let hasMovedPointer = false;
+let onFirstPointerMove: (() => void) | null = null;
 
 /**
- * Initializes global event listeners to detect user interaction.
- * Sets a flag when the user moves the pointer or touches the screen.
+ * Initializes tracking for first pointer/touch interaction.
  */
 export function setupPointerMoveTracking(): void {
   hasMovedPointer = false;
 
-  window.addEventListener("pointermove", () => {
-    hasMovedPointer = true;
-  });
+  const markMoved = () => {
+    if (!hasMovedPointer) {
+      hasMovedPointer = true;
+      if (onFirstPointerMove) onFirstPointerMove();
+    }
+  };
 
-  window.addEventListener("touchstart", () => {
-    hasMovedPointer = true;
-  });
+  window.addEventListener("pointermove", markMoved, { once: true });
+  window.addEventListener("touchstart", markMoved, { once: true });
 }
 
 /**
- * Returns whether the user has interacted with the globe.
- *
- * @returns True if user moved the pointer or touched the screen.
+ * Registers a callback that fires once the user moves or touches.
  */
+export function onPointerInteraction(callback: () => void): void {
+  if (hasMovedPointer) {
+    callback();
+  } else {
+    onFirstPointerMove = callback;
+  }
+}
+
 export function userHasMovedPointer(): boolean {
   return hasMovedPointer;
 }
