@@ -134,7 +134,11 @@ export async function update3DOceanLabel(
 
 /** Hides all 3D ocean labels from the scene. */
 export function hideAll3DOceanLabels(): void {
-  for (const { group } of labelObjectsOcean.values()) group.visible = false;
+  for (const { group, sprite, line } of labelObjectsOcean.values()) {
+    group.visible = false;
+    sprite.material.opacity = 0;
+    (line.material as any).opacity = 0;
+  }
 }
 
 /**

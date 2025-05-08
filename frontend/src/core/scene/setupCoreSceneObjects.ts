@@ -27,13 +27,6 @@ import {
 } from "@/core/earth/borders/borderMeshMap";
 import { buildOceanBorderMeshes } from "../earth/borders/generateOceanBorders";
 
-const selectedMaterial = new MeshBasicMaterial({
-  color: 0xffffff,
-  transparent: true,
-  opacity: 1.0,
-  depthWrite: false,
-});
-
 /**
  * Sets up the core globe, raycast mesh, and tilt group (with borders and labels).
  */
@@ -69,8 +62,13 @@ export function setupCoreSceneObjects(
   const tiltGroup = new Group();
   tiltGroup.add(globe, globeRaycastMesh, countryLabelGroup, oceanLabelGroup);
 
-  // === Add Country Borders ===
+  // Ensure label groups render on top of everything
+  countryLabelGroup.renderOrder = 5;
+  oceanLabelGroup.renderOrder = 5;
+
   const borderThickness = CONFIG.borders.countryBorderThickness ?? 0.07;
+
+  // === Country Borders ===
   const countryBorderEntries = buildCountryBorderMeshes(
     countryGeojson,
     CONFIG.globe.radius,
@@ -79,8 +77,8 @@ export function setupCoreSceneObjects(
 
   for (const { id, mesh } of countryBorderEntries) {
     mesh.visible = false;
+    mesh.renderOrder = 3;
 
-    // Apply material tweaks to all children in the group
     mesh.traverse((child) => {
       if (
         child instanceof Mesh &&
@@ -88,15 +86,15 @@ export function setupCoreSceneObjects(
       ) {
         child.material.opacity = 1.0;
         child.material.transparent = false;
+        child.renderOrder = 3;
       }
     });
 
     tiltGroup.add(mesh);
-
     countryBorderMeshMap.set(id, mesh);
   }
 
-  // === Add Ocean Borders ===
+  // === Ocean Borders ===
   const oceanBorderEntries = buildOceanBorderMeshes(
     oceanGeojson,
     CONFIG.globe.radius,
@@ -105,6 +103,8 @@ export function setupCoreSceneObjects(
 
   for (const { id, mesh } of oceanBorderEntries) {
     mesh.visible = false;
+    mesh.renderOrder = 3;
+
     mesh.traverse((child) => {
       if (
         child instanceof Mesh &&
@@ -112,8 +112,10 @@ export function setupCoreSceneObjects(
       ) {
         child.material.opacity = 1.0;
         child.material.transparent = false;
+        child.renderOrder = 3;
       }
     });
+
     tiltGroup.add(mesh);
     oceanBorderMeshMap.set(id, mesh);
   }

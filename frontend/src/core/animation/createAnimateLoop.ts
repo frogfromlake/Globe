@@ -28,6 +28,8 @@ import { update3DLabels } from "./loopParts/update3DLabels";
 import { updateSelectionTextures } from "./loopParts/updateSelectionTextures";
 import { updateUniforms } from "./loopParts/updateUniforms";
 import { resetHighlightUniforms } from "./loopParts/resetHighlightUniforms";
+import { hideAll3DLabels } from "../earth/interactivity/countryLabels3D";
+import { hideAll3DOceanLabels } from "../earth/interactivity/oceanLabel3D";
 
 interface AnimateParams {
   globe: Mesh;
@@ -141,7 +143,11 @@ export function createAnimateLoop({
     );
 
     // Reset hover state when pointer leaves the globe
-    if (!uniforms.uCursorOnGlobe.value) {
+    const pointerOnGlobe = uniforms.uCursorOnGlobe.value === true;
+
+    if (!pointerOnGlobe) {
+      hideAll3DLabels();
+      hideAll3DOceanLabels();
       resetHighlightUniforms(uniforms);
       appState.hoverIdState = {
         currentHoveredId: -1,
@@ -153,6 +159,16 @@ export function createAnimateLoop({
         fadeInOcean: 0,
         fadeOutOcean: 0,
       };
+    } else {
+      // Only update labels if cursor is on globe
+      update3DLabels(
+        camera,
+        appState.hoverIdState,
+        selectedCountryIds,
+        selectedOceanIds,
+        selectedOceanFadeIn,
+        delta
+      );
     }
 
     lastRaycastTime = updatedLastRaycastTime;
@@ -176,15 +192,6 @@ export function createAnimateLoop({
 
     updateCountryBorderVisibility(selectedCountryIds, appState.hoverIdState);
     updateOceanBorderVisibility(selectedOceanIds, appState.hoverIdState);
-
-    update3DLabels(
-      camera,
-      appState.hoverIdState,
-      selectedCountryIds,
-      selectedOceanIds,
-      selectedOceanFadeIn,
-      delta
-    );
 
     appState.lastSelectedCountryIds = new Set(selectedCountryIds);
     appState.lastHoveredCountryId = appState.hoverIdState.currentHoveredId;

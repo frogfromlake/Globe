@@ -126,7 +126,6 @@ export async function update3DLabel(
   }
 
   const { sprite, line, group } = labelObjects.get(countryId)!;
-
   const { phi, theta, radius } = latLonToSphericalCoordsGeographic(
     entry.lat,
     entry.lon,
@@ -187,6 +186,15 @@ export async function update3DLabel(
   mat.resolution.copy(resolution);
 
   group.visible = fade > 0.01;
+}
+
+/** Hides all 3D country labels from the scene. */
+export function hideAll3DLabels(): void {
+  for (const { group, sprite, line } of labelObjects.values()) {
+    group.visible = false;
+    sprite.material.opacity = 0;
+    (line.material as any).opacity = 0;
+  }
 }
 
 /**
