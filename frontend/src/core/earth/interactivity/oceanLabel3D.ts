@@ -3,21 +3,14 @@
  * @description Manages ocean label creation, scaling, and visibility using 3D sprites and connector lines.
  */
 
-import {
-  Sprite,
-  Group,
-  Vector3,
-  Camera,
-  MathUtils,
-  Object3D,
-  PerspectiveCamera,
-} from "three";
+import { Sprite, Group, Vector3, Camera, MathUtils, Object3D } from "three";
 import { createTextSprite } from "@/core/earth/interactivity/countryLabels3D";
 import { CONFIG } from "@/configs/config";
 import { createLabelLineMaterial } from "@/core/earth/materials/labelMaterial";
 import { LineGeometry } from "three/examples/jsm/lines/LineGeometry";
 import { Line2 } from "three/examples/jsm/lines/Line2";
 import { latLonToSphericalCoordsGeographic } from "@/core/earth/geo/coordinates";
+import { oceanCenters } from "@/core/data/oceanCenters";
 
 type LabelObject = {
   sprite: Sprite;
@@ -29,15 +22,26 @@ export const oceanLabelGroup = new Group();
 const labelObjectsOcean = new Map<number, LabelObject>();
 
 /**
- * Pre-initializes all ocean labels based on configured label metadata.
+ * Initializes ocean labels in small idle chunks to avoid blocking the main thread.
  */
-export function init3DOceanLabels(camera: PerspectiveCamera): void {
-  for (const idStr of Object.keys(CONFIG.oceanHover.oceanCenters)) {
-    const id = parseInt(idStr);
-    const ocean = CONFIG.oceanHover.oceanCenters[id];
-    if (ocean)
-      update3DOceanLabel(id, ocean.name, ocean.lat, ocean.lon, camera, 0);
+export function init3DOceanLabelsDeferred(camera: Camera): void {
+  const ids = Object.keys(oceanCenters).map(Number);
+
+  function chunkedInit(i = 0) {
+    if (i >= ids.length) return;
+    const batch = ids.slice(i, i + 5);
+
+    for (const id of batch) {
+      const ocean = oceanCenters[id];
+      if (ocean) {
+        update3DOceanLabel(id, ocean.name, ocean.lat, ocean.lon, camera, 0);
+      }
+    }
+
+    requestIdleCallback(() => chunkedInit(i + 5));
   }
+
+  chunkedInit();
 }
 
 /**
@@ -50,16 +54,16 @@ export function init3DOceanLabels(camera: PerspectiveCamera): void {
  * @param camera - Current camera (for zoom-based sizing)
  * @param fade - Opacity from 0.0 to 1.0
  */
-export async function update3DOceanLabel(
+export function update3DOceanLabel(
   oceanId: number,
   name: string,
   lat: number,
   lon: number,
   camera: Camera,
   fade: number
-): Promise<void> {
+): void {
   if (!labelObjectsOcean.has(oceanId)) {
-    const sprite = await createTextSprite(name, true);
+    const sprite = createTextSprite(name, true);
     const geometry = new LineGeometry().setPositions([0, 0, 0, 0, 0, 0]);
     const line = new Line2(geometry, createLabelLineMaterial(true));
     line.computeLineDistances();
@@ -111,9 +115,9 @@ export async function update3DOceanLabel(
     baseScale * scaleFactor,
     1
   );
-  sprite.lookAt(camera.position); // Makes sure it faces the camera
+  sprite.lookAt(camera.position);
   group.rotation.set(0, 0, 0);
-  group.quaternion.identity(); // Prevent distortion from parent rotation
+  group.quaternion.identity();
 
   (line.geometry as LineGeometry).setPositions([
     center.x,

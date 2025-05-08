@@ -29,14 +29,17 @@ type LabelObject = {
 export const countryLabelGroup = new Group();
 const labelObjects = new Map<number, LabelObject>();
 
-export function init3DCountryLabels(camera: PerspectiveCamera): void {
-  // === Pre-create all country labels ===
-  for (const id of Object.keys(countryMeta)) {
-    const countryId = parseInt(id);
-    if (countryId > 0) {
-      update3DLabel(countryId, camera, 0); // No rotation, invisible (fade=0)
-    }
+export function init3DCountryLabelsDeferred(camera: Camera): void {
+  const ids = Object.keys(countryMeta).map(Number);
+
+  function chunkedInit(i = 0) {
+    if (i >= ids.length) return;
+    const batch = ids.slice(i, i + 5);
+    for (const id of batch) update3DLabel(id, camera, 0);
+    requestIdleCallback(() => chunkedInit(i + 5));
   }
+
+  chunkedInit();
 }
 
 /**
@@ -47,37 +50,26 @@ export function init3DCountryLabels(camera: PerspectiveCamera): void {
  * @param isOcean - Boolean flag to distinguish between ocean and country labels
  * @returns A Promise that resolves to a THREE.Sprite with custom styling.
  */
-export async function createTextSprite(
-  message: string,
-  isOcean: boolean
-): Promise<Sprite> {
+export function createTextSprite(message: string, isOcean: boolean): Sprite {
   const { canvasFontSize, fontFamily, glow, spriteScale } = CONFIG.labels3D;
-
-  // --- Ensure font is fully available before measuring ---
-  await document.fonts.ready;
-  await document.fonts.load(`normal 400 ${canvasFontSize}px '${fontFamily}'`);
-  await new Promise(requestAnimationFrame); // sync w/ layout
-  await new Promise(requestAnimationFrame); // extra frame ensures stability on Chromium
 
   const canvas = document.createElement("canvas");
   const ctx = canvas.getContext("2d")!;
   ctx.font = `${canvasFontSize}px '${fontFamily}', sans-serif`;
 
-  // --- Measure text and apply a fallback minimum size ---
   const textWidth = ctx.measureText(message).width || 1;
   const height = canvasFontSize * 3.5;
 
   canvas.width = Math.max(2, textWidth);
   canvas.height = Math.max(2, height);
 
-  // Reapply styles *after* sizing to avoid clearing
   ctx.font = `${canvasFontSize}px '${fontFamily}', sans-serif`;
   ctx.textBaseline = "top";
   ctx.shadowColor = glow.shadowColor;
   ctx.shadowBlur = glow.shadowBlur;
-  ctx.lineWidth = 35; // Thickness of the outline
-  ctx.strokeStyle = "black"; // Outline color
-  ctx.strokeText(message, 0, 0); // Draw stroke first
+  ctx.lineWidth = 35;
+  ctx.strokeStyle = "black";
+  ctx.strokeText(message, 0, 0);
   ctx.fillStyle = glow.fillStyle;
   ctx.fillText(message, 0, 0);
 
@@ -101,17 +93,17 @@ export async function createTextSprite(
  * @param fade - Opacity from 0.0 to 1.0
  * @param resolution - Optional screen resolution (used for line material)
  */
-export async function update3DLabel(
+export function update3DLabel(
   countryId: number,
   camera: Camera,
   fade: number,
   resolution: Vector2 = new Vector2(window.innerWidth, window.innerHeight)
-): Promise<void> {
+): void {
   const entry = countryMeta[countryId];
   if (!entry) return;
 
   if (!labelObjects.has(countryId)) {
-    const sprite = await createTextSprite(entry.name, false);
+    const sprite = createTextSprite(entry.name, false);
     const geometry = new LineGeometry().setPositions([0, 0, 0, 0, 0, 0]);
     const line = new Line2(geometry, createLabelLineMaterial(false));
     line.computeLineDistances();
@@ -148,11 +140,7 @@ export async function update3DLabel(
   sprite.material.opacity = fade;
 
   const canvas = sprite.material.map?.image as HTMLCanvasElement;
-  const aspect =
-    canvas && canvas.width > 0 && canvas.height > 0
-      ? canvas.width / canvas.height
-      : 2.5;
-
+  const aspect = canvas?.width / canvas?.height || 2.5;
   const scaleFactor = MathUtils.mapLinear(
     cameraDistance,
     CONFIG.labels3D.zoomRange.min,

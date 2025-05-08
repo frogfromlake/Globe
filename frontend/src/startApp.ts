@@ -37,6 +37,7 @@ import {
 import { loadCoreTextures } from "@/core/earth/init/initializeTextures";
 import { enhanceSceneObjects } from "./core/scene/enhanceSceneObjects";
 import { setupCoreSceneObjects } from "./core/scene/setupCoreSceneObjects";
+import { CONFIG } from "./configs/config";
 
 if (typeof window.requestIdleCallback !== "function") {
   window.requestIdleCallback = function (
@@ -87,6 +88,12 @@ const waitForEssentialTextures = new Promise<void>((resolve) => {
  * @returns Animation loop starter and a deferred hover activation function
  */
 export async function startApp(updateSubtitle: (text: string) => void) {
+  // === Wait for fonts to load and stabilize ===
+  await document.fonts.ready;
+  await document.fonts.load(
+    `normal 400 ${CONFIG.labels3D.canvasFontSize}px '${CONFIG.labels3D.fontFamily}'`
+  );
+
   // === State Stores for Country/Ocean Selection ===
   const selection = {
     countryIds: new Set<number>(),
@@ -310,19 +317,25 @@ export async function startApp(updateSubtitle: (text: string) => void) {
 
     fadeInTextures();
     resolveEssentialTextures(); // Startup is visually ready now
-    renderer.setAnimationLoop(animate);
+    setTimeout(() => {
+      renderer.setAnimationLoop(animate);
+      renderer.render;
+    }, 0);
   });
 
-  // === Schedule each feature module during idle time
-  requestIdleCallback(async function load3DLabelsIdle() {
-    const { init3DCountryLabels } = await import(
-      "./core/earth/interactivity/countryLabels3D"
-    );
-    const { init3DOceanLabels } = await import(
-      "./core/earth/interactivity/oceanLabel3D"
-    );
-    init3DCountryLabels(camera);
-    init3DOceanLabels(camera);
+  // === Schedule label creation AFTER fonts have settled and layout has stabilized
+  requestIdleCallback(() => {
+    requestIdleCallback(async () => {
+      const { init3DCountryLabelsDeferred } = await import(
+        "@/core/earth/interactivity/countryLabels3D"
+      );
+      const { init3DOceanLabelsDeferred } = await import(
+        "@/core/earth/interactivity/oceanLabel3D"
+      );
+
+      init3DCountryLabelsDeferred(camera); // uses chunked idle loops
+      init3DOceanLabelsDeferred(camera);
+    });
   });
 
   // === Medium Priority Idle Tasks (News, Controls) ===
