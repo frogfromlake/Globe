@@ -67,7 +67,7 @@ export async function update3DOceanLabel(
     const group = new Group();
     group.add(sprite, line as Object3D);
     line.renderOrder = 0;
-    sprite.renderOrder = 1;
+    sprite.renderOrder = 3;
 
     oceanLabelGroup.add(group);
     labelObjectsOcean.set(oceanId, { sprite, line, group });

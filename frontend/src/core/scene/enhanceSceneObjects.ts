@@ -68,7 +68,7 @@ export function enhanceSceneObjects(
   );
   const cloudMaterial = createCloudMaterial();
   const cloudSphere = new Mesh(cloudGeometry, cloudMaterial);
-  cloudSphere.renderOrder = 1.5;
+  cloudSphere.renderOrder = 2;
   cloudSphere.visible = false;
   cloudSphere.frustumCulled = false;
   tiltGroup.add(cloudSphere);

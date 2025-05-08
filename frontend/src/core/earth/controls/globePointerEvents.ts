@@ -19,7 +19,7 @@ type InteractionOptions = {
    * Receives the first intersection point if hit, or undefined if no hit.
    */
   onHover?: (hit: Intersection | undefined) => void;
-
+  
   /**
    * Callback fired when the globe is clicked.
    * Receives the first intersection point if hit, or undefined if no hit.

@@ -29,6 +29,7 @@ export function createCloudMaterial(cloudTexture?: Texture): ShaderMaterial {
     fragmentShader: cloudsFragmentShader,
     transparent: true,
     depthWrite: false,
+    depthTest: false,
     fog: false,
     lights: false,
     toneMapped: false,

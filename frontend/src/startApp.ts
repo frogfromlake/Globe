@@ -99,11 +99,6 @@ export async function startApp(updateSubtitle: (text: string) => void) {
     oceanData: new Uint8Array(),
   };
 
-  let resolveEssentialTextures: () => void;
-  const waitForEssentialTextures = new Promise<void>((resolve) => {
-    resolveEssentialTextures = resolve;
-  });
-
   // === Pointer & Raycasting ===
   const raycaster = new Raycaster();
   const pointer = new Vector2();
@@ -220,8 +215,6 @@ export async function startApp(updateSubtitle: (text: string) => void) {
   uniforms.uCursorOnGlobe.value = false;
   uniforms.cursorWorldPos.value.set(0, 0, 0);
 
-  renderer.setAnimationLoop(animate);
-
   starSphere.visible = false;
   cloudSphere.visible = false;
 
@@ -273,8 +266,6 @@ export async function startApp(updateSubtitle: (text: string) => void) {
         : updateMat(globe.material);
     }
 
-    resolveEssentialTextures(); // Startup is visually ready now
-
     // Load star map and fade in
     const esoSkyMapTexture = await texMod.loadSkyMapTexture();
     if (starSphere.material instanceof ShaderMaterial) {
@@ -316,7 +307,10 @@ export async function startApp(updateSubtitle: (text: string) => void) {
       }
       if (fade < 1) requestAnimationFrame(fadeInTextures);
     };
+
     fadeInTextures();
+    resolveEssentialTextures(); // Startup is visually ready now
+    renderer.setAnimationLoop(animate);
   });
 
   // === Schedule each feature module during idle time

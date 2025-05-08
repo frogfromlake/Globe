@@ -7,33 +7,27 @@ import {
   Raycaster,
   Vector2,
   Vector3,
-  MathUtils,
   DataTexture,
   Group,
   Object3DEventMap,
 } from "three";
 
-import { CONFIG } from "@/configs/config";
-import { updateHoveredCountry } from "@/core/earth/interactivity/countryHover";
-import { updateHoveredOcean } from "@/core/earth/interactivity/oceanHover";
-import {
-  update3DLabel,
-  hideAll3DLabelsExcept,
-} from "@/core/earth/interactivity/countryLabels3D";
-import {
-  update3DOceanLabel,
-  hideAll3DOceanLabelsExcept,
-} from "@/core/earth/interactivity/oceanLabel3D";
-import { oceanIdToIndex } from "@/utils/oceanIdToIndex";
 import { appState } from "@/state/appState";
 import { userHasMovedPointer } from "@/core/earth/controls/pointerTracker";
+import { updateAurora } from "./loopParts/updateAurora";
+import { updateCloudsAndLightning } from "./loopParts/updateCloudsAndLightning";
+import { updateSolarLighting } from "./loopParts/updateSolarLighting";
+import { updatePointerRaycast } from "./loopParts/updatePointerRaycast";
+import { updateCameraControls } from "./loopParts/updateCameraControls";
+import { updateHoveredEntities } from "./loopParts/updateHoveredEntities";
 import {
-  getSolarRotationY,
-  getSunDirectionWorld,
-} from "@/core/earth/lighting/sunDirection";
-import { latLonToUnitVector } from "@/core/earth/geo/coordinates";
-import { updateSubsolarMarkerPosition } from "@/utils/debugMarkers";
-import { formatUTCFull } from "@/utils/formatClockUtc";
+  updateCountryBorderVisibility,
+  updateOceanBorderVisibility,
+} from "./loopParts/updateBorderVisibility";
+import { update3DLabels } from "./loopParts/update3DLabels";
+import { updateSelectionTextures } from "./loopParts/updateSelectionTextures";
+import { updateUniforms } from "./loopParts/updateUniforms";
+import { resetHighlightUniforms } from "./loopParts/resetHighlightUniforms";
 
 interface AnimateParams {
   globe: Mesh;
@@ -62,6 +56,7 @@ interface AnimateParams {
   selectedOceanIds: Set<number>;
   subsolarMarker: Mesh;
 }
+
 export function createAnimateLoop({
   globe,
   cloudSphere,
@@ -90,14 +85,6 @@ export function createAnimateLoop({
   subsolarMarker,
   hoverReadyRef,
 }: AnimateParams & { hoverReadyRef: { current: boolean } }): () => void {
-  let fadeIn = 0,
-    fadeOut = 0;
-  let fadeInOcean = 0,
-    fadeOutOcean = 0;
-  let currentHoveredId = -1,
-    previousHoveredId = -1;
-  let currentHoveredOceanId = -1,
-    previousHoveredOceanId = -1;
   let lastFrameTime = performance.now();
   let lastRaycastTime = 0;
   const raycastInterval = 100;
@@ -105,72 +92,7 @@ export function createAnimateLoop({
   let flashlightWorldPos: Vector3 | null = null;
 
   const atmosphereMaterial = atmosphere.material as ShaderMaterial;
-  function resetInitialHighlightUniforms() {
-    uniforms.hoveredCountryId.value = 0;
-    uniforms.previousHoveredId.value = 0;
-    uniforms.hoveredOceanId.value = 0;
-    uniforms.previousHoveredOceanId.value = 0;
-    uniforms.highlightFadeIn.value = 0;
-    uniforms.highlightFadeOut.value = 0;
-  }
-  resetInitialHighlightUniforms();
-
-  const zoomRange = CONFIG.zoom.max - CONFIG.zoom.min;
-
-  // === Cloud Movement Config ===
-  let cloudElapsedTime = 0;
-  let currentDrift = new Vector2(1, 0);
-  let targetDrift = new Vector2(1, 0);
-  let lastDriftChange = performance.now();
-  const driftChangeInterval = 30000; // every 30s
-  const driftLerpSpeed = 0.015; // slow gradual turn
-
-  let cloudDriftBaseSpeed = 0.00004; // very slow: matches shader default
-  let cloudSpeedVariation = 0.0;
-  let cloudTargetVariation = 0.0;
-  let lastSpeedVariationChange = performance.now();
-  const speedVariationStrength = 0.00001; // subtle pulsing
-  const speedVariationChangeInterval = 20000; // update every 20s
-  const speedLerpSpeed = 0.04;
-
-  // === Lightning Config ===
-  const MAX_FLASHES = 80;
-  const NUM_STORM_CENTERS = 25; // more storm systems (used to be 15)
-  const baseFlashChance = 0.02; // chance a flashe occurs inside each storm (2%)
-  const stormDriftSpeed = 0.00002; // keep same slow drift
-  const flashFadeSpeed = 0.8; // faster fading (was 0.88)
-
-  const flashPoints: Vector2[] = Array.from(
-    { length: MAX_FLASHES },
-    () => new Vector2(Math.random(), Math.random())
-  );
-  const flashStrengths: number[] = Array(MAX_FLASHES).fill(0);
-
-  const stormCenters: Vector2[] = Array.from(
-    { length: NUM_STORM_CENTERS },
-    () => new Vector2(Math.random(), Math.random())
-  );
-
-  function updateSelectionTexture(
-    fadeInArray: Float32Array,
-    flagsArray: Uint8Array,
-    dataArray: Uint8Array,
-    texture: DataTexture,
-    delta: number
-  ) {
-    for (let i = 0, len = dataArray.length; i < len; i++) {
-      const isSelected = flagsArray[i] === 1;
-      fadeInArray[i] += delta * CONFIG.fade.selection * (isSelected ? 1 : -1);
-      fadeInArray[i] = MathUtils.clamp(fadeInArray[i], 0, 1);
-      dataArray[i] = Math.floor(
-        fadeInArray[i] * CONFIG.selectionTexture.fadeMaxValue
-      );
-    }
-    texture.needsUpdate = true;
-  }
-
-  let simulationTime = Date.now(); // milliseconds
-  const simClockEl = document.getElementById("sim-clock") as HTMLDivElement;
+  resetHighlightUniforms(uniforms);
 
   function animate(): void {
     const now = performance.now();
@@ -178,341 +100,101 @@ export function createAnimateLoop({
     lastFrameTime = now;
     const nowInSeconds = now / 1000;
 
-    if (auroraMesh.material instanceof ShaderMaterial) {
-      auroraMesh.material.uniforms.uTime.value = nowInSeconds * 0.015;
-      if (auroraMesh.material instanceof ShaderMaterial) {
-        auroraMesh.material.uniforms.lightDirection.value.copy(
-          uniforms.lightDirection.value
-        );
-        auroraMesh.material.uniforms.uMagneticNorth.value.copy(
-          latLonToUnitVector(86.5, -161)
-        );
-        auroraMesh.material.uniforms.uMagneticSouth.value.copy(
-          latLonToUnitVector(-64.5, 137)
-        );
-      }
-    }
+    appState.simulation.time = Date.now();
 
-    simulationTime += delta * 1000 * CONFIG.time.simulationSpeed;
-    const simulatedDate = new Date(simulationTime);
+    updateAurora(auroraMesh, uniforms.lightDirection.value, nowInSeconds);
 
-    simClockEl.textContent = formatUTCFull(simulatedDate);
-
-    updateSubsolarMarkerPosition(subsolarMarker, simulatedDate);
-    // === Solar Alignment ===
-    // Compute the rotation angle needed to bring the subsolar longitude to the front (0° on globe)
-    // const targetRotation = getSolarRotationY();
-    const targetRotation = getSolarRotationY(simulatedDate);
-    tiltGroup.rotation.y = targetRotation;
-
-    // Update real-time uniform for globe shaders
-    uniforms.uTime.value = nowInSeconds;
-
-    cloudElapsedTime += delta;
-
-    // Drift Direction Update
-    if (now - lastDriftChange > driftChangeInterval) {
-      const maxAngleOffset = MathUtils.degToRad(10); // small angle, stay eastward
-      const angleOffset = MathUtils.randFloatSpread(maxAngleOffset); // random between -5.0° and +5.0°
-      const eastward = new Vector2(1, 0); // pure east
-      targetDrift = eastward
-        .clone()
-        .rotateAround(new Vector2(0, 0), angleOffset);
-      lastDriftChange = now;
-    }
-
-    currentDrift.lerp(targetDrift, delta * driftLerpSpeed);
-    currentDrift.normalize();
-
-    // Speed Variation Update
-    if (now - lastSpeedVariationChange > speedVariationChangeInterval) {
-      cloudTargetVariation = (Math.random() * 2 - 1) * speedVariationStrength;
-      lastSpeedVariationChange = now;
-    }
-    cloudSpeedVariation = MathUtils.lerp(
-      cloudSpeedVariation,
-      cloudTargetVariation,
-      delta * speedLerpSpeed
+    const targetRotation = updateSolarLighting(
+      uniforms,
+      nowInSeconds,
+      delta,
+      appState.simulation,
+      subsolarMarker,
+      tiltGroup
     );
 
-    if (!isFinite(cloudSpeedVariation)) {
-      cloudSpeedVariation = 0;
-    }
-
-    const totalSpeed = MathUtils.clamp(
-      cloudDriftBaseSpeed + cloudSpeedVariation,
-      0.00001, // min drift speed
-      0.0001 // max drift speed
+    updateCloudsAndLightning(
+      cloudSphere,
+      uniforms,
+      now,
+      delta,
+      appState.driftState
     );
-
-    // Pass cloud drift and time to shader
-    if (cloudSphere.material instanceof ShaderMaterial) {
-      cloudSphere.material.uniforms.uCloudTime.value = cloudElapsedTime;
-      cloudSphere.material.uniforms.uCloudDrift.value.copy(currentDrift);
-      cloudSphere.material.uniforms.uLightDirection.value.copy(
-        uniforms.lightDirection.value
-      );
-      cloudSphere.material.uniforms.uBaseDriftSpeed.value = totalSpeed;
-
-      // === LIGHTNING FLASH ===
-      // === Drift storm centers slightly ===
-      for (let center of stormCenters) {
-        center.x += MathUtils.randFloatSpread(stormDriftSpeed);
-        center.y += MathUtils.randFloatSpread(stormDriftSpeed);
-        if (center.x < 0) center.x += 1;
-        if (center.x > 1) center.x -= 1;
-        if (center.y < 0) center.y += 1;
-        if (center.y > 1) center.y -= 1;
-      }
-
-      for (let i = 0; i < MAX_FLASHES; i++) {
-        const randomChance = baseFlashChance * MathUtils.randFloat(0.7, 1.3);
-        if (Math.random() < randomChance) {
-          const center =
-            stormCenters[Math.floor(Math.random() * NUM_STORM_CENTERS)];
-          const jitter = new Vector2(
-            MathUtils.randFloatSpread(0.05),
-            MathUtils.randFloatSpread(0.05)
-          );
-          flashPoints[i].copy(center).add(jitter);
-
-          // Random strength (rarely bright)
-          flashStrengths[i] = Math.random() < 0.05 ? 2.0 : 1.0;
-        }
-
-        // Faster fade per frame
-        if (typeof flashStrengths[i] !== "number") flashStrengths[i] = 0;
-        flashStrengths[i] *= flashFadeSpeed;
-      }
-
-      // Send to shader
-      if (cloudSphere.material instanceof ShaderMaterial) {
-        const mat = cloudSphere.material as ShaderMaterial;
-        mat.uniforms.uFlashPoints.value = flashPoints;
-        mat.uniforms.uFlashStrengths.value = flashStrengths;
-        mat.uniforms.uNumFlashes.value = MAX_FLASHES;
-      }
-    }
-
-    // Store rotationY globally for this frame
-    let globeIntersection: Vector3 | null = null;
 
     const pointerActive = userHasMovedPointer();
-    const doRaycast = pointerActive && now - lastRaycastTime > raycastInterval;
+    const {
+      currentUV: newUV,
+      updatedLastRaycastTime,
+      flashlightWorldPos: newFlashlightPos,
+      uvUpdated,
+    } = updatePointerRaycast(
+      raycaster,
+      pointer,
+      camera,
+      globeRaycastMesh,
+      uniforms,
+      now,
+      lastRaycastTime,
+      raycastInterval,
+      pointerActive,
+      targetRotation
+    );
 
-    // === Flashlight raycast (always runs, unthrottled, for smooth movement) ===
-    raycaster.setFromCamera(pointer, camera);
-    const hitForFlashlight = raycaster.intersectObject(globeRaycastMesh, false);
-    if (hitForFlashlight.length > 0) {
-      flashlightWorldPos = hitForFlashlight[0].point.clone().normalize();
-      uniforms.cursorWorldPos.value.copy(flashlightWorldPos);
-      uniforms.uCursorOnGlobe.value = true;
-    } else {
-      flashlightWorldPos = null;
-      uniforms.uCursorOnGlobe.value = false;
+    // Reset hover state when pointer leaves the globe
+    if (!uniforms.uCursorOnGlobe.value) {
+      resetHighlightUniforms(uniforms);
+      appState.hoverIdState = {
+        currentHoveredId: -1,
+        previousHoveredId: -1,
+        fadeIn: 0,
+        fadeOut: 0,
+        currentHoveredOceanId: -1,
+        previousHoveredOceanId: -1,
+        fadeInOcean: 0,
+        fadeOutOcean: 0,
+      };
     }
 
-    if (doRaycast) {
-      lastRaycastTime = now;
-
-      raycaster.setFromCamera(pointer, camera);
-      const hits = raycaster.intersectObject(globeRaycastMesh, false); // false = no recursion
-
-      if (hits.length > 0) {
-        const hitPoint = hits[0].point.clone().normalize();
-        globeIntersection = hitPoint;
-
-        const longitude = Math.atan2(hitPoint.z, hitPoint.x);
-        const latitude = Math.asin(hitPoint.y);
-
-        const correctedLongitude = longitude + targetRotation;
-        const u = MathUtils.euclideanModulo(
-          0.5 - correctedLongitude / (2.0 * Math.PI),
-          1.0
-        );
-        const v = MathUtils.clamp(0.5 + latitude / Math.PI, 0, 1);
-
-        currentUV = new Vector2(u, v);
-        uniforms.uCursorOnGlobe.value = true;
-      } else {
-        currentUV = null;
-        uniforms.uCursorOnGlobe.value = false;
-      }
-    } else if (!pointerActive) {
-      currentUV = null;
-      uniforms.uCursorOnGlobe.value = false;
+    lastRaycastTime = updatedLastRaycastTime;
+    flashlightWorldPos = newFlashlightPos;
+    if (uvUpdated && newUV) {
+      currentUV = newUV;
     }
 
-    // Atmosphere + Rotation Speed Updates
-    const distance = camera.position.distanceTo(controls.target);
-    const normalizedZoom = (distance - CONFIG.zoom.min) / zoomRange;
-
-    controls.rotateSpeed = MathUtils.clamp(
-      CONFIG.interaction.rotateSpeed.base +
-        normalizedZoom * CONFIG.interaction.rotateSpeed.scale,
-      CONFIG.interaction.rotateSpeed.min,
-      CONFIG.interaction.rotateSpeed.max
-    );
-
-    controls.zoomSpeed = MathUtils.clamp(
-      CONFIG.interaction.zoomSpeed.base +
-        normalizedZoom * CONFIG.interaction.zoomSpeed.scale,
-      CONFIG.interaction.zoomSpeed.min,
-      CONFIG.interaction.zoomSpeed.max
-    );
-
-    atmosphereMaterial.uniforms.uCameraDistance.value = distance;
-
-    // const sunDirWorld = getSunDirectionWorld();
-    const sunDirWorld = getSunDirectionWorld(simulatedDate);
-    const sunDirWithTilt = sunDirWorld
-      .clone()
-      .applyQuaternion(tiltGroup.quaternion); // Apply the globe’s tilt
-    uniforms.lightDirection.value.copy(sunDirWithTilt);
-
-    atmosphereMaterial.uniforms.uLightDirection.value.copy(
-      uniforms.lightDirection.value
-    );
-
+    updateCameraControls(camera, controls, atmosphereMaterial, uniforms);
     updateKeyboardRef.fn(delta);
     controls.update();
 
-    // Country / Ocean Hover Updates
-    let newHoveredId = -1;
-    if (hoverReadyRef.current && userHasMovedPointer() && currentUV) {
-      type HoverResult = { id: number; position: Vector3 | null };
-      let countryResult: HoverResult = { id: -1, position: null };
-      let oceanResult: HoverResult = { id: -1, position: null };
-
-      if (currentUV) {
-        if (appState.countryInteractivity) {
-          countryResult = updateHoveredCountry(
-            currentUV,
-            globe.material as ShaderMaterial
-          );
-        }
-        if (appState.oceanInteractivity) {
-          oceanResult = updateHoveredOcean(currentUV);
-        }
-      }
-
-      if (countryResult.id > 0) {
-        newHoveredId = countryResult.id;
-        currentHoveredOceanId = -1;
-      } else if (oceanResult.id >= 10000) {
-        newHoveredId = oceanResult.id;
-        currentHoveredOceanId = oceanResult.id;
-      } else {
-        newHoveredId = -1;
-        currentHoveredOceanId = -1;
-      }
-    } else {
-      currentHoveredId = -1;
-      currentHoveredOceanId = -1;
-
-      uniforms.hoveredCountryId.value = 0;
-      uniforms.hoveredOceanId.value = 0;
-      uniforms.highlightFadeIn.value = 0;
-      uniforms.highlightFadeOut.value = 0;
-    }
-
-    // --- Hover State Transitions ---
-    if (newHoveredId !== currentHoveredId) {
-      if (currentHoveredId > 0 && currentHoveredId < 10000) {
-        previousHoveredId = currentHoveredId;
-        fadeOut = fadeIn;
-        fadeIn = 0;
-        previousHoveredOceanId = 0;
-        fadeOutOcean = 0;
-      } else if (currentHoveredId >= 10000) {
-        previousHoveredOceanId = currentHoveredId;
-        fadeOutOcean = fadeInOcean;
-        fadeInOcean = 0;
-        previousHoveredId = 0;
-        fadeOut = 0;
-      }
-      currentHoveredId = newHoveredId;
-
-      uniforms.hoveredCountryId.value =
-        currentHoveredId > 0 && currentHoveredId < 10000 ? currentHoveredId : 0;
-      uniforms.hoveredOceanId.value =
-        currentHoveredId >= 10000 ? currentHoveredId : 0;
-    }
-
-    // Fade Logic
-    if (currentHoveredId > 0 && currentHoveredId < 10000) {
-      fadeIn = Math.min(fadeIn + delta * CONFIG.fade.highlight, 1);
-    }
-    if (fadeOut > 0) {
-      fadeOut = Math.max(fadeOut - delta * CONFIG.fade.highlight, 0);
-    }
-    if (currentHoveredId >= 10000) {
-      fadeInOcean = Math.min(fadeInOcean + delta * CONFIG.fade.highlight, 1);
-    }
-    if (
-      previousHoveredOceanId >= 10000 &&
-      previousHoveredOceanId !== currentHoveredOceanId
-    ) {
-      fadeOutOcean = Math.max(fadeOutOcean - delta * CONFIG.fade.highlight, 0);
-    }
-
-    // Label Updates
-    hideAll3DLabelsExcept(
-      [...selectedCountryIds, currentHoveredId].filter(
-        (id) => id > 0 && id < 10000
-      )
-    );
-    hideAll3DOceanLabelsExcept(
-      [...selectedOceanIds, currentHoveredId].filter((id) => id >= 10000)
+    appState.hoverIdState = updateHoveredEntities(
+      currentUV,
+      globe.material as ShaderMaterial,
+      hoverReadyRef.current && userHasMovedPointer(),
+      appState.hoverIdState,
+      delta,
+      uniforms
     );
 
-    if (
-      currentHoveredId > 0 &&
-      currentHoveredId < 10000 &&
-      !selectedCountryIds.has(currentHoveredId)
-    ) {
-      update3DLabel(currentHoveredId, camera, fadeIn);
-    } else if (
-      currentHoveredId >= 10000 &&
-      !selectedOceanIds.has(currentHoveredId)
-    ) {
-      const ocean = CONFIG.oceanHover.oceanCenters[currentHoveredId];
-      if (ocean) {
-        update3DOceanLabel(
-          currentHoveredId,
-          ocean.name,
-          ocean.lat,
-          ocean.lon,
-          camera,
-          fadeInOcean
-        );
-      }
-    }
+    updateCountryBorderVisibility(selectedCountryIds, appState.hoverIdState);
+    updateOceanBorderVisibility(selectedOceanIds, appState.hoverIdState);
 
-    for (const id of selectedOceanIds) {
-      if (id !== currentHoveredId) {
-        const ocean = CONFIG.oceanHover.oceanCenters[id];
-        if (ocean) {
-          update3DOceanLabel(
-            id,
-            ocean.name,
-            ocean.lat,
-            ocean.lon,
-            camera,
-            selectedOceanFadeIn[oceanIdToIndex[id]]
-          );
-        }
-      }
-    }
+    update3DLabels(
+      camera,
+      appState.hoverIdState,
+      selectedCountryIds,
+      selectedOceanIds,
+      selectedOceanFadeIn,
+      delta
+    );
 
-    updateSelectionTexture(
+    appState.lastSelectedCountryIds = new Set(selectedCountryIds);
+    appState.lastHoveredCountryId = appState.hoverIdState.currentHoveredId;
+    appState.lastPreviousHoveredId = appState.hoverIdState.previousHoveredId;
+
+    updateSelectionTextures(
       selectedFadeIn,
       selectedFlags,
       selectedData,
       uniforms.selectedMask.value as DataTexture,
-      delta
-    );
-    updateSelectionTexture(
       selectedOceanFadeIn,
       selectedOceanFlags,
       selectedOceanData,
@@ -520,26 +202,7 @@ export function createAnimateLoop({
       delta
     );
 
-    if (hoverReadyRef.current) {
-      uniforms.hoveredCountryId.value =
-        currentHoveredId < 10000 ? currentHoveredId : 0;
-      uniforms.hoveredOceanId.value =
-        currentHoveredId >= 10000 ? currentHoveredId : 0;
-      uniforms.previousHoveredId.value = previousHoveredId;
-      uniforms.previousHoveredOceanId.value = previousHoveredOceanId;
-      uniforms.highlightFadeIn.value =
-        currentHoveredId >= 10000 ? fadeInOcean : fadeIn;
-      uniforms.highlightFadeOut.value =
-        currentHoveredId >= 10000 ? fadeOutOcean : fadeOut;
-    } else {
-      uniforms.hoveredCountryId.value = 0;
-      uniforms.hoveredOceanId.value = 0;
-      uniforms.previousHoveredId.value = 0;
-      uniforms.previousHoveredOceanId.value = 0;
-      uniforms.highlightFadeIn.value = 0;
-      uniforms.highlightFadeOut.value = 0;
-    }
-
+    updateUniforms(uniforms, hoverReadyRef.current, appState.hoverIdState);
     uniforms.cameraDirection.value.copy(camera.position).normalize();
 
     if (getBackgroundMode()) {

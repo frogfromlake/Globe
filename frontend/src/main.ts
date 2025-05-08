@@ -50,6 +50,7 @@
 
   loadingScreen.classList.add("fade-out");
   appContainer.classList.add("visible");
+  document.body.classList.add("ready");
 
   setTimeout(() => {
     loadingScreen.remove();

@@ -19,7 +19,7 @@ export const CONFIG = {
     /** Field of view in degrees for the perspective camera */
     fov: 50,
     /** Near clipping plane distance */
-    near: 0.1,
+    near: 0.15,
     /** Far clipping plane distance */
     far: 1000,
     /** Initial camera position in 3D space */
@@ -54,6 +54,12 @@ export const CONFIG = {
     widthSegments: 128,
     /** Vertical resolution (latitude segments) */
     heightSegments: 128,
+  },
+
+  borders: {
+    countryBorderThickness: 0.001,
+    oceanBorderThickness: 0.001,
+    oceanBorderColor: "white",
   },
 
   stars: {
@@ -336,7 +342,7 @@ export const CONFIG = {
     /** Glow effect for text labels */
     glow: {
       /** Shadow color for glow effect */
-      shadowColor: "rgba(0, 140, 255, 0.2)",
+      shadowColor: "rgba(0, 14, 23, 0.91)",
       /** Shadow blur radius in pixels */
       shadowBlur: 20,
       /** Fill color for label text */

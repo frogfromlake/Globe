@@ -3,7 +3,7 @@
  * @description Sets up the WebGL renderer with performance-conscious defaults and resize behavior.
  */
 
-import { WebGLRenderer, PerspectiveCamera, NoToneMapping } from "three";
+import { WebGLRenderer, PerspectiveCamera, NoToneMapping, ACESFilmicToneMapping } from "three";
 import { CONFIG } from "@/configs/config";
 
 /**
@@ -26,6 +26,7 @@ export function initializeRenderer(camera: PerspectiveCamera): WebGLRenderer {
     depth: true, // Keep if needed for 3D depth (true by default)
     preserveDrawingBuffer: false, // Only needed for screenshots
   });
+  renderer.setClearColor(0x000000, 1); // or 0x0d0d1a for "deep space"
 
   // Disable dev-only checks in production
   renderer.debug.checkShaderErrors = !!CONFIG.renderer.checkShaderErrors;
@@ -35,6 +36,9 @@ export function initializeRenderer(camera: PerspectiveCamera): WebGLRenderer {
 
   // Disable tone mapping unless you need HDR
   renderer.toneMapping = NoToneMapping;
+
+  renderer.toneMapping = ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 1.2;
 
   // Configure resolution
   const pixelRatio =

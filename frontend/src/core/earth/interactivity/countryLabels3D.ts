@@ -8,7 +8,6 @@ import {
   PerspectiveCamera,
   LinearFilter,
   Object3D,
-  SpriteMaterial,
   Vector2,
 } from "three";
 import { countryMeta } from "@/core/data/countryMeta";
@@ -29,17 +28,6 @@ type LabelObject = {
 
 export const countryLabelGroup = new Group();
 const labelObjects = new Map<number, LabelObject>();
-
-let fontLoaded = false;
-async function loadFontIfNeeded(): Promise<void> {
-  if (!fontLoaded) {
-    await document.fonts.ready;
-    await document.fonts.load(
-      `normal 400 ${CONFIG.labels3D.canvasFontSize}px '${CONFIG.labels3D.fontFamily}'`
-    );
-    fontLoaded = true;
-  }
-}
 
 export function init3DCountryLabels(camera: PerspectiveCamera): void {
   // === Pre-create all country labels ===
@@ -87,6 +75,9 @@ export async function createTextSprite(
   ctx.textBaseline = "top";
   ctx.shadowColor = glow.shadowColor;
   ctx.shadowBlur = glow.shadowBlur;
+  ctx.lineWidth = 35; // Thickness of the outline
+  ctx.strokeStyle = "black"; // Outline color
+  ctx.strokeText(message, 0, 0); // Draw stroke first
   ctx.fillStyle = glow.fillStyle;
   ctx.fillText(message, 0, 0);
 
@@ -103,7 +94,12 @@ export async function createTextSprite(
 }
 
 /**
- * Creates or updates the label for a given country.
+ * Updates or creates a 3D label for the given country using camera-aware scale and position.
+ *
+ * @param countryId - ISO-based country ID from countryMeta
+ * @param camera - Current camera (for zoom-based sizing)
+ * @param fade - Opacity from 0.0 to 1.0
+ * @param resolution - Optional screen resolution (used for line material)
  */
 export async function update3DLabel(
   countryId: number,
@@ -116,18 +112,14 @@ export async function update3DLabel(
 
   if (!labelObjects.has(countryId)) {
     const sprite = await createTextSprite(entry.name, false);
-    const geometry = new LineGeometry();
-    geometry.setPositions([0, 0, 0, 0, 0, 0]);
-
-    const lineMaterial = createLabelLineMaterial(false);
-    const line = new Line2(geometry, lineMaterial);
+    const geometry = new LineGeometry().setPositions([0, 0, 0, 0, 0, 0]);
+    const line = new Line2(geometry, createLabelLineMaterial(false));
     line.computeLineDistances();
 
     const group = new Group();
-    group.add(sprite);
-    group.add(line as unknown as Object3D);
+    group.add(sprite, line as Object3D);
     line.renderOrder = 0;
-    sprite.renderOrder = 1;
+    sprite.renderOrder = 3;
 
     countryLabelGroup.add(group);
     labelObjects.set(countryId, { sprite, line, group });
@@ -141,6 +133,7 @@ export async function update3DLabel(
     CONFIG.labels3D.markerRadius
   );
   const center = new Vector3().setFromSphericalCoords(radius, phi, theta);
+  const direction = center.clone().normalize();
 
   const cameraDistance = camera.position.length();
   const offset = MathUtils.mapLinear(
@@ -151,15 +144,16 @@ export async function update3DLabel(
     CONFIG.labels3D.offsetRange.max
   );
 
-  const direction = center.clone().normalize();
   const labelPos = center.clone().add(direction.multiplyScalar(offset));
-
   sprite.position.copy(labelPos);
   sprite.material.opacity = fade;
 
-  const baseScale = CONFIG.labels3D.spriteScale;
   const canvas = sprite.material.map?.image as HTMLCanvasElement;
-  const aspect = canvas.width / canvas.height || 2.5;
+  const aspect =
+    canvas && canvas.width > 0 && canvas.height > 0
+      ? canvas.width / canvas.height
+      : 2.5;
+
   const scaleFactor = MathUtils.mapLinear(
     cameraDistance,
     CONFIG.labels3D.zoomRange.min,
@@ -168,25 +162,23 @@ export async function update3DLabel(
     5.0
   );
 
+  const baseScale = CONFIG.labels3D.spriteScale;
   sprite.scale.set(
     aspect * baseScale * scaleFactor,
     baseScale * scaleFactor,
     1
   );
-  sprite.lookAt(camera.position); // Ensures label always faces camera
+  sprite.lookAt(camera.position);
   group.rotation.set(0, 0, 0);
-  group.quaternion.identity(); // Prevent any inherited rotation
-
-  const top = labelPos;
-  const bottom = center;
+  group.quaternion.identity();
 
   (line.geometry as LineGeometry).setPositions([
-    bottom.x,
-    bottom.y,
-    bottom.z,
-    top.x,
-    top.y,
-    top.z,
+    center.x,
+    center.y,
+    center.z,
+    labelPos.x,
+    labelPos.y,
+    labelPos.z,
   ]);
   line.computeLineDistances();
 
@@ -194,10 +186,7 @@ export async function update3DLabel(
   mat.opacity = fade;
   mat.resolution.copy(resolution);
 
-  const shouldBeVisible = fade > 0.01;
-  if (group.visible !== shouldBeVisible) {
-    group.visible = shouldBeVisible;
-  }
+  group.visible = fade > 0.01;
 }
 
 /**
