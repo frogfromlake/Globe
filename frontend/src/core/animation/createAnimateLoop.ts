@@ -95,8 +95,14 @@ export function createAnimateLoop({
 
   const atmosphereMaterial = atmosphere.material as ShaderMaterial;
   resetHighlightUniforms(uniforms);
+  let firstRender = true;
 
   function animate(): void {
+    if (firstRender) {
+      performance.mark("first-frame-rendered");
+      firstRender = false;
+    }
+
     const now = performance.now();
     const delta = (now - lastFrameTime) / 1000;
     lastFrameTime = now;

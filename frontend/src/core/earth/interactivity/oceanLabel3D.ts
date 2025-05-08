@@ -38,7 +38,8 @@ export function init3DOceanLabelsDeferred(camera: Camera): void {
       }
     }
 
-    requestIdleCallback(() => chunkedInit(i + 5));
+    // Let the frame render before continuing
+    setTimeout(() => chunkedInit(i + 5), 0);
   }
 
   chunkedInit();

@@ -22,24 +22,10 @@
 
   setLoadingSubtitle("Initializing orbital launch sequence...");
 
-  const { animate, waitForEssentialTextures } = await startApp(
-    setLoadingSubtitle
-  );
+  const { waitForEssentialTextures, waitUntilInteractiveReady } =
+    await startApp(setLoadingSubtitle);
 
-  await waitForEssentialTextures; // Ensure visuals are ready before fade-out
-
-  performance.mark("start-app-done");
-  performance.measure("App Init", "start-app-init", "start-app-done");
-
-  const [entry] = performance.getEntriesByName("App Init");
-  console.log(
-    `📈 %cApp Init took ${entry.duration.toFixed(2)} ms`,
-    "color: #4caf50; font-weight: bold"
-  );
-
-  inject();
-  injectSpeedInsights();
-
+  // Begin fading out loader immediately after first globe render
   const loadingScreen = document.getElementById("loading-screen");
   const appContainer = document.getElementById("app-container");
 
@@ -52,8 +38,73 @@
   appContainer.classList.add("visible");
   document.body.classList.add("ready");
 
-  setTimeout(() => {
+  // Remove loading screen after transition ends (no hardcoded delay)
+  loadingScreen.addEventListener("transitionend", () => {
     loadingScreen.remove();
-    animate();
-  }, 400);
+
+    requestAnimationFrame(() => {
+      console.log("🌀 Frame rendered post-fade");
+    });
+  });
+
+  // Optionally show subtitle update when core visuals are loaded
+  await waitForEssentialTextures;
+  setLoadingSubtitle("Enhancing visuals...");
+
+  await waitUntilInteractiveReady;
+  setLoadingSubtitle("Ready for liftoff...");
+
+  // === Performance Markers ===
+  performance.mark("start-app-done");
+
+  performance.measure(
+    "1. Basic Init",
+    "start-app-init",
+    "startApp:basic-init-done"
+  );
+  performance.measure(
+    "2. Scene Setup",
+    "startApp:basic-init-done",
+    "startApp:core-scene-ready"
+  );
+  // performance.measure("3. Visual Fade-In", "fade-in-start", "fade-in-end");
+  performance.measure(
+    "4. Ready for Interaction",
+    "startApp:core-scene-ready",
+    "startApp:interactive-ready"
+  );
+  performance.measure("5. Total App Init", "start-app-init", "start-app-done");
+  performance.measure(
+    "First Frame Delay",
+    "start-app-init",
+    "first-frame-rendered"
+  );
+  performance.measure("App Init", "start-app-init", "start-app-done");
+
+  // === Display Results ===
+  setTimeout(() => {
+    const [entry] = performance.getEntriesByName("App Init");
+    console.log(
+      `📈 %cApp Init took ${entry.duration.toFixed(2)} ms`,
+      "color: #4caf50; font-weight: bold"
+    );
+
+    const allMeasures = performance.getEntriesByType("measure");
+
+    console.group("📊 OrbitalOne Startup Breakdown");
+    console.table(
+      allMeasures
+        .filter((entry) => entry.name.match(/^\d/)) // only steps with numbered names
+        .map(({ name, duration }) => ({
+          Step: name,
+          Duration: `${duration.toFixed(2)} ms`,
+        }))
+    );
+    console.groupEnd();
+  }, 0);
+
+  inject();
+  injectSpeedInsights();
+
+  // Animate loop was already started in startApp()
 })();

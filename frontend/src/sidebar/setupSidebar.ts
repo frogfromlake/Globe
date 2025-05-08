@@ -44,7 +44,7 @@ export async function setupSettingsPanel(
   tiltGroup: Group<Object3DEventMap>,
   cloudSphere: Mesh,
   auroraMesh: Mesh,
-  locationSearchInput: HTMLInputElement,
+  locationSearchInput: HTMLInputElement | null,
   camera: PerspectiveCamera,
   controls: OrbitControls,
   selectedFadeIn: Float32Array<ArrayBuffer>,

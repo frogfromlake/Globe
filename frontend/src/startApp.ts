@@ -37,7 +37,6 @@ import {
 import { loadCoreTextures } from "@/core/earth/init/initializeTextures";
 import { enhanceSceneObjects } from "./core/scene/enhanceSceneObjects";
 import { setupCoreSceneObjects } from "./core/scene/setupCoreSceneObjects";
-import { CONFIG } from "./configs/config";
 
 if (typeof window.requestIdleCallback !== "function") {
   window.requestIdleCallback = function (
@@ -74,10 +73,14 @@ fallbackTexture.needsUpdate = true;
 // Hover interactivity is disabled until RGB ID maps are ready
 const hoverReadyRef = { current: false };
 
-// Inside startApp function
 let resolveEssentialTextures: () => void;
 const waitForEssentialTextures = new Promise<void>((resolve) => {
   resolveEssentialTextures = resolve;
+});
+
+let resolveInteractiveReady: () => void;
+const waitUntilInteractiveReady = new Promise<void>((resolve) => {
+  resolveInteractiveReady = resolve;
 });
 
 /**
@@ -103,7 +106,7 @@ export async function startApp(updateSubtitle: (text: string) => void) {
   // === Pointer & Raycasting ===
   const raycaster = new Raycaster();
   const pointer = new Vector2();
-  requestIdleCallback(function setupPointerTrackingIdle() {
+  queueMicrotask(() => {
     setupPointerMoveTracking();
     performance.mark("pointer-tracking-ready");
   });
@@ -116,11 +119,14 @@ export async function startApp(updateSubtitle: (text: string) => void) {
   // === Load UI element reference
   const locationSearchInput = document.getElementById(
     "country-search"
-  ) as HTMLInputElement;
+  ) as HTMLInputElement | null;
+  if (!locationSearchInput) {
+    console.warn("Missing #country-search input — skipping related setup.");
+  }
 
   // === Load Core (Lightweight) Textures ===
   const { countryIdMapTexture, oceanIdMapTexture } = await loadCoreTextures();
-
+  performance.mark("startApp:basic-init-done");
   let animate = () => {};
 
   // === Initialize Uniforms with temporary placeholder maps ===
@@ -157,6 +163,7 @@ export async function startApp(updateSubtitle: (text: string) => void) {
   // === Enhance Scene and Load Settings ===
   const { atmosphere, cloudSphere, starSphere, auroraMesh, subsolarMarker } =
     enhanceSceneObjects(scene, uniforms, tiltGroup, new Texture());
+  performance.mark("startApp:core-scene-ready");
 
   const { setupSettingsPanel } = await import("./sidebar/setupSidebar");
   const { getBackgroundMode } = await setupSettingsPanel(
@@ -205,6 +212,7 @@ export async function startApp(updateSubtitle: (text: string) => void) {
     subsolarMarker,
     hoverReadyRef,
   });
+  renderer.setAnimationLoop(animate);
 
   // Ensure no initial hover or selection state
   uniforms.hoveredCountryId.value = 0;
@@ -246,49 +254,45 @@ export async function startApp(updateSubtitle: (text: string) => void) {
 
   // === Schedule heavy loading work in idle phases
   // === High Priority Idle Tasks (Visuals & Interactivity) ===
-  requestIdleCallback(async () => {
+  // === Schedule visual texture loading (priority 0)
+  // === Texture loading (formerly idleTask priority 0)
+  setTimeout(async () => {
     performance.mark("idle-load-visual-textures-start");
-
     const texMod = await import("@/core/earth/init/initializeTextures");
 
-    // Load essential textures FIRST, then resolve startup
-    const day = texMod.loadDayTexture(renderer);
-    const night = texMod.loadNightTexture(renderer);
-
-    uniforms.dayTexture.value = await day;
-    uniforms.nightTexture.value = await night;
+    // 🌍 Load main Earth day/night textures
+    uniforms.dayTexture.value = await texMod.loadDayTexture(renderer);
+    uniforms.nightTexture.value = await texMod.loadNightTexture(renderer);
 
     if (globe.material) {
-      const updateMat = (mat: any) => {
-        mat.needsUpdate = true;
-      };
+      const updateMat = (mat: any) => (mat.needsUpdate = true);
       Array.isArray(globe.material)
         ? globe.material.forEach(updateMat)
         : updateMat(globe.material);
     }
 
-    // Load star map and fade in
+    // 🌌 Load sky background
     const esoSkyMapTexture = await texMod.loadSkyMapTexture();
     if (starSphere.material instanceof ShaderMaterial) {
       const starMaterial = starSphere.material;
       starMaterial.uniforms.uStarMap.value = esoSkyMapTexture;
       starMaterial.needsUpdate = true;
-
       starSphere.visible = true;
+
       let starFade = 0;
       let lastStarTime = performance.now();
-      const fade = (now = performance.now()) => {
+      const fade = () => {
+        const now = performance.now();
         const delta = (now - lastStarTime) / 1000;
         lastStarTime = now;
         starFade += delta * 0.1;
         starMaterial.uniforms.uStarFade.value = Math.min(starFade, 1);
-        starMaterial.needsUpdate = true;
         if (starFade < 1) requestAnimationFrame(fade);
       };
       fade();
     }
 
-    // Load clouds and fade in
+    // ☁️ Load cloud texture
     const cloudTexture = await texMod.loadCloudTexture(renderer);
     if (cloudTexture && cloudSphere.material instanceof ShaderMaterial) {
       cloudSphere.material.uniforms.uCloudMap.value = cloudTexture;
@@ -298,57 +302,73 @@ export async function startApp(updateSubtitle: (text: string) => void) {
 
     let fade = 0;
     let last = performance.now();
+    let fadeCompleted = false;
+
     const fadeInTextures = (now = performance.now()) => {
       const delta = (now - last) / 1000;
       last = now;
       fade += delta * 0.2;
+
       uniforms.uTextureFade.value = Math.min(fade, 1);
       if (cloudSphere.material instanceof ShaderMaterial) {
         cloudSphere.material.uniforms.uCloudFade.value = Math.min(fade, 1);
       }
-      if (fade < 1) requestAnimationFrame(fadeInTextures);
+
+      if (!fadeCompleted && fade >= 1) {
+        fadeCompleted = true;
+        performance.mark("fade-in-end");
+        performance.measure(
+          "3. Visual Fade-In",
+          "fade-in-start",
+          "fade-in-end"
+        );
+        resolveEssentialTextures();
+        runPostFadeTasks();
+      } else {
+        requestAnimationFrame(fadeInTextures); // continue loop
+      }
     };
 
-    fadeInTextures();
-    resolveEssentialTextures(); // Startup is visually ready now
-    setTimeout(() => {
-      renderer.setAnimationLoop(animate);
-    }, 0);
-  });
+    // 🎨 Begin fade-in now that all visuals are loaded
+    performance.mark("fade-in-start");
+    requestAnimationFrame(fadeInTextures);
+  }, 100);
 
-  // === Schedule label creation AFTER fonts have settled and layout has stabilized
-  requestIdleCallback(() => {
-    requestIdleCallback(async () => {
+  const runPostFadeTasks = () => {
+    // === Label setup
+    setTimeout(async () => {
       const { init3DCountryLabelsDeferred } = await import(
         "@/core/earth/interactivity/countryLabels3D"
       );
       const { init3DOceanLabelsDeferred } = await import(
         "@/core/earth/interactivity/oceanLabel3D"
       );
-
-      init3DCountryLabelsDeferred(camera); // uses chunked idle loops
+      init3DCountryLabelsDeferred(camera);
       init3DOceanLabelsDeferred(camera);
-    });
-  });
+    }, 100);
 
-  // === Medium Priority Idle Tasks (News, Controls) ===
-  requestIdleCallback(async function loadNewsPanel() {
-    const { initNewsPanel } = await import(
-      "./features/panels/news/handleNewsPanel"
-    );
-    initNewsPanel(selection.countryIds, selection.countryFlags);
-  });
+    // === News panel
+    setTimeout(async () => {
+      const { initNewsPanel } = await import(
+        "./features/panels/news/handleNewsPanel"
+      );
+      initNewsPanel(selection.countryIds, selection.countryFlags);
+    }, 300);
 
-  requestIdleCallback(async function loadKeyboardControls() {
-    const { setupKeyboardControls } = await import(
-      "./core/earth/controls/keyboardControls"
-    );
-    updateKeyboardRef.fn = setupKeyboardControls(camera, controls);
-  });
+    // === Keyboard controls
+    setTimeout(async () => {
+      const { setupKeyboardControls } = await import(
+        "./core/earth/controls/keyboardControls"
+      );
+      updateKeyboardRef.fn = setupKeyboardControls(camera, controls);
+      performance.mark("startApp:interactive-ready");
+      resolveInteractiveReady();
+    }, 500);
+  };
 
-  // === Low Priority Idle Tasks (Dev Tools Only) ===
-  requestIdleCallback(async function loadAdminPanel() {
-    if (import.meta.env.DEV) {
+  // === Dev tools: admin panel (formerly priority 5)
+  if (import.meta.env.DEV) {
+    setTimeout(async () => {
       const modules = import.meta.glob("../features/news/setupAdminPanel.ts");
       const load = modules["../features/news/setupAdminPanel.ts"];
       if (load) {
@@ -359,8 +379,8 @@ export async function startApp(updateSubtitle: (text: string) => void) {
           console.warn("🛠 Admin panel failed to load:", err);
         }
       }
-    }
-  });
+    }, 1400); // Dev panel last
+  }
 
   await runWithLoadingMessage(
     loadingMessages.countryTextures,
@@ -376,9 +396,11 @@ export async function startApp(updateSubtitle: (text: string) => void) {
 
   // === Defer hover activation until user interacts
   onPointerInteraction(() => {
-    hoverReadyRef.current = true;
-    uniforms.uHoverEnabled.value = true;
-    performance.mark("hover-ready-activated");
+    if (!hoverReadyRef.current) {
+      hoverReadyRef.current = true;
+      uniforms.uHoverEnabled.value = true;
+      performance.mark("hover-ready-activated");
+    }
   });
 
   // Zero out selection masks
@@ -389,7 +411,7 @@ export async function startApp(updateSubtitle: (text: string) => void) {
   selection.oceanFadeIn.fill(0);
   selection.oceanData.fill(0);
 
-  return { animate, waitForEssentialTextures };
+  return { animate, waitForEssentialTextures, waitUntilInteractiveReady };
 }
 
 /**

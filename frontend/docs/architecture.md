@@ -21,21 +21,14 @@ This document outlines the structured multi-phase boot process that prioritizes 
 
 ```mermaid
 graph TD
-  A[main.ts] --> B[startApp()]
-  B --> C[Initialize Camera, Renderer, Fallback Globe]
-  C --> D[setupSceneObjects()]
-  D --> E[Render Once for First Paint]
-  E --> F[loadCoreTextures() (ID Maps)]
-  F --> G[initializeUniforms()]
-  G --> H[runWithLoadingMessage() → Labels, Panels]
-  H --> I[idleCallback: loadAtmosphere + News Panel]
-  I --> J[idleCallback: loadVisualTextures() (day/night/cloud/sky)]
-  J --> K[idleCallback: assign uniforms + fadeInTextures()]
-  K --> L[idleCallback: fade in star background]
-  L --> M[idleCallback: startHoverSystem()]
-  M --> N[idleCallback: Load RGB ID canvas maps]
-  N --> O[Enable hover (hoverReady = true)]
-  O --> P[Call animate()]
+  A[main.ts] --> B[startApp() light mode]
+  B --> C[Renderer, Camera, fallback Globe]
+  C --> D[renderOnce()] --> E[Fade out loader early]
+  E --> F[Start async: load ID textures + uniforms]
+  F --> G[Run animate() — low detail]
+  G --> H[requestIdleCallback: Load high-res day/night]
+  H --> I[fadeIn day/night/clouds/star]
+  I --> J[Enable hover + update uniforms]
 ```
 
 ---

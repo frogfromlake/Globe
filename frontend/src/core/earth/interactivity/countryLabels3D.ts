@@ -36,7 +36,9 @@ export function init3DCountryLabelsDeferred(camera: Camera): void {
     if (i >= ids.length) return;
     const batch = ids.slice(i, i + 5);
     for (const id of batch) update3DLabel(id, camera, 0);
-    requestIdleCallback(() => chunkedInit(i + 5));
+
+    // Let the frame render before continuing
+    setTimeout(() => chunkedInit(i + 5), 0);
   }
 
   chunkedInit();

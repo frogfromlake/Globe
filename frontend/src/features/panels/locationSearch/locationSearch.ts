@@ -45,7 +45,7 @@ let targetTween: gsap.core.Tween | null = null;
  * @param selectedOceanFlags - Uint8Array to track selection states for oceans.
  */
 export function setupLocationSearch(
-  inputLocation: HTMLInputElement,
+  inputLocation: HTMLInputElement | null,
   camera: Camera,
   controls: any,
   selectedCountryIds: Set<number>,
@@ -86,7 +86,8 @@ export function setupLocationSearch(
     "suggestions"
   ) as HTMLUListElement;
 
-  inputLocation.addEventListener("input", () => {
+
+  inputLocation?.addEventListener("input", () => {
     const query = inputLocation.value.trim();
     suggestionsList.innerHTML = "";
 
@@ -119,7 +120,7 @@ export function setupLocationSearch(
 
   let activeIndex = -1;
 
-  inputLocation.addEventListener("keydown", (e) => {
+  inputLocation?.addEventListener("keydown", (e) => {
     const items = suggestionsList.querySelectorAll("li");
     if (!items.length) return;
 
