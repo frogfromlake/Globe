@@ -55,5 +55,5 @@
   setTimeout(() => {
     loadingScreen.remove();
     animate();
-  }, 600);
+  }, 400);
 })();

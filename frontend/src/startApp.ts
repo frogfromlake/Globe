@@ -88,12 +88,6 @@ const waitForEssentialTextures = new Promise<void>((resolve) => {
  * @returns Animation loop starter and a deferred hover activation function
  */
 export async function startApp(updateSubtitle: (text: string) => void) {
-  // === Wait for fonts to load and stabilize ===
-  await document.fonts.ready;
-  await document.fonts.load(
-    `normal 400 ${CONFIG.labels3D.canvasFontSize}px '${CONFIG.labels3D.fontFamily}'`
-  );
-
   // === State Stores for Country/Ocean Selection ===
   const selection = {
     countryIds: new Set<number>(),
@@ -319,7 +313,6 @@ export async function startApp(updateSubtitle: (text: string) => void) {
     resolveEssentialTextures(); // Startup is visually ready now
     setTimeout(() => {
       renderer.setAnimationLoop(animate);
-      renderer.render;
     }, 0);
   });
 
