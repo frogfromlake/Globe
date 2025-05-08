@@ -37,6 +37,7 @@ import {
 import { loadCoreTextures } from "@/core/earth/init/initializeTextures";
 import { enhanceSceneObjects } from "./core/scene/enhanceSceneObjects";
 import { setupCoreSceneObjects } from "./core/scene/setupCoreSceneObjects";
+import { loadBorderMeshesDeferred } from "./core/earth/borders/loadBorderMeshesDeferred";
 
 if (typeof window.requestIdleCallback !== "function") {
   window.requestIdleCallback = function (
@@ -212,7 +213,9 @@ export async function startApp(updateSubtitle: (text: string) => void) {
     subsolarMarker,
     hoverReadyRef,
   });
+
   renderer.setAnimationLoop(animate);
+  loadBorderMeshesDeferred(tiltGroup, scene);
 
   // Ensure no initial hover or selection state
   uniforms.hoveredCountryId.value = 0;
