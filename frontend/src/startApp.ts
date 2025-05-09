@@ -337,19 +337,7 @@ export async function startApp(updateSubtitle: (text: string) => void) {
     requestAnimationFrame(fadeInTextures);
   }, 100);
 
-  const runPostFadeTasks = () => {
-    // === Label setup
-    setTimeout(async () => {
-      const { init3DCountryLabelsDeferred } = await import(
-        "@/core/earth/interactivity/countryLabels3D"
-      );
-      const { init3DOceanLabelsDeferred } = await import(
-        "@/core/earth/interactivity/oceanLabel3D"
-      );
-      init3DCountryLabelsDeferred(camera);
-      init3DOceanLabelsDeferred(camera);
-    }, 100);
-
+  const runPostFadeTasks = () => {  
     // === News panel
     setTimeout(async () => {
       const { initNewsPanel } = await import(

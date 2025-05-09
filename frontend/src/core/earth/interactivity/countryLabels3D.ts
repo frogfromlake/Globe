@@ -5,7 +5,6 @@ import {
   Vector3,
   Camera,
   MathUtils,
-  PerspectiveCamera,
   LinearFilter,
   Object3D,
   Vector2,
@@ -20,126 +19,137 @@ import { Line2 } from "three/examples/jsm/lines/Line2.js";
 import { LineGeometry } from "three/examples/jsm/lines/LineGeometry.js";
 import { latLonToSphericalCoordsGeographic } from "@/core/earth/geo/coordinates";
 
+/** Group containing all country label 3D objects. */
+export const countryLabelGroup = new Group();
+
+/** Label object structure for sprite + connector line. */
 type LabelObject = {
   sprite: Sprite;
   line: Line2;
   group: Group;
+  lastFade: number;
+  lastCameraDist: number;
 };
 
+/** Canvas reuse pool. */
 const canvasPool: HTMLCanvasElement[] = [];
-export const countryLabelGroup = new Group();
 const labelObjects = new Map<number, LabelObject>();
 
-export function init3DCountryLabelsDeferred(camera: Camera): void {
-  const ids = Object.keys(countryMeta).map(Number);
-  let i = 0;
+const tmpResolution = new Vector2();
 
-  function chunkedInit(deadline: IdleDeadline) {
-    while (i < ids.length && deadline.timeRemaining() > 4) {
-      update3DLabel(ids[i], camera, 0);
-      i++;
-    }
+/**
+ * Lazily initializes a 3D label for a given country if it doesn't exist.
+ * Called only on demand.
+ */
+function ensureCountryLabelExists(countryId: number): LabelObject | null {
+  const entry = countryMeta[countryId];
+  if (!entry) return null;
+  if (labelObjects.has(countryId)) return labelObjects.get(countryId)!;
 
-    if (i < ids.length) {
-      requestIdleCallback(chunkedInit);
-    }
-  }
+  const sprite = createTextSprite(entry.name, false);
+  const geometry = new LineGeometry().setPositions([0, 0, 0, 0, 0, 0]);
+  const line = new Line2(geometry, createLabelLineMaterial(false));
+  line.computeLineDistances();
 
-  requestIdleCallback(chunkedInit);
+  const group = new Group();
+  group.add(sprite, line as Object3D);
+  line.renderOrder = 0;
+  sprite.renderOrder = 3;
+
+  countryLabelGroup.add(group);
+  const obj: LabelObject = {
+    sprite,
+    line,
+    group,
+    lastFade: -1,
+    lastCameraDist: -1,
+  };
+  labelObjects.set(countryId, obj);
+  return obj;
 }
 
 /**
  * Creates a styled canvas-based sprite used to display country names in 3D space.
- * The sprite includes shadow glow and proper scaling based on text dimensions.
- *
- * @param message - The country name text to render as a label.
- * @param isOcean - Boolean flag to distinguish between ocean and country labels
- * @returns A Promise that resolves to a THREE.Sprite with custom styling.
  */
 export function createTextSprite(message: string, isOcean: boolean): Sprite {
   const { canvasFontSize, fontFamily, glow, spriteScale } = CONFIG.labels3D;
 
   const canvas = canvasPool.pop() || document.createElement("canvas");
   const ctx = canvas.getContext("2d")!;
-  ctx.font = `${canvasFontSize}px '${fontFamily}', sans-serif`;
 
+  // 1. Measure using font
+  ctx.font = `${canvasFontSize}px '${fontFamily}', sans-serif`;
   const textWidth = ctx.measureText(message).width || 1;
   const height = canvasFontSize * 3.5;
 
-  canvas.width = Math.max(2, textWidth);
-  canvas.height = Math.max(2, height);
+  // 2. Resize canvas
+  canvas.width = Math.ceil(textWidth);
+  canvas.height = Math.ceil(height);
 
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  // 3. Re-apply all styles (they're wiped by canvas resize)
   ctx.font = `${canvasFontSize}px '${fontFamily}', sans-serif`;
   ctx.textBaseline = "top";
   ctx.shadowColor = glow.shadowColor;
   ctx.shadowBlur = glow.shadowBlur;
   ctx.lineWidth = 35;
   ctx.strokeStyle = "black";
-  ctx.strokeText(message, 0, 0);
   ctx.fillStyle = glow.fillStyle;
+
+  // 4. Draw text
+  ctx.strokeText(message, 0, 0);
   ctx.fillText(message, 0, 0);
 
+  // 5. Create sprite
   const texture = new CanvasTexture(canvas);
   texture.minFilter = LinearFilter;
   texture.needsUpdate = true;
 
   const material = createLabelSpriteMaterial(texture, isOcean);
   const sprite = new Sprite(material);
-  const aspect = canvas.width / canvas.height || 2.5;
 
+  const aspect = canvas.width / canvas.height || 2.5;
   sprite.scale.set(aspect * spriteScale, spriteScale, 1);
 
-  // Return canvas to the pool on texture disposal (optional safety)
-  texture.onUpdate = () => {
-    canvasPool.push(canvas);
-  };
+  texture.onUpdate = () => canvasPool.push(canvas);
 
+  (sprite as any).__aspect = aspect; // Save it
   return sprite;
 }
 
 /**
- * Updates or creates a 3D label for the given country using camera-aware scale and position.
- *
- * @param countryId - ISO-based country ID from countryMeta
- * @param camera - Current camera (for zoom-based sizing)
- * @param fade - Opacity from 0.0 to 1.0
- * @param resolution - Optional screen resolution (used for line material)
+ * Updates or creates a 3D label for the given country with position, scaling, and fade.
  */
 export function update3DLabel(
   countryId: number,
   camera: Camera,
   fade: number,
-  resolution: Vector2 = new Vector2(window.innerWidth, window.innerHeight)
+  resolution: Vector2 = tmpResolution.set(window.innerWidth, window.innerHeight)
 ): void {
   const entry = countryMeta[countryId];
   if (!entry) return;
 
-  if (!labelObjects.has(countryId)) {
-    const sprite = createTextSprite(entry.name, false);
-    const geometry = new LineGeometry().setPositions([0, 0, 0, 0, 0, 0]);
-    const line = new Line2(geometry, createLabelLineMaterial(false));
-    line.computeLineDistances();
+  const obj = ensureCountryLabelExists(countryId);
+  if (!obj) return;
 
-    const group = new Group();
-    group.add(sprite, line as Object3D);
-    line.renderOrder = 0;
-    sprite.renderOrder = 3;
-
-    countryLabelGroup.add(group);
-    labelObjects.set(countryId, { sprite, line, group });
-  }
-
-  const { sprite, line, group } = labelObjects.get(countryId)!;
+  const { sprite, line, group } = obj;
   const { phi, theta, radius } = latLonToSphericalCoordsGeographic(
     entry.lat,
     entry.lon,
     CONFIG.labels3D.markerRadius
   );
+
   const center = new Vector3().setFromSphericalCoords(radius, phi, theta);
   const direction = center.clone().normalize();
-
   const cameraDistance = camera.position.length();
+
+  // Avoid re-updating unless fade or camera distance meaningfully changes
+  const fadeDelta = Math.abs(obj.lastFade - fade);
+  const distDelta = Math.abs(obj.lastCameraDist - cameraDistance);
+
+  if (fadeDelta < 0.01 && distDelta < 0.5) return;
+  obj.lastFade = fade;
+  obj.lastCameraDist = cameraDistance;
+
   const offset = MathUtils.mapLinear(
     cameraDistance,
     CONFIG.labels3D.zoomRange.min,
@@ -152,8 +162,7 @@ export function update3DLabel(
   sprite.position.copy(labelPos);
   sprite.material.opacity = fade;
 
-  const canvas = sprite.material.map?.image as HTMLCanvasElement;
-  const aspect = canvas?.width / canvas?.height || 2.5;
+  const aspect = (sprite as any).__aspect || 2.5;
   const scaleFactor = MathUtils.mapLinear(
     cameraDistance,
     CONFIG.labels3D.zoomRange.min,
@@ -169,8 +178,6 @@ export function update3DLabel(
     1
   );
   sprite.lookAt(camera.position);
-  group.rotation.set(0, 0, 0);
-  group.quaternion.identity();
 
   (line.geometry as LineGeometry).setPositions([
     center.x,
@@ -189,7 +196,9 @@ export function update3DLabel(
   group.visible = fade > 0.01;
 }
 
-/** Hides all 3D country labels from the scene. */
+/**
+ * Hides all 3D country labels from the scene.
+ */
 export function hideAll3DLabels(): void {
   for (const { group, sprite, line } of labelObjects.values()) {
     group.visible = false;
@@ -203,7 +212,6 @@ export function hideAll3DLabels(): void {
  */
 export function hideAll3DLabelsExcept(idsToKeep: number[] = []): void {
   for (const [id, { group }] of labelObjects.entries()) {
-    const shouldShow = idsToKeep.includes(id);
-    if (group.visible !== shouldShow) group.visible = shouldShow;
+    group.visible = idsToKeep.includes(id);
   }
 }
