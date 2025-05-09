@@ -67,7 +67,6 @@
     "startApp:basic-init-done",
     "startApp:core-scene-ready"
   );
-  // performance.measure("3. Visual Fade-In", "fade-in-start", "fade-in-end");
   performance.measure(
     "4. Ready for Interaction",
     "startApp:core-scene-ready",

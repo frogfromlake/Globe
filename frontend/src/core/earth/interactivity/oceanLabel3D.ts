@@ -26,23 +26,24 @@ const labelObjectsOcean = new Map<number, LabelObject>();
  */
 export function init3DOceanLabelsDeferred(camera: Camera): void {
   const ids = Object.keys(oceanCenters).map(Number);
+  let i = 0;
 
-  function chunkedInit(i = 0) {
-    if (i >= ids.length) return;
-    const batch = ids.slice(i, i + 5);
-
-    for (const id of batch) {
+  function chunkedInit(deadline: IdleDeadline) {
+    while (i < ids.length && deadline.timeRemaining() > 4) {
+      const id = ids[i];
       const ocean = oceanCenters[id];
       if (ocean) {
         update3DOceanLabel(id, ocean.name, ocean.lat, ocean.lon, camera, 0);
       }
+      i++;
     }
 
-    // Let the frame render before continuing
-    setTimeout(() => chunkedInit(i + 5), 0);
+    if (i < ids.length) {
+      requestIdleCallback(chunkedInit);
+    }
   }
 
-  chunkedInit();
+  requestIdleCallback(chunkedInit);
 }
 
 /**

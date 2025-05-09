@@ -26,22 +26,26 @@ type LabelObject = {
   group: Group;
 };
 
+const canvasPool: HTMLCanvasElement[] = [];
 export const countryLabelGroup = new Group();
 const labelObjects = new Map<number, LabelObject>();
 
 export function init3DCountryLabelsDeferred(camera: Camera): void {
   const ids = Object.keys(countryMeta).map(Number);
+  let i = 0;
 
-  function chunkedInit(i = 0) {
-    if (i >= ids.length) return;
-    const batch = ids.slice(i, i + 5);
-    for (const id of batch) update3DLabel(id, camera, 0);
+  function chunkedInit(deadline: IdleDeadline) {
+    while (i < ids.length && deadline.timeRemaining() > 4) {
+      update3DLabel(ids[i], camera, 0);
+      i++;
+    }
 
-    // Let the frame render before continuing
-    setTimeout(() => chunkedInit(i + 5), 0);
+    if (i < ids.length) {
+      requestIdleCallback(chunkedInit);
+    }
   }
 
-  chunkedInit();
+  requestIdleCallback(chunkedInit);
 }
 
 /**
@@ -55,7 +59,7 @@ export function init3DCountryLabelsDeferred(camera: Camera): void {
 export function createTextSprite(message: string, isOcean: boolean): Sprite {
   const { canvasFontSize, fontFamily, glow, spriteScale } = CONFIG.labels3D;
 
-  const canvas = document.createElement("canvas");
+  const canvas = canvasPool.pop() || document.createElement("canvas");
   const ctx = canvas.getContext("2d")!;
   ctx.font = `${canvasFontSize}px '${fontFamily}', sans-serif`;
 
@@ -65,6 +69,7 @@ export function createTextSprite(message: string, isOcean: boolean): Sprite {
   canvas.width = Math.max(2, textWidth);
   canvas.height = Math.max(2, height);
 
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
   ctx.font = `${canvasFontSize}px '${fontFamily}', sans-serif`;
   ctx.textBaseline = "top";
   ctx.shadowColor = glow.shadowColor;
@@ -84,6 +89,12 @@ export function createTextSprite(message: string, isOcean: boolean): Sprite {
   const aspect = canvas.width / canvas.height || 2.5;
 
   sprite.scale.set(aspect * spriteScale, spriteScale, 1);
+
+  // Return canvas to the pool on texture disposal (optional safety)
+  texture.onUpdate = () => {
+    canvasPool.push(canvas);
+  };
+
   return sprite;
 }
 

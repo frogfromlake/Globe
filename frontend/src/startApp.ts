@@ -215,7 +215,7 @@ export async function startApp(updateSubtitle: (text: string) => void) {
   });
 
   renderer.setAnimationLoop(animate);
-  loadBorderMeshesDeferred(tiltGroup, scene);
+  loadBorderMeshesDeferred(tiltGroup, scene, camera, renderer);
 
   // Ensure no initial hover or selection state
   uniforms.hoveredCountryId.value = 0;
@@ -274,7 +274,7 @@ export async function startApp(updateSubtitle: (text: string) => void) {
         : updateMat(globe.material);
     }
 
-    // 🌌 Load sky background
+    // Load sky background
     const esoSkyMapTexture = await texMod.loadSkyMapTexture();
     if (starSphere.material instanceof ShaderMaterial) {
       const starMaterial = starSphere.material;
@@ -332,7 +332,7 @@ export async function startApp(updateSubtitle: (text: string) => void) {
       }
     };
 
-    // 🎨 Begin fade-in now that all visuals are loaded
+    // Begin fade-in now that all visuals are loaded
     performance.mark("fade-in-start");
     requestAnimationFrame(fadeInTextures);
   }, 100);

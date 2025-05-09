@@ -1,6 +1,13 @@
 // src/core/earth/borders/loadBorderMeshesDeferred.ts
 
-import { Scene, Mesh, MeshBasicMaterial, Group } from "three";
+import {
+  Scene,
+  Mesh,
+  MeshBasicMaterial,
+  Group,
+  WebGLRenderer,
+  Camera,
+} from "three";
 import { CONFIG } from "@/configs/config";
 import { buildCountryBorderMeshes } from "./generateCountryBorders";
 import { buildOceanBorderMeshes } from "./generateOceanBorders";
@@ -11,9 +18,14 @@ import oceanGeojson from "@/core/data/dev/oceans.json";
 
 /**
  * Generates all country and ocean borders in the background and attaches them to the tilt group.
- * Runs after initial rendering and interactivity are ready.
+ * Also precompiles materials to avoid shader lag on first hover.
  */
-export function loadBorderMeshesDeferred(tiltGroup: Group, scene: Scene): void {
+export function loadBorderMeshesDeferred(
+  tiltGroup: Group,
+  scene: Scene,
+  camera: Camera,
+  renderer: WebGLRenderer
+): void {
   requestIdleCallback(() => {
     const radius = CONFIG.globe.radius;
     const thickness = CONFIG.borders.countryBorderThickness ?? 0.07;
@@ -72,7 +84,21 @@ export function loadBorderMeshesDeferred(tiltGroup: Group, scene: Scene): void {
       oceanBorderMeshMap.set(id, mesh);
     }
 
-    // Optional: Force materials to compile
+    // === Force material compilation to avoid shader stall on first use
     scene.updateMatrixWorld(true);
+    renderer.compile(scene, camera);
+
+    tiltGroup.traverse((child) => {
+      if (child instanceof Mesh) {
+        child.onBeforeRender?.(
+          renderer,
+          scene,
+          camera,
+          null as any,
+          null as any,
+          null as any
+        );
+      }
+    });
   });
 }

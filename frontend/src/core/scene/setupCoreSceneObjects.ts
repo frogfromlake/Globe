@@ -6,7 +6,6 @@ import {
   Group,
   Object3DEventMap,
   ShaderMaterial,
-  Vector2,
 } from "three";
 
 import { CONFIG } from "@/configs/config";
@@ -16,16 +15,6 @@ import {
 } from "@/core/earth/shaders/earthShaders";
 import { countryLabelGroup } from "@/core/earth/interactivity/countryLabels3D";
 import { oceanLabelGroup } from "@/core/earth/interactivity/oceanLabel3D";
-
-import { buildCountryBorderMeshes } from "@/core/earth/borders/generateCountryBorders";
-import countryGeojson from "@/core/data/dev/countries.json";
-import oceanGeojson from "@/core/data/dev/oceans.json";
-
-import {
-  countryBorderMeshMap,
-  oceanBorderMeshMap,
-} from "@/core/earth/borders/borderMeshMap";
-import { buildOceanBorderMeshes } from "../earth/borders/generateOceanBorders";
 
 /**
  * Sets up the core globe, raycast mesh, and tilt group (with borders and labels).
@@ -65,60 +54,6 @@ export function setupCoreSceneObjects(
   // Ensure label groups render on top of everything
   countryLabelGroup.renderOrder = 5;
   oceanLabelGroup.renderOrder = 5;
-
-  const borderThickness = CONFIG.borders.countryBorderThickness ?? 0.07;
-
-  // === Country Borders ===
-  const countryBorderEntries = buildCountryBorderMeshes(
-    countryGeojson,
-    CONFIG.globe.radius,
-    borderThickness
-  );
-
-  for (const { id, mesh } of countryBorderEntries) {
-    mesh.visible = false;
-    mesh.renderOrder = 3;
-
-    mesh.traverse((child) => {
-      if (
-        child instanceof Mesh &&
-        child.material instanceof MeshBasicMaterial
-      ) {
-        child.material.opacity = 1.0;
-        child.material.transparent = false;
-        child.renderOrder = 3;
-      }
-    });
-
-    tiltGroup.add(mesh);
-    countryBorderMeshMap.set(id, mesh);
-  }
-
-  // === Ocean Borders ===
-  const oceanBorderEntries = buildOceanBorderMeshes(
-    oceanGeojson,
-    CONFIG.globe.radius,
-    borderThickness
-  );
-
-  for (const { id, mesh } of oceanBorderEntries) {
-    mesh.visible = false;
-    mesh.renderOrder = 3;
-
-    mesh.traverse((child) => {
-      if (
-        child instanceof Mesh &&
-        child.material instanceof MeshBasicMaterial
-      ) {
-        child.material.opacity = 1.0;
-        child.material.transparent = false;
-        child.renderOrder = 3;
-      }
-    });
-
-    tiltGroup.add(mesh);
-    oceanBorderMeshMap.set(id, mesh);
-  }
 
   scene.add(tiltGroup);
 
