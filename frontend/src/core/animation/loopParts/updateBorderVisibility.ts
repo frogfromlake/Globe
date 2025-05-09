@@ -1,5 +1,8 @@
 import { Mesh, MeshBasicMaterial } from "three";
-import { countryBorderMeshMap, oceanBorderMeshMap } from "@/core/earth/borders/borderMeshMap";
+import {
+  countryBorderMeshMap,
+  oceanBorderMeshMap,
+} from "@/core/earth/borders/borderMeshMap";
 
 export function updateCountryBorderVisibility(
   selectedCountryIds: Set<number>,
@@ -123,6 +126,38 @@ export function updateOceanBorderVisibility(
           child.material.needsUpdate = true;
           child.material.opacity = targetOpacity;
         }
+      }
+    });
+  }
+}
+
+export function hideAllCountryBorders(): void {
+  for (const group of countryBorderMeshMap.values()) {
+    group.visible = false;
+    group.traverse((child) => {
+      if (
+        child instanceof Mesh &&
+        child.material instanceof MeshBasicMaterial
+      ) {
+        child.visible = false;
+        child.material.opacity = 0;
+        child.material.needsUpdate = true;
+      }
+    });
+  }
+}
+
+export function hideAllOceanBorders(): void {
+  for (const group of oceanBorderMeshMap.values()) {
+    group.visible = false;
+    group.traverse((child) => {
+      if (
+        child instanceof Mesh &&
+        child.material instanceof MeshBasicMaterial
+      ) {
+        child.visible = false;
+        child.material.opacity = 0;
+        child.material.needsUpdate = true;
       }
     });
   }

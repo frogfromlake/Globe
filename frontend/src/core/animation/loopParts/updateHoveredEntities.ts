@@ -3,6 +3,7 @@ import { updateHoveredCountry } from "@/core/earth/interactivity/countryHover";
 import { updateHoveredOcean } from "@/core/earth/interactivity/oceanHover";
 import { appState } from "@/state/appState";
 import { CONFIG } from "@/configs/config";
+import { countryBorderMeshMap, oceanBorderMeshMap } from "@/core/earth/borders/borderMeshMap";
 
 export interface HoverState {
   currentHoveredId: number;
@@ -69,14 +70,21 @@ export function updateHoveredEntities(
   // Early reset if nothing is hovered (e.g., pointer left the globe)
   if (!hoverReady || !currentUV) {
     if (currentHoveredId > 0 && currentHoveredId < 10000) {
+      const mesh = countryBorderMeshMap.get(currentHoveredId);
+      if (mesh) mesh.visible = false;
+
       previousHoveredId = currentHoveredId;
       fadeOut = fadeIn;
       fadeIn = 0;
     } else if (currentHoveredId >= 10000) {
+      const mesh = oceanBorderMeshMap.get(currentHoveredId);
+      if (mesh) mesh.visible = false;
+
       previousHoveredOceanId = currentHoveredOceanId;
       fadeOutOcean = fadeInOcean;
       fadeInOcean = 0;
     }
+
     currentHoveredId = -1;
     currentHoveredOceanId = -1;
     newHoveredId = -1;

@@ -21,6 +21,8 @@ import { updatePointerRaycast } from "./loopParts/updatePointerRaycast";
 import { updateCameraControls } from "./loopParts/updateCameraControls";
 import { updateHoveredEntities } from "./loopParts/updateHoveredEntities";
 import {
+  hideAllCountryBorders,
+  hideAllOceanBorders,
   updateCountryBorderVisibility,
   updateOceanBorderVisibility,
 } from "./loopParts/updateBorderVisibility";
@@ -154,6 +156,8 @@ export function createAnimateLoop({
     if (!pointerOnGlobe) {
       hideAll3DLabels();
       hideAll3DOceanLabels();
+      hideAllCountryBorders();
+      hideAllOceanBorders();
       resetHighlightUniforms(uniforms);
       appState.hoverIdState = {
         currentHoveredId: -1,
@@ -175,6 +179,8 @@ export function createAnimateLoop({
         selectedOceanFadeIn,
         delta
       );
+      updateCountryBorderVisibility(selectedCountryIds, appState.hoverIdState);
+      updateOceanBorderVisibility(selectedOceanIds, appState.hoverIdState);
     }
 
     lastRaycastTime = updatedLastRaycastTime;
@@ -195,9 +201,6 @@ export function createAnimateLoop({
       delta,
       uniforms
     );
-
-    updateCountryBorderVisibility(selectedCountryIds, appState.hoverIdState);
-    updateOceanBorderVisibility(selectedOceanIds, appState.hoverIdState);
 
     appState.lastSelectedCountryIds = new Set(selectedCountryIds);
     appState.lastHoveredCountryId = appState.hoverIdState.currentHoveredId;
