@@ -31,8 +31,6 @@ export function updateCloudsAndLightning(
     stormCenters: Vector2[];
   }
 ): void {
-  driftState.cloudElapsedTime += delta;
-
   // === Drift Direction Update ===
   if (now - driftState.lastDriftChange > 30000) {
     const maxAngleOffset = MathUtils.degToRad(10);
@@ -73,7 +71,7 @@ export function updateCloudsAndLightning(
   const mat = cloudSphere.material;
   if (!(mat instanceof ShaderMaterial)) return;
 
-  mat.uniforms.uCloudTime.value = driftState.cloudElapsedTime;
+  mat.uniforms.uCloudTime.value = (now % 60000) / 1000;
   mat.uniforms.uCloudDrift.value.copy(driftState.currentDrift);
   mat.uniforms.uLightDirection.value.copy(uniforms.lightDirection.value);
   mat.uniforms.uBaseDriftSpeed.value = totalSpeed;

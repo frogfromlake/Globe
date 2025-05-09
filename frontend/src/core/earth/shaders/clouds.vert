@@ -20,8 +20,8 @@ void main() {
 
     // Global cloud drift
     float driftSpeed = uBaseDriftSpeed;
-    vec2 uvOffset = uCloudDrift * uCloudTime * driftSpeed;
-    vUv = uv + uvOffset;
+    vec2 uvOffset = fract(vUv + uCloudDrift * uCloudTime * uBaseDriftSpeed);
+    vUv = uvOffset;
 
     vec4 worldPosition = modelMatrix * vec4(position, 1.0);
     vViewDirection = normalize(cameraPosition - worldPosition.xyz);
