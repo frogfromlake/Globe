@@ -18,11 +18,6 @@ void main() {
     float normalized = sunDot * 0.5 + 0.5;
     vSunlightFactor = smoothstep(0.42, 0.58, normalized);
 
-    // Global cloud drift
-    float driftSpeed = uBaseDriftSpeed;
-    vec2 uvOffset = fract(vUv + uCloudDrift * uCloudTime * uBaseDriftSpeed);
-    vUv = uvOffset;
-
     vec4 worldPosition = modelMatrix * vec4(position, 1.0);
     vViewDirection = normalize(cameraPosition - worldPosition.xyz);
 

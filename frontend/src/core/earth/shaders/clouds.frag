@@ -11,6 +11,9 @@ uniform vec2 uFlashPoints[MAX_FLASHES];    // Tiny flash centers (in UV)
 uniform float uFlashStrengths[MAX_FLASHES]; // Strengths [0..1]
 uniform int uNumFlashes;
 
+uniform float uCloudTime;
+uniform vec2 uCloudDrift;
+uniform float uBaseDriftSpeed;
 
 vec3 desaturate(vec3 color, float factor) {
     float gray = dot(color, vec3(0.299, 0.587, 0.114));
@@ -18,7 +21,8 @@ vec3 desaturate(vec3 color, float factor) {
 }
 
 void main() {
-    vec4 cloudSample = texture2D(uCloudMap, vUv);
+    vec2 driftedUv = fract(vUv + uCloudDrift * uCloudTime * uBaseDriftSpeed);
+    vec4 cloudSample = texture2D(uCloudMap, driftedUv);
 
     float cloudAlpha = cloudSample.r;
     cloudAlpha = pow(cloudAlpha, 0.6);
