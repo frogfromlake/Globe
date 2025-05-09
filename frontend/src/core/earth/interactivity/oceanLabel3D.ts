@@ -129,8 +129,8 @@ export function update3DOceanLabel(
   sprite.position.copy(labelPos);
   sprite.material.opacity = fade;
 
-  const canvas = sprite.material.map?.image as HTMLCanvasElement;
-  const aspect = canvas?.width / canvas?.height || 2.5;
+  const aspect = (sprite as any).__aspect || 2.5;
+
   const scaleFactor = MathUtils.mapLinear(
     cameraDistance,
     CONFIG.labels3D.zoomRange.min,
