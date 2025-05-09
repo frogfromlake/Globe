@@ -6,6 +6,7 @@ import {
   Mesh,
   MathUtils,
 } from "three";
+import { userHasMovedPointer } from "@/core/earth/controls/pointerTracker";
 
 /**
  * Performs globe raycasting to determine flashlight hit and UV position under pointer.
@@ -48,6 +49,17 @@ export function updatePointerRaycast(
   let currentUV: Vector2 | null = null;
   let uvUpdated = false;
 
+  // 🛑 Skip entirely if user hasn't moved pointer yet
+  if (!userHasMovedPointer()) {
+    uniforms.uCursorOnGlobe.value = false;
+    return {
+      currentUV: null,
+      updatedLastRaycastTime,
+      flashlightWorldPos: null,
+      uvUpdated: false,
+    };
+  }
+
   // Flashlight raycast (runs every frame)
   raycaster.setFromCamera(pointer, camera);
   const hitForFlashlight = raycaster.intersectObject(globeRaycastMesh, false);
@@ -59,11 +71,10 @@ export function updatePointerRaycast(
     uniforms.uCursorOnGlobe.value = false;
   }
 
-  // UV raycast (runs at interval)
+  // UV raycast (throttled)
   if (pointerActive && now - lastRaycastTime > raycastInterval) {
     updatedLastRaycastTime = now;
 
-    raycaster.setFromCamera(pointer, camera);
     const hits = raycaster.intersectObject(globeRaycastMesh, false);
     if (hits.length > 0) {
       const hitPoint = hits[0].point.clone().normalize();

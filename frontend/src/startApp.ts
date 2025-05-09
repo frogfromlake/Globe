@@ -106,7 +106,7 @@ export async function startApp(updateSubtitle: (text: string) => void) {
 
   // === Pointer & Raycasting ===
   const raycaster = new Raycaster();
-  const pointer = new Vector2();
+  const pointer = new Vector2(999, 999); // Offscreen so raycaster won't hit globe
   queueMicrotask(() => {
     setupPointerMoveTracking();
     performance.mark("pointer-tracking-ready");
@@ -337,7 +337,7 @@ export async function startApp(updateSubtitle: (text: string) => void) {
     requestAnimationFrame(fadeInTextures);
   }, 100);
 
-  const runPostFadeTasks = () => {  
+  const runPostFadeTasks = () => {
     // === News panel
     setTimeout(async () => {
       const { initNewsPanel } = await import(
