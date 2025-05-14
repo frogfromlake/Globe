@@ -1,0 +1,23 @@
+.env.upload
+
+# Tile Sources
+BlackMarble_2016_A1.jpg
+BlackMarble_2016_A2.jpg
+BlackMarble_2016_B1.jpg
+BlackMarble_2016_B2.jpg
+BlackMarble_2016_C1.jpg
+BlackMarble_2016_C2.jpg
+BlackMarble_2016_D1.jpg
+BlackMarble_2016_D2.jpg
+
+world.topo.200406.3x21600x21600.A1.png
+world.topo.200406.3x21600x21600.A2.png
+world.topo.200406.3x21600x21600.B1.png
+world.topo.200406.3x21600x21600.B2.png
+world.topo.200406.3x21600x21600.C1.png
+world.topo.200406.3x21600x21600.C2.png
+world.topo.200406.3x21600x21600.D1.png
+world.topo.200406.3x21600x21600.D2.png
+
+# Tileset
+tiles/
