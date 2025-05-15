@@ -8,10 +8,12 @@ pnpm-debug.log*
 lerna-debug.log*
 
 # Frontend
-frontend/public/textures/backups/
-frontend/node_modules
-frontend/dist
-frontend/src/tests
+apps/orbitalone-frontend/public/textures/backups
+apps/orbitalone-frontend/node_modules
+apps/orbitalone-frontend/dist
+apps/orbitalone-frontend/src/tests
+apps/orbitalone-frontend/.DS_Store
+
 # Backend
 backend/.env
 
