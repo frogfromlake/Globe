@@ -1,2 +1,24 @@
-fly.toml
-.git/
+# Ignore target directory and build artifacts
+target
+**/target
+
+# Ignore Git, editor configs, and OS trash
+.git
+.gitignore
+.DS_Store
+.vscode
+.idea
+
+# Ignore frontend and unrelated app folders
+apps/frontend
+apps/3d-globe
+apps/admin-dashboard
+node_modules
+dist
+
+# Ignore logs and large binary dumps
+*.log
+*.sqlite
+*.db
+*.tar.gz
+*.zip
