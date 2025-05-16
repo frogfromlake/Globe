@@ -147,34 +147,33 @@ export class TileManager {
           this.visibleTiles.add(key);
 
           const mat = mesh.material as Material & { opacity: number };
-
-          // Always make the mesh visible — it's up to the material to control opacity
           mesh.visible = true;
 
           if (this.zoom <= 2) {
-            // Fallback tile: fully visible, no fade
+            // Fallback: fully visible, no fade
             mat.opacity = 1;
           } else {
-            // High-res tile: fade in
+            // High-res: fade in with easing
             mat.opacity = 0;
-            let opacity = 0;
+            const duration = 800; // ms
+            const start = performance.now();
 
-            const fadeIn = () => {
-              opacity += 0.05;
-              mat.opacity = Math.min(1, opacity);
-              if (opacity < 1) {
+            const fadeIn = (now: number) => {
+              const t = Math.min(1, (now - start) / duration);
+              mat.opacity = easeInOutQuad(t);
+              if (t < 1) {
                 requestAnimationFrame(fadeIn);
               } else {
                 mat.opacity = 1;
                 requestAnimationFrame(() => {
                   this.fallbackManager?.hideOverlappingFallbacks(
-                    this.fallbackManager
+                    this.fallbackManager!
                   );
                 });
               }
             };
 
-            fadeIn();
+            requestAnimationFrame(fadeIn);
           }
         } catch (err) {
           console.warn(`❌ Failed to load tile ${key}`, err);
@@ -337,4 +336,8 @@ function getTileBoundingSphere(
   const sphereRadius = Math.sin(approxAngle / 2) * radius * 0.8;
 
   return new Sphere(center, sphereRadius);
+}
+
+function easeInOutQuad(t: number): number {
+  return t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
 }
