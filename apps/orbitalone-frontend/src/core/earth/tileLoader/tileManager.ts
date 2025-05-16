@@ -1,6 +1,7 @@
 import {
   Frustum,
   Group,
+  Material,
   Matrix4,
   PerspectiveCamera,
   Sphere,
@@ -18,6 +19,7 @@ import { latLonToUnitVector } from "./utils/latLonToVector";
  */
 export interface TileManagerOptions {
   zoomLevel?: number;
+  fallbackZoomLevel?: number;
   urlTemplate: string;
   radius?: number;
   renderer: WebGLRenderer;
@@ -42,7 +44,8 @@ export class TileManager {
   private updateScheduled = false;
   private updatePending = false;
   private lastCenterDir = new Vector3();
-  private minDirectionChangeThreshold = 0.002; // tweakable — lower = more sensitive
+  private minDirectionChangeThreshold = 0.0005; // tweakable — lower = more sensitive
+  private fallbackManager?: TileManager;
 
   public group: Group;
 
@@ -62,6 +65,10 @@ export class TileManager {
     this.camera = camera;
     this.group = new Group();
     this.group.name = `TileGroup_Z${this.zoom}`;
+  }
+
+  public setFallbackManager(fallback: TileManager) {
+    this.fallbackManager = fallback;
   }
 
   /**
@@ -91,6 +98,7 @@ export class TileManager {
 
     const centerDir = getCameraCenterDirection(this.camera);
     const allTiles: { x: number; y: number; dist: number; key: string }[] = [];
+
     for (let x = 0; x < tileCount; x++) {
       for (let y = 0; y < tileCount; y++) {
         const key = `${z}/${x}/${y}`;
@@ -110,28 +118,10 @@ export class TileManager {
         const centerLon = (bounds.lonMin + bounds.lonMax) / 2;
         const tileDir = latLonToUnitVector(centerLat, centerLon);
 
-        console.log("🔄 Checking tile", key);
-
         const boundingSphere = getTileBoundingSphere(x, y, z, this.radius);
-        console.log(
-          "  center:",
-          boundingSphere.center.toArray(),
-          "radius:",
-          boundingSphere.radius
-        );
-
         const dot = centerDir.dot(tileDir.negate());
-        if (dot < 0.15) {
-          console.log("❌ Culled by angle", key);
-          continue;
-        }
-
-        if (!frustum.intersectsSphere(boundingSphere)) {
-          console.log("❌ Culled by frustum", key);
-          continue;
-        }
-
-        console.log("✅ Visible", key);
+        if (dot < 0.15) continue;
+        if (!frustum.intersectsSphere(boundingSphere)) continue;
 
         const dist = 1 - centerDir.dot(tileDir);
         allTiles.push({ x, y, dist, key });
@@ -142,6 +132,7 @@ export class TileManager {
 
     for (const { x, y, key } of allTiles) {
       tileTasks.push(async () => {
+        // await new Promise((r) => setTimeout(r, 150));
         try {
           const mesh = await this.createTileMesh({
             x,
@@ -154,6 +145,37 @@ export class TileManager {
           this.group.add(mesh);
           this.cache.set(key, mesh);
           this.visibleTiles.add(key);
+
+          const mat = mesh.material as Material & { opacity: number };
+
+          // Always make the mesh visible — it's up to the material to control opacity
+          mesh.visible = true;
+
+          if (this.zoom <= 2) {
+            // Fallback tile: fully visible, no fade
+            mat.opacity = 1;
+          } else {
+            // High-res tile: fade in
+            mat.opacity = 0;
+            let opacity = 0;
+
+            const fadeIn = () => {
+              opacity += 0.05;
+              mat.opacity = Math.min(1, opacity);
+              if (opacity < 1) {
+                requestAnimationFrame(fadeIn);
+              } else {
+                mat.opacity = 1;
+                requestAnimationFrame(() => {
+                  this.fallbackManager?.hideOverlappingFallbacks(
+                    this.fallbackManager
+                  );
+                });
+              }
+            };
+
+            fadeIn();
+          }
         } catch (err) {
           console.warn(`❌ Failed to load tile ${key}`, err);
         }
@@ -192,6 +214,74 @@ export class TileManager {
         this.updateTiles(); // rerun once more for latest state
       }
     });
+  }
+
+  hideOverlappingFallbacks(fallbackManager: TileManager): void {
+    for (const key of fallbackManager.visibleTiles) {
+      const [zStr, xStr, yStr] = key.split("/");
+      const zx = parseInt(xStr, 10);
+      const zy = parseInt(yStr, 10);
+      const zz = parseInt(zStr, 10);
+
+      const tileMesh = fallbackManager.cache.get(key);
+      if (!tileMesh || !tileMesh.visible) continue;
+
+      const scale = 2 ** (this.zoom - zz);
+      const baseX = zx * scale;
+      const baseY = zy * scale;
+
+      let covered = true;
+      for (let dx = 0; dx < scale; dx++) {
+        for (let dy = 0; dy < scale; dy++) {
+          const subKey = `${this.zoom}/${baseX + dx}/${baseY + dy}`;
+          const highRes = this.cache.get(subKey);
+          const mat = highRes?.material as Material & { opacity: number };
+          if (!highRes || mat.opacity < 1) {
+            covered = false;
+            break;
+          }
+        }
+        if (!covered) break;
+      }
+
+      if (covered) {
+        tileMesh.visible = false;
+      }
+    }
+  }
+
+  async loadAllTiles(): Promise<void> {
+    const tileCount = 2 ** this.zoom;
+    const z = this.zoom;
+    const tileTasks: (() => Promise<void>)[] = [];
+
+    for (let x = 0; x < tileCount; x++) {
+      for (let y = 0; y < tileCount; y++) {
+        const key = `${z}/${x}/${y}`;
+        if (this.visibleTiles.has(key) || this.cache.has(key)) continue;
+
+        tileTasks.push(async () => {
+          try {
+            const mesh = await this.createTileMesh({
+              x,
+              y,
+              z,
+              urlTemplate: this.urlTemplate,
+              radius: this.radius,
+              renderer: this.renderer,
+            });
+            mesh.visible = true;
+            this.group.add(mesh);
+            this.cache.set(key, mesh);
+            this.visibleTiles.add(key);
+          } catch (err) {
+            console.warn(`❌ Failed to load fallback tile ${key}`, err);
+          }
+        });
+      }
+    }
+
+    await runConcurrent(tileTasks, 6);
   }
 }
 

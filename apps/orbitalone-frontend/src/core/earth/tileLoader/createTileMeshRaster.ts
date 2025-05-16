@@ -96,8 +96,23 @@ export async function createTileMeshRaster(
 
   if (onTextureLoaded) onTextureLoaded(texture);
 
-  return new Mesh(
-    geometry,
-    new MeshBasicMaterial({ map: texture, side: FrontSide })
-  );
+  const isHighRes = z > 2;
+
+  const material = new MeshBasicMaterial({
+    map: texture,
+    side: FrontSide,
+    transparent: isHighRes, // Only high-res tiles need transparency
+    opacity: isHighRes ? 1 : 0, // Start high-res at 0 for fade-in, fallback fully visible
+    depthWrite: !isHighRes, // Fix for overdraw issues when mixing transparent/opaque
+  });
+
+  material.map = texture;
+  material.needsUpdate = true;
+  texture.needsUpdate = true;
+
+  const mesh = new Mesh(geometry, material);
+
+  mesh.visible = true;
+
+  return mesh;
 }

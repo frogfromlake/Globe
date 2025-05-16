@@ -88,7 +88,24 @@ const tileManager = new TileManager({
   createTileMesh: createTileMeshFn,
   camera,
 });
+
+// Low-res fallback tile manager (Z2)
+const fallbackTileManager = new TileManager({
+  urlTemplate,
+  zoomLevel: 2, // Always Z2 fallback
+  radius: 1,
+  renderer,
+  createTileMesh: createTileMeshFn,
+  camera,
+});
+tileManager.setFallbackManager(fallbackTileManager);
+
+scene.add(fallbackTileManager.group);
 scene.add(tileManager.group);
+
+fallbackTileManager.loadAllTiles().then(() => {
+  console.log("✅ Z2 fallback tiles loaded (no culling)");
+});
 
 // Defer tile loading until OrbitControls finishes first update
 let firstUpdateDone = false;
@@ -100,11 +117,13 @@ type OrbitControlsWithEvents = OrbitControls & {
 controls.addEventListener("change", () => {
   if (!firstUpdateDone) {
     firstUpdateDone = true;
+
     tileManager.loadTiles().then(() => {
-      console.log("✅ Initial tile loading complete.");
+      tileManager.hideOverlappingFallbacks(fallbackTileManager);
     });
   } else {
     tileManager.updateTiles();
+    tileManager.hideOverlappingFallbacks(fallbackTileManager);
   }
 });
 
