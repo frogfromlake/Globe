@@ -12,6 +12,7 @@ import {
   DoubleSide,
   LinearFilter,
   WebGLRenderer,
+  FrontSide,
 } from "three";
 import { KTX2Loader } from "three/examples/jsm/loaders/KTX2Loader";
 import { latLonToUnitVectorFlipped } from "./utils/latLonToVector";
@@ -110,6 +111,6 @@ export async function createTileMeshKTX2(
 
   return new Mesh(
     geometry,
-    new MeshBasicMaterial({ map: texture, side: DoubleSide })
+    new MeshBasicMaterial({ map: texture, side: FrontSide })
   );
 }

@@ -12,6 +12,7 @@ import {
   DoubleSide,
   LinearMipMapLinearFilter,
   LinearFilter,
+  FrontSide,
 } from "three";
 import { tileToLatLonBounds } from "./utils/tileToBounds";
 import { latLonToUnitVector } from "./utils/latLonToVector";
@@ -97,6 +98,6 @@ export async function createTileMeshRaster(
 
   return new Mesh(
     geometry,
-    new MeshBasicMaterial({ map: texture, side: DoubleSide })
+    new MeshBasicMaterial({ map: texture, side: FrontSide })
   );
 }

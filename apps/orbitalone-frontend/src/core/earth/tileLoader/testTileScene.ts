@@ -22,10 +22,6 @@ const createTileMeshFn: CreateTileMeshFn = useKTX2
   ? createTileMeshKTX2
   : createTileMeshRaster;
 
-// const urlTemplate = useKTX2
-//   ? "https://orbitalone-tiles.b-cdn.net/day/{z}/{x}/{y}.ktx2"
-//   : "https://tiles.maps.eox.at/wmts/1.0.0/s2cloudless-2024_3857/default/GoogleMapsCompatible/{z}/{y}/{x}.jpg";
-
 const PROXY_BASE =
   import.meta.env.VITE_TILE_PROXY_URL || "http://localhost:8080";
 
@@ -33,7 +29,7 @@ const urlTemplate = useKTX2
   ? "https://orbitalone-tiles.b-cdn.net/day/{z}/{x}/{y}.ktx2"
   : `${PROXY_BASE}/tile/{z}/{y}/{x}`;
 
-const zoomLevel = useKTX2 ? 5 : 3;
+const zoomLevel = useKTX2 ? 5 : 4;
 
 // Initialize the scene
 const scene = new Scene();
@@ -55,14 +51,14 @@ renderer.setSize(window.innerWidth, window.innerHeight);
 document.body.appendChild(renderer.domElement);
 
 // Setup orbit controls
-const controls = new OrbitControls(camera, renderer.domElement);
+const controls = new OrbitControls(
+  camera,
+  renderer.domElement
+) as OrbitControlsWithEvents;
+
 controls.enableDamping = true;
 controls.minDistance = 1.1;
 controls.maxDistance = 10;
-
-(controls as any).addEventListener("change", () => {
-  tileManager.updateTiles();
-});
 
 // Optional wireframe Earth for debugging
 const wireframeEarth = new Mesh(
@@ -83,7 +79,7 @@ const directionalLight = new DirectionalLight(0xffffff, 0.6);
 directionalLight.position.set(3, 2, 1);
 scene.add(directionalLight);
 
-// Initialize and load tiles
+// Initialize tile manager
 const tileManager = new TileManager({
   urlTemplate,
   zoomLevel,
@@ -92,11 +88,24 @@ const tileManager = new TileManager({
   createTileMesh: createTileMeshFn,
   camera,
 });
-
 scene.add(tileManager.group);
 
-tileManager.loadTiles().then(() => {
-  console.log("✅ Tile loading complete.");
+// Defer tile loading until OrbitControls finishes first update
+let firstUpdateDone = false;
+type OrbitControlsWithEvents = OrbitControls & {
+  addEventListener: (type: string, listener: () => void) => void;
+  dispatchEvent: (event: { type: "change" }) => void;
+};
+
+controls.addEventListener("change", () => {
+  if (!firstUpdateDone) {
+    firstUpdateDone = true;
+    tileManager.loadTiles().then(() => {
+      console.log("✅ Initial tile loading complete.");
+    });
+  } else {
+    tileManager.updateTiles();
+  }
 });
 
 // Resize handling
@@ -105,6 +114,10 @@ window.addEventListener("resize", () => {
   camera.updateProjectionMatrix();
   renderer.setSize(window.innerWidth, window.innerHeight);
 });
+
+// Kick off initial camera update & tile loading
+controls.update();
+controls.dispatchEvent({ type: "change" }); // Trigger tile loading once
 
 // Animation loop
 function animate() {

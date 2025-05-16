@@ -1,9 +1,17 @@
-import { Group, PerspectiveCamera, Vector3, WebGLRenderer } from "three";
+import {
+  Frustum,
+  Group,
+  Matrix4,
+  PerspectiveCamera,
+  Sphere,
+  Vector3,
+  WebGLRenderer,
+} from "three";
 import type { CreateTileMeshFn } from "./types";
 import { TileCache } from "./tileCache";
-import { latLonToUnitVector } from "../geo/coordinates";
 import { getCameraCenterDirection } from "./utils/cameraUtils";
 import { tileToLatLonBounds } from "./utils/tileToBounds";
+import { latLonToUnitVector } from "./utils/latLonToVector";
 
 /**
  * Configuration for initializing the TileManager.
@@ -15,6 +23,7 @@ export interface TileManagerOptions {
   renderer: WebGLRenderer;
   createTileMesh: CreateTileMeshFn;
   camera: PerspectiveCamera;
+  fadeDuration?: number;
 }
 
 /**
@@ -66,14 +75,22 @@ export class TileManager {
    * Loads only tiles relevant to the current camera view.
    */
   async loadVisibleTiles(): Promise<void> {
+    console.log("📦 Loading tiles at zoom", this.zoom);
     const tileCount = 2 ** this.zoom;
     const z = this.zoom;
     const concurrencyLimit = 6;
     const tileTasks: (() => Promise<void>)[] = [];
+    const frustum = new Frustum();
+    this.camera.updateMatrixWorld();
+    const projScreenMatrix = new Matrix4();
+    projScreenMatrix.multiplyMatrices(
+      this.camera.projectionMatrix,
+      this.camera.matrixWorldInverse
+    );
+    frustum.setFromProjectionMatrix(projScreenMatrix);
 
     const centerDir = getCameraCenterDirection(this.camera);
     const allTiles: { x: number; y: number; dist: number; key: string }[] = [];
-
     for (let x = 0; x < tileCount; x++) {
       for (let y = 0; y < tileCount; y++) {
         const key = `${z}/${x}/${y}`;
@@ -92,8 +109,31 @@ export class TileManager {
         const centerLat = (bounds.latMin + bounds.latMax) / 2;
         const centerLon = (bounds.lonMin + bounds.lonMax) / 2;
         const tileDir = latLonToUnitVector(centerLat, centerLon);
-        const dist = 1 - centerDir.dot(tileDir);
 
+        console.log("🔄 Checking tile", key);
+
+        const boundingSphere = getTileBoundingSphere(x, y, z, this.radius);
+        console.log(
+          "  center:",
+          boundingSphere.center.toArray(),
+          "radius:",
+          boundingSphere.radius
+        );
+
+        const dot = centerDir.dot(tileDir.negate());
+        if (dot < 0.15) {
+          console.log("❌ Culled by angle", key);
+          continue;
+        }
+
+        if (!frustum.intersectsSphere(boundingSphere)) {
+          console.log("❌ Culled by frustum", key);
+          continue;
+        }
+
+        console.log("✅ Visible", key);
+
+        const dist = 1 - centerDir.dot(tileDir);
         allTiles.push({ x, y, dist, key });
       }
     }
@@ -181,4 +221,30 @@ async function runConcurrent<T>(
 
   await Promise.all(executing);
   return results;
+}
+
+function getTileBoundingSphere(
+  x: number,
+  y: number,
+  z: number,
+  radius: number
+): Sphere {
+  const bounds = tileToLatLonBounds(x, y, z);
+
+  // Get center position of the tile on the globe
+  const centerLat = (bounds.latMin + bounds.latMax) / 2;
+  const centerLon = (bounds.lonMin + bounds.lonMax) / 2;
+  const centerDir = latLonToUnitVector(centerLat, centerLon);
+
+  // Compute tile center in world space
+  const center = centerDir.clone().multiplyScalar(radius * 1.05);
+
+  // Estimate angular tile height (in radians)
+  const deltaLat = Math.abs(bounds.latMax - bounds.latMin);
+  const approxAngle = (deltaLat * Math.PI) / 180;
+
+  // Convert angular height to world radius
+  const sphereRadius = Math.sin(approxAngle / 2) * radius * 0.8;
+
+  return new Sphere(center, sphereRadius);
 }
