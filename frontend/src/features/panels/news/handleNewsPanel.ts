@@ -54,7 +54,7 @@ export async function showNewsPanel(isoCode: string): Promise<void> {
   isFetchingNews = true;
 
   const API_BASE =
-    import.meta.env.VITE_PUBLIC_API_URL || "http://localhost:8080";
+    import.meta.env.VITE_NEWS_API_URL || "http://localhost:8080";
 
   const panel = document.getElementById("news-panel")!;
   const title = document.getElementById("news-title")!;

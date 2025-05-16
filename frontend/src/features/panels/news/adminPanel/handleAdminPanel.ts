@@ -4,7 +4,7 @@
  * Handles authentication, feed testing, saving, and live viewing of current configuration.
  */
 
-const API_BASE = import.meta.env.VITE_PUBLIC_API_URL || "http://localhost:8080";
+const API_BASE = import.meta.env.VITE_NEWS_API_URL || "http://localhost:8080";
 
 /**
  * Initializes and returns the admin panel object.
