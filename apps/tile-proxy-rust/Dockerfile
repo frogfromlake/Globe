@@ -1,3 +1,4 @@
+# Dockerfile
 FROM lukemathwalker/cargo-chef:latest-rust-1 AS chef
 WORKDIR /app
 
@@ -7,14 +8,24 @@ RUN cargo chef prepare --recipe-path recipe.json
 
 FROM chef AS builder
 COPY --from=planner /app/recipe.json recipe.json
-# Build dependencies - this is the caching Docker layer!
 RUN cargo chef cook --release --recipe-path recipe.json
-# Build application
 COPY . .
 RUN cargo build --release --bin tile-proxy-rust
 
-# We do not need the Rust toolchain to run the binary!
 FROM debian:bookworm-slim AS runtime
 WORKDIR /app
+
+# Install curl and CA certs for the tile prefill script
+RUN apt-get update \
+    && apt-get install -y curl ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
 COPY --from=builder /app/target/release/tile-proxy-rust /usr/local/bin
-ENTRYPOINT ["/usr/local/bin/tile-proxy-rust"]
+COPY scripts/prefill_tiles.sh /app/scripts/prefill_tiles.sh
+
+RUN chmod +x /app/scripts/prefill_tiles.sh
+RUN mkdir -p /data/logs
+
+# Optional: run prefill script at startup if desired (commented out for safety)
+ENTRYPOINT ["/app/scripts/prefill_tiles.sh"]
+# ENTRYPOINT ["/usr/local/bin/tile-proxy-rust"]

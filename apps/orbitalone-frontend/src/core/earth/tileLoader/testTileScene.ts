@@ -26,13 +26,14 @@ const createTileMeshFn: CreateTileMeshFn = useKTX2
 //   ? "https://orbitalone-tiles.b-cdn.net/day/{z}/{x}/{y}.ktx2"
 //   : "https://tiles.maps.eox.at/wmts/1.0.0/s2cloudless-2024_3857/default/GoogleMapsCompatible/{z}/{y}/{x}.jpg";
 
-const PROXY_BASE = import.meta.env.VITE_TILE_PROXY_URL || "http://localhost:8080";
+const PROXY_BASE =
+  import.meta.env.VITE_TILE_PROXY_URL || "http://localhost:8080";
 
 const urlTemplate = useKTX2
   ? "https://orbitalone-tiles.b-cdn.net/day/{z}/{x}/{y}.ktx2"
   : `${PROXY_BASE}/tile/{z}/{y}/{x}`;
 
-const zoomLevel = useKTX2 ? 5 : 4;
+const zoomLevel = useKTX2 ? 5 : 3;
 
 // Initialize the scene
 const scene = new Scene();
@@ -56,10 +57,16 @@ document.body.appendChild(renderer.domElement);
 // Setup orbit controls
 const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
+controls.minDistance = 1.1;
+controls.maxDistance = 10;
+
+(controls as any).addEventListener("change", () => {
+  tileManager.updateTiles();
+});
 
 // Optional wireframe Earth for debugging
 const wireframeEarth = new Mesh(
-  new SphereGeometry(1, 64, 64),
+  new SphereGeometry(1, 128, 128),
   new MeshBasicMaterial({
     color: 0x444444,
     wireframe: true,
@@ -83,6 +90,7 @@ const tileManager = new TileManager({
   radius: 1,
   renderer,
   createTileMesh: createTileMeshFn,
+  camera,
 });
 
 scene.add(tileManager.group);

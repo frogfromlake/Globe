@@ -79,7 +79,15 @@ export async function createTileMeshRaster(
     .replace("{x}", x.toString())
     .replace("{y}", y.toString());
 
-  const texture = await new TextureLoader().loadAsync(url);
+  const texture = await new TextureLoader().loadAsync(url).catch((err) => {
+    console.warn(`❌ Failed to load texture from ${url}`, err);
+    return null;
+  });
+
+  if (!texture) {
+    throw new Error(`Texture loading failed for tile ${z}/${x}/${y}`);
+  }
+
   texture.generateMipmaps = true;
   texture.minFilter = LinearMipMapLinearFilter;
   texture.magFilter = LinearFilter;
