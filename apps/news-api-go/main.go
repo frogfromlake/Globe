@@ -11,11 +11,21 @@ import (
 	"github.com/joho/godotenv"
 )
 
+func getRequiredEnv(key string) string {
+	val := os.Getenv(key)
+	if val == "" {
+		log.Fatalf("❌ Required environment variable %s not set", key)
+	}
+	return val
+}
+
 func main() {
-	env := getEnv("ENV", "development")
+	if os.Getenv("ENV") == "" {
+		_ = godotenv.Load()
+	}
+	env := getRequiredEnv("ENV")
 	log.Printf("🌍 Environment: %s\n", env)
 
-	// Load local .env in non-production environments
 	if env != "production" {
 		if err := godotenv.Load(); err != nil {
 			log.Printf("⚠️  Failed to load .env: %v\n", err)
@@ -24,11 +34,14 @@ func main() {
 		}
 	}
 
-	// Ensure critical credentials are set
-	adminUser := os.Getenv("ADMIN_USER")
-	adminPass := os.Getenv("ADMIN_PASS")
-	if adminUser == "" || adminPass == "" {
-		log.Fatal("❌ Missing ADMIN_USER or ADMIN_PASS in environment")
+	if env == "production" {
+		log.Println("🔐 Skipping admin panel for production")
+	} else {
+		adminUser := os.Getenv("ADMIN_USER")
+		adminPass := os.Getenv("ADMIN_PASS")
+		if adminUser == "" || adminPass == "" {
+			log.Fatal("❌ Missing ADMIN_USER or ADMIN_PASS in environment")
+		}
 	}
 
 	// Normalize PORT, especially for Fly.io in production
