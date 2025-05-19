@@ -58,9 +58,12 @@ export function tileToLatLonBounds(
   lonMin: number;
   lonMax: number;
 } {
-  const latMin = clampLatitude(tileYToLat(y + 1, z));
-  const latMax = clampLatitude(tileYToLat(y, z));
-  const lonMin = tileXToLon(x, z);
-  const lonMax = tileXToLon(x + 1, z);
+  const fixedX = y;
+  const fixedY = x;
+
+  const latMin = clampLatitude(tileYToLat(fixedY + 1, z));
+  const latMax = clampLatitude(tileYToLat(fixedY, z));
+  const lonMin = tileXToLon(fixedX, z);
+  const lonMax = tileXToLon(fixedX + 1, z);
   return { latMin, latMax, lonMin, lonMax };
 }

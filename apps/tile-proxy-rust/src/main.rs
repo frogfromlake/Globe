@@ -22,11 +22,15 @@ use tokio::fs;
 use std::path::Path;
 use std::env;
 
+/// Returns the tile storage base path from the `TILE_STORAGE_PATH` env var.
+/// - If set and non-empty, returns the trimmed path.
+/// - If set but empty/whitespace, returns `None`.
+/// - If unset, returns the default path `/data/tiles`.
 fn get_tile_base_path() -> Option<String> {
-    match env::var("TILE_STORAGE_PATH") {
-        Ok(p) if !p.trim().is_empty() => Some(p),
-        Ok(_) => None,
-        Err(_) => Some("/data/tiles".to_string()), // prod default
+    match env::var("TILE_STORAGE_PATH").ok().map(|s| s.trim().to_string()) {
+        Some(s) if !s.is_empty() => Some(s),
+        Some(_) => None,
+        None => Some("/data/tiles".to_string()),
     }
 }
 
@@ -69,7 +73,7 @@ async fn main() -> anyhow::Result<()> {
     let addr: SocketAddr = "0.0.0.0:8080".parse()?;
     let listener = TcpListener::bind(addr).await?;
 
-    info!("🚀 Tile Proxy Server Ready");
+    info!("🚀 Tile Proxy Server is Ready");
     info!("🌍 Listening on       http://{}", addr);
     info!("🧩 Tile route format: /tile/{{z}}/{{x}}/{{y}}");
     info!("📦 Cache capacity:   {} tiles", MAX_TILE_CACHE_CAPACITY);
@@ -95,24 +99,13 @@ async fn proxy_handler(
     req: Request<Incoming>,
 ) -> Result<Response<BoxBody<Bytes, std::io::Error>>, Infallible> {
     let start = Instant::now();
-    let path = req.uri().path().to_string();
-    let result = actual_proxy_logic(req).await;
-    let elapsed = start.elapsed();
-
-    match &result {
-        Ok(resp) => {
-            info!(%path, status = %resp.status(), elapsed_ms = elapsed.as_millis(), "Served request");
-        }
-        Err(_) => {
-            error!(%path, elapsed_ms = elapsed.as_millis(), "Error serving request");
-        }
-    }
-
+    let result = actual_proxy_logic(req, start).await;
     result
 }
 
 async fn actual_proxy_logic(
     req: Request<Incoming>,
+    start: Instant,
 ) -> Result<Response<BoxBody<Bytes, std::io::Error>>, Infallible> {
     let path = req.uri().path();
     let use_disk_cache = get_tile_base_path()
@@ -146,28 +139,44 @@ async fn actual_proxy_logic(
         "https://tiles.maps.eox.at/wmts/1.0.0/s2cloudless-2024_3857/default/GoogleMapsCompatible/{}.jpg",
         stripped_path
     );
+    let cache_key = stripped_path.to_string();
 
-    // If Z is between 5-8, try persistent volume
-    // Only attempt volume access in production and for zoom levels 5–8
+    // Serve Z0–Z8 tiles from persistent volume storage if available
+    // Only attempt volume access in production and for zoom levels Z0–Z8
     if let Some(base_path) = get_tile_base_path() {
-        if (5..=8).contains(&z) && Path::new(&base_path).exists() {
+        if (0..=8).contains(&z) && Path::new(&base_path).exists() {
             let tile_path = format!("{}/{}.jpg", base_path, stripped_path);
-            if let Ok(file_bytes) = fs::read(&tile_path).await {
-                info!(%path, "📦 Served from volume");
-                return Ok(
-                    with_cors_headers(Response::builder(), req.headers().get("origin").and_then(|v| v.to_str().ok()))
-                        .status(StatusCode::OK)
-                        .header("content-type", "image/jpeg")
-                        .body(StreamBody::new(once(Ok(Frame::data(Bytes::from(file_bytes))))).boxed())
+            match fs::read(&tile_path).await {
+                Ok(file_bytes) => {
+                    let elapsed = start.elapsed().as_millis();
+                    info!(%cache_key, elapsed_ms = elapsed, "📦 Served from volume");
+                    return Ok(
+                        with_cors_headers(Response::builder(), req.headers().get("origin").and_then(|v| v.to_str().ok()))
+                            .status(StatusCode::OK)
+                            .header("content-type", "image/jpeg")
+                            .body(StreamBody::new(once(Ok(Frame::data(Bytes::from(file_bytes))))).boxed())
+                            .unwrap(),
+                    );
+                }
+                Err(_) => {
+                    let elapsed = start.elapsed().as_millis();
+                    info!(%path, elapsed_ms = elapsed, "❌ Tile missing on disk (Z 0–8). Not found.");
+                    TILE_CACHE.insert(cache_key.clone(), Bytes::from_static(b"")).await;
+                    return Ok(
+                        with_cors_headers(Response::builder(), req.headers().get("origin").and_then(|v| v.to_str().ok()))
+                        .status(StatusCode::NOT_FOUND)
+                        .body(full_body("Tile not found on volume"))
                         .unwrap(),
-                );
+                    );
+                }
             }
         }
     }
 
     // If cached in-memory (e.g. for z > 8)
-    if let Some(cached_bytes) = TILE_CACHE.get(&upstream_url).await {
-        info!(%path, "✅ Served from memory cache");
+    if let Some(cached_bytes) = TILE_CACHE.get(&cache_key).await {
+        let elapsed = start.elapsed().as_millis();
+        info!(%cache_key, elapsed_ms = elapsed, "✅ Served from memory cache");        
         return Ok(
             with_cors_headers(Response::builder(), req.headers().get("origin").and_then(|v| v.to_str().ok()))
                 .status(StatusCode::OK)
@@ -201,10 +210,11 @@ async fn actual_proxy_logic(
             };
 
             if !use_disk_cache || z > 8 {
-                TILE_CACHE.insert(upstream_url.clone(), collected.clone()).await;
+                TILE_CACHE.insert(cache_key.clone(), collected.clone()).await;
             }
 
-            info!(%path, "🌐 Fetched from upstream");
+            let elapsed = start.elapsed().as_millis();
+            info!(%cache_key, elapsed_ms = elapsed, "🌐 Fetched from upstream");
             let body = StreamBody::new(once(Ok(Frame::data(collected)))).boxed();
 
             Ok(

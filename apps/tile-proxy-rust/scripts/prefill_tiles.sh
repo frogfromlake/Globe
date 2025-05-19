@@ -1,5 +1,9 @@
 #!/bin/bash
 
+log() {
+  echo "$(date '+%Y-%m-%d %H:%M:%S') $*" | tee -a "$LOG_DIR/tile_prefill.log"
+}
+
 log "🚀 Starting tile prefill script..."
 
 # === FLAGS ===
@@ -17,7 +21,7 @@ if [[ $IS_TEST -eq 1 ]]; then
 else
   BASE_DIR="/data/tiles"
   LOG_DIR="/data/logs"
-  ZOOM_START=5
+  ZOOM_START=0
   ZOOM_END=8
 fi
 
@@ -29,18 +33,31 @@ RETRY_BASE_DELAY=3  # seconds
 BATCH_SLEEP_EVERY=500
 BATCH_SLEEP_SECONDS=5
 TEMPLATE_URL="https://tiles.maps.eox.at/wmts/1.0.0/s2cloudless-2024_3857/default/GoogleMapsCompatible"
-CONCURRENT_FETCHES=10
+CONCURRENT_FETCHES=20
 
-log() {
-  echo "$(date '+%Y-%m-%d %H:%M:%S') $*" | tee -a "$LOG_DIR/tile_prefill.log"
-}
+# === SAFETY CHECK: Abort if any Z0–Z8 tiles already exist (unless in test mode) ===
+ALLOW_EXISTING=0
+if [[ "$1" == "--allow-existing" ]]; then
+  ALLOW_EXISTING=1
+fi
+
+if [[ $IS_TEST -eq 0 && $ALLOW_EXISTING -eq 0 ]]; then
+  for ((z=ZOOM_START; z<=ZOOM_END; z++)); do
+    if compgen -G "$BASE_DIR/$z/*.jpg" > /dev/null; then
+      log "❌ ABORTED: Existing tiles detected in Z$z. Use --allow-existing if you really intend to continue."
+      exit 1
+    fi
+  done
+fi
 
 fetch_tile() {
   local z=$1 x=$2 y=$3
   local url="${TEMPLATE_URL}/${z}/${x}/${y}.jpg"
   local tile_path="${BASE_DIR}/${z}/${x}/${y}.jpg"
 
+  # === CRITICAL SAFETY: never overwrite existing tile ===
   if [[ -f "$tile_path" ]]; then
+    log "🛑 Skipped existing $z/$x/$y"
     return
   fi
 
@@ -89,4 +106,3 @@ done
 wait
 log "🟡 Prefill complete. Sleeping to keep container alive..."
 sleep infinity
-

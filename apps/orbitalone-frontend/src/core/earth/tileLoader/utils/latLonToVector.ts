@@ -18,7 +18,7 @@ import { Vector3 } from "three";
  */
 export function latLonToUnitVector(lat: number, lon: number): Vector3 {
   const phi = (90 - lat) * (Math.PI / 180); // polar angle from vertical
-  const theta = (lon + 90) * (Math.PI / 180); // azimuthal angle from x-axis
+  const theta = (lon) * (Math.PI / 180); // azimuthal angle from x-axis
   return new Vector3().setFromSphericalCoords(1, phi, theta).normalize();
 }
 

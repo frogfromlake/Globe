@@ -35,6 +35,7 @@ export async function createTileMeshRaster(
     latOverride,
     onTextureLoaded,
   } = options;
+  // console.log(`📦 Creating tile ${z}/${x}/${y}`);
 
   const bounds = latOverride ?? tileToLatLonBounds(x, y, z);
   const { latMin, latMax, lonMin, lonMax } = bounds;
@@ -105,13 +106,22 @@ export async function createTileMeshRaster(
     opacity: isHighRes ? 1 : 0, // Start high-res at 0 for fade-in, fallback fully visible
     depthWrite: !isHighRes, // Fix for overdraw issues when mixing transparent/opaque
   });
-
+  
   material.map = texture;
   material.needsUpdate = true;
   texture.needsUpdate = true;
+  
+  
+    // console.log(
+    //   `🎨 Material for tile ${z}/${x}/${y}: opacity=${material.opacity}, transparent=${material.transparent}, depthWrite=${material.depthWrite}`
+    // );
 
-  const mesh = new Mesh(geometry, material);
+    const mesh = new Mesh(geometry, material);
 
+    // console.log(
+    //   `🧱 Mesh created for tile ${z}/${x}/${y}: visible=${mesh.visible}, vertices=${geometry.getAttribute('position').count}`
+    // );
+    
   mesh.visible = true;
 
   return mesh;

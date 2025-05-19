@@ -13,11 +13,15 @@
  */
 interface ImportMetaEnv {
   /**
-   * @property {string | undefined} PUBLIC_API_URL - The base URL for the public API.
-   * This is used to configure API calls throughout the application.
-   * If not set, the application falls back to the default local development URL.
+   * @property {string | undefined} VITE_NEWS_API_URL - The base URL for the public API.
    */
-  readonly PUBLIC_API_URL?: string;
+  readonly VITE_NEWS_API_URL?: string;
+
+  /**
+   * @property {string} VITE_TILE_PROXY_URL - The base URL for the tile proxy.
+   * This is required to resolve tile URLs in production and development.
+   */
+  readonly VITE_TILE_PROXY_URL: string;
 }
 
 /**

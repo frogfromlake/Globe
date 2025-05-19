@@ -12,7 +12,7 @@ primary_region = 'fra'
   PORT = '8080'
   TILE_STORAGE_PATH = '/data/tiles'
 
-[mounts]
+[[mounts]]
   source = "tile_cache"
   destination = "/data"
 

@@ -27,5 +27,5 @@ RUN chmod +x /app/scripts/prefill_tiles.sh
 RUN mkdir -p /data/logs
 
 # Optional: run prefill script at startup if desired (commented out for safety)
-ENTRYPOINT ["/app/scripts/prefill_tiles.sh"]
-# ENTRYPOINT ["/usr/local/bin/tile-proxy-rust"]
+# ENTRYPOINT ["/app/scripts/prefill_tiles.sh"]
+ENTRYPOINT ["/usr/local/bin/tile-proxy-rust"]
