@@ -1,22 +1,35 @@
 import {
+  ArrowHelper,
   Frustum,
   Group,
-  Material,
   Matrix4,
+  Object3D,
   PerspectiveCamera,
+  Scene,
   Sphere,
   Vector3,
   WebGLRenderer,
 } from "three";
-import type { CreateTileMeshFn } from "./types";
+import type { CreateTileMeshFn, TileLoaderConfig } from "./types";
 import { TileCache } from "./tileCache";
-import { getCameraCenterDirection } from "./utils/cameraUtils";
+import {
+  getCameraCenterDirection,
+  getCameraLongitude,
+} from "./utils/cameraUtils";
 import { tileToLatLonBounds } from "./utils/tileToBounds";
 import { latLonToUnitVector } from "./utils/latLonToVector";
+import {
+  estimateZoomLevel,
+  getBoundingSphereMultiplier,
+  getConcurrencyLimit,
+  getMaxTilesToLoad,
+  getMinDotThreshold,
+  getMinTileRadius,
+  getTileInflation,
+} from "./utils/lodFunctions";
 
-/**
- * Configuration for initializing the TileManager.
- */
+const DEBUG_DOT_PRODUCT = true;
+
 export interface TileManagerOptions {
   zoomLevel?: number;
   fallbackZoomLevel?: number;
@@ -26,13 +39,12 @@ export interface TileManagerOptions {
   createTileMesh: CreateTileMeshFn;
   camera: PerspectiveCamera;
   fadeDuration?: number;
+  config?: TileLoaderConfig;
+  scene?: Scene;
 }
 
-/**
- * Manages loading and displaying a static globe shell using XYZ tiles.
- * Supports both standard raster formats and GPU-compressed KTX2 tiles.
- */
 export class TileManager {
+  private config: TileLoaderConfig;
   private cache = new TileCache(512);
   private radius: number;
   private zoom: number;
@@ -44,10 +56,15 @@ export class TileManager {
   private updateScheduled = false;
   private updatePending = false;
   private lastCenterDir = new Vector3();
-  private minDirectionChangeThreshold = 0.0005; // tweakable — lower = more sensitive
+  private minDirectionChangeThreshold = 0.0005;
   private fallbackManager?: TileManager;
-
+  private tileQueue: (() => Promise<void>)[] = [];
+  private tileQueueBusy = false;
+  private scene?: Scene;
+  private debugArrows: Object3D[] = [];
   public group: Group;
+  private readonly dotLogCounts: Record<number, number> = {};
+  private readonly LOG_LIMIT_PER_ZOOM = 10;
 
   constructor({
     zoomLevel = 3,
@@ -56,6 +73,8 @@ export class TileManager {
     renderer,
     createTileMesh,
     camera,
+    config = {},
+    scene,
   }: TileManagerOptions) {
     this.zoom = zoomLevel;
     this.urlTemplate = urlTemplate;
@@ -63,6 +82,14 @@ export class TileManager {
     this.renderer = renderer;
     this.createTileMesh = createTileMesh;
     this.camera = camera;
+    this.config = {
+      enableFrustumCulling: true,
+      enableDotProductFiltering: true,
+      enableScreenSpacePrioritization: true,
+      enableCaching: true,
+      ...config,
+    };
+    this.scene = scene;
     this.group = new Group();
     this.group.name = `TileGroup_Z${this.zoom}`;
   }
@@ -78,71 +105,152 @@ export class TileManager {
   }
 
   public forceNextUpdate(): void {
-    this.lastCenterDir.set(NaN, NaN, NaN); // Guarantees angleDiff will be NaN → trigger update
+    this.lastCenterDir.set(NaN, NaN, NaN);
   }
 
-  /**
-   * Loads all tiles for the globe.
-   */
+  public setFeatureEnabled(feature: keyof TileLoaderConfig, enabled: boolean) {
+    this.config[feature] = enabled;
+    this.forceNextUpdate();
+  }
+
+  private passesUnifiedVisibility(
+    tileDir: Vector3,
+    boundingSphere: Sphere,
+    frustum: Frustum
+  ): boolean {
+    const z = this.zoom;
+    const DEBUG_DOT_PRODUCT = true;
+
+    if (
+      !this.config.enableDotProductFiltering &&
+      !this.config.enableFrustumCulling
+    ) {
+      return true;
+    }
+
+    const viewDir = getCameraCenterDirection(this.camera);
+    const dot = viewDir.dot(tileDir);
+    const minDotThreshold = getMinDotThreshold(z, this.camera.fov);
+
+    if (
+      DEBUG_DOT_PRODUCT &&
+      dot < 0.35 &&
+      (this.dotLogCounts[z] ?? 0) < this.LOG_LIMIT_PER_ZOOM
+    ) {
+      const angleDeg = (Math.acos(dot) * 180) / Math.PI;
+      console.warn(
+        `🧭 [Z${z}] dot=${dot.toFixed(4)}, angle=${angleDeg.toFixed(
+          1
+        )}° — might be grazing or behind camera`
+      );
+      this.dotLogCounts[z] = (this.dotLogCounts[z] ?? 0) + 1;
+    }
+
+    const passedDot =
+      !this.config.enableDotProductFiltering || dot >= minDotThreshold;
+
+    const passedFrustum =
+      !this.config.enableFrustumCulling ||
+      frustum.intersectsSphere(boundingSphere);
+
+    const passed = passedDot && passedFrustum;
+
+    // ✅ Draw debug arrow (optional)
+    if (
+      DEBUG_DOT_PRODUCT &&
+      this.scene &&
+      this.debugArrows.length < getMaxDebugArrows(z)
+    ) {
+      const arrowColor = passed ? 0x00ff00 : 0xff0000;
+      const arrow = new ArrowHelper(
+        tileDir.clone().normalize(),
+        new Vector3(0, 0, 0),
+        1.05,
+        arrowColor,
+        0.02,
+        0.01
+      );
+      this.scene.add(arrow);
+      this.debugArrows.push(arrow);
+    }
+
+    // ✅ Log only once per zoom level
+    // if (
+    //   DEBUG_DOT_PRODUCT &&
+    //   (this.dotLogCounts[z] ?? 0) < this.LOG_LIMIT_PER_ZOOM
+    // ) {
+    //   console.log(
+    //     `%c[Z${z}] Tile visibility: dot=${dot.toFixed(
+    //       4
+    //     )}, minDot=${minDotThreshold.toFixed(
+    //       4
+    //     )}, dotPass=${passedDot}, frustumPass=${passedFrustum}, passed=${passed}`,
+    //     passed ? "color: green" : "color: red"
+    //   );
+    //   this.dotLogCounts[z] = (this.dotLogCounts[z] ?? 0) + 1;
+    // }
+
+    return passed;
+  }
+
+  private computeScreenDistance(center: Vector3): number {
+    if (!this.config.enableScreenSpacePrioritization) return 0;
+    const projected = center.clone().project(this.camera);
+    return projected.distanceTo(new Vector3(0, 0, -1));
+  }
+
   async loadTiles(): Promise<void> {
     await this.loadVisibleTiles();
   }
 
-  /**
-   * Loads only tiles relevant to the current camera view.
-   */
   async loadVisibleTiles(): Promise<void> {
-    const MAX_TILES_TO_LOAD = Math.floor(4000 / Math.pow(2, this.zoom - 10));
-
+    const MAX_TILES_TO_LOAD = getMaxTilesToLoad(this.zoom);
     const tileCount = 2 ** this.zoom;
     const z = this.zoom;
-    const concurrencyLimit = this.zoom >= 8 ? 3 : 6;
-    const tileTasks: (() => Promise<void>)[] = [];
+    const concurrencyLimit = getConcurrencyLimit(this.zoom); // !
+
+    if (DEBUG_DOT_PRODUCT && this.scene) {
+      for (const obj of this.debugArrows) {
+        this.scene.remove(obj);
+      }
+      this.debugArrows = [];
+    }
 
     const frustum = new Frustum();
-    this.camera.updateMatrixWorld();
-    const projScreenMatrix = new Matrix4();
-    projScreenMatrix.multiplyMatrices(
-      this.camera.projectionMatrix,
-      this.camera.matrixWorldInverse
-    );
+    if (this.config.enableFrustumCulling) {
+      const lookaheadFov = this.camera.fov * 1.3;
+      const tempCamera = new PerspectiveCamera(
+        lookaheadFov,
+        this.camera.aspect,
+        this.camera.near,
+        this.camera.far
+      );
+      tempCamera.position.copy(this.camera.position);
+      tempCamera.quaternion.copy(this.camera.quaternion);
+      tempCamera.updateMatrixWorld(true);
 
-    // Lookahead camera for preloading
-    const lookaheadFov = this.camera.fov * 1.15;
-    const tempCamera = new PerspectiveCamera(
-      lookaheadFov,
-      this.camera.aspect,
-      this.camera.near,
-      this.camera.far
-    );
-    tempCamera.position.copy(this.camera.position);
-    tempCamera.quaternion.copy(this.camera.quaternion);
-    tempCamera.updateMatrixWorld(true);
-    projScreenMatrix.multiplyMatrices(
-      tempCamera.projectionMatrix,
-      tempCamera.matrixWorldInverse
-    );
-    frustum.setFromProjectionMatrix(projScreenMatrix);
+      const projScreenMatrix = new Matrix4().multiplyMatrices(
+        tempCamera.projectionMatrix,
+        tempCamera.matrixWorldInverse
+      );
+      frustum.setFromProjectionMatrix(projScreenMatrix);
+    }
 
-    const allTiles: {
+    const maxScreenDist = Infinity;
+
+    const tileCandidates: {
       x: number;
       y: number;
       key: string;
-      dot: number;
       screenDist: number;
     }[] = [];
 
-    const viewDir = getCameraCenterDirection(this.camera);
-    const screenCenter = new Vector3(0, 0, -1); // NDC center
-
-    let shouldBreak = false;
-
-    for (let x = 0; x < tileCount && !shouldBreak; x++) {
+    for (let x = 0; x < tileCount; x++) {
       for (let y = 0; y < tileCount; y++) {
         const key = `${z}/${x}/${y}`;
         if (this.visibleTiles.has(key)) continue;
 
-        if (this.cache.has(key)) {
+        if (this.config.enableCaching && this.cache.has(key)) {
           const cached = this.cache.get(key);
           if (cached && !this.group.children.includes(cached)) {
             this.group.add(cached);
@@ -154,6 +262,12 @@ export class TileManager {
         const bounds = tileToLatLonBounds(x, y, z);
         const centerLat = (bounds.latMin + bounds.latMax) / 2;
         const centerLon = (bounds.lonMin + bounds.lonMax) / 2;
+        const cameraLon = getCameraLongitude(this.camera);
+        const lonDiff = Math.abs(centerLon - cameraLon);
+        const wrappedLonDiff = lonDiff > 180 ? 360 - lonDiff : lonDiff;
+
+        if (wrappedLonDiff > 100) continue;
+
         const cameraDistance = this.camera.position.length();
 
         const boundingSphere = getTileBoundingSphere(
@@ -163,57 +277,54 @@ export class TileManager {
           this.radius,
           cameraDistance
         );
+
         const tileDir = latLonToUnitVector(centerLat, centerLon);
-        const dot = viewDir.dot(tileDir);
 
-        const minDotThreshold =
-          z <= 8
-            ? 0.6
-            : z === 9
-            ? 0.74
-            : z === 10
-            ? 0.78
-            : z === 11
-            ? 0.83
-            : z === 12
-            ? 0.87
-            : 0.9;
+        const screenDist = this.computeScreenDistance(boundingSphere.center);
+        // if (screenDist > 1.5) continue; // ❗ was 0.6 before — too aggressive
 
-        if (dot < minDotThreshold) continue;
-        if (!frustum.intersectsSphere(boundingSphere)) continue;
-
-        // Screen-space prioritization
-        const projected = boundingSphere.center.clone().project(this.camera);
-        const screenDist = projected.distanceTo(screenCenter);
-
-        allTiles.push({ x, y, key, dot, screenDist });
-
-        if (allTiles.length >= MAX_TILES_TO_LOAD * 4) {
-          shouldBreak = true;
-          break;
+        if (
+          DEBUG_DOT_PRODUCT &&
+          z === 10 &&
+          (this.dotLogCounts[z] ?? 0) < this.LOG_LIMIT_PER_ZOOM
+        ) {
+          this.dotLogCounts[z] = (this.dotLogCounts[z] ?? 0) + 1;
+          const cameraToTile = boundingSphere.center
+            .clone()
+            .sub(this.camera.position);
+          const angle =
+            (cameraToTile.angleTo(
+              this.camera.getWorldDirection(new Vector3())
+            ) *
+              180) /
+            Math.PI;
+          console.warn(
+            `Z10 Tile [${x},${y}] → centerDist=${boundingSphere.center
+              .length()
+              .toFixed(3)} | ` +
+              `radius=${boundingSphere.radius.toFixed(
+                4
+              )} | angle=${angle.toFixed(1)}°`
+          );
         }
+
+        if (!this.passesUnifiedVisibility(tileDir, boundingSphere, frustum)) {
+          continue;
+        }
+
+        tileCandidates.push({ x, y, key, screenDist });
       }
     }
 
+    tileCandidates.sort((a, b) => a.screenDist - b.screenDist);
+    const loadList = tileCandidates.slice(0, MAX_TILES_TO_LOAD);
+
     console.log(
-      `🧮 [TileManager Z${z}] ${allTiles.length} tiles passed culling`
+      `🧮 Z${z} → ${tileCandidates.length} tiles, queuing ${loadList.length}`
     );
 
-    if (allTiles.length > MAX_TILES_TO_LOAD * 3) {
-      console.warn(
-        `⚠️ Too many tiles (${allTiles.length}) passed culling at Z${z}. Reducing to top ${MAX_TILES_TO_LOAD}`
-      );
-    }
-
-    allTiles.sort((a, b) => {
-      if (b.dot !== a.dot) return b.dot - a.dot;
-      return a.screenDist - b.screenDist;
-    });
-
-    const loadLimit = allTiles.slice(0, MAX_TILES_TO_LOAD);
-
-    for (const { x, y, key } of loadLimit) {
-      tileTasks.push(async () => {
+    for (const { x, y, key } of loadList) {
+      this.tileQueue.push(async () => {
         try {
           const mesh = await this.createTileMesh({
             x,
@@ -223,9 +334,7 @@ export class TileManager {
             radius: this.radius,
             renderer: this.renderer,
           });
-
           mesh.visible = true;
-
           this.group.add(mesh);
           this.cache.set(key, mesh);
           this.visibleTiles.add(key);
@@ -235,21 +344,22 @@ export class TileManager {
       });
     }
 
-    await runConcurrent(tileTasks, concurrencyLimit, 16);
+    if (!this.tileQueueBusy) this.processTileQueue();
   }
 
-  /**
-   * Called externally when camera moves.
-   */
-  updateTiles(): void {
-    const currentDir = getCameraCenterDirection(this.camera);
-    const angleDiff = currentDir.angleTo(this.lastCenterDir);
-
-    if (angleDiff < this.minDirectionChangeThreshold) {
-      return; // Camera hasn't moved enough
+  private async processTileQueue(): Promise<void> {
+    this.tileQueueBusy = true;
+    while (this.tileQueue.length > 0) {
+      const task = this.tileQueue.shift();
+      if (task) await task();
+      await new Promise((resolve) => requestAnimationFrame(resolve));
     }
+    this.tileQueueBusy = false;
+  }
 
-    this.lastCenterDir.copy(currentDir);
+  updateTiles(): void {
+    const estimatedZoom = estimateZoomLevel(this.camera);
+    if (this.zoom > estimatedZoom + 1) return; // Too early to load this zoom level
 
     if (this.updateScheduled) {
       this.updatePending = true;
@@ -257,50 +367,23 @@ export class TileManager {
     }
 
     this.updateScheduled = true;
-
     requestAnimationFrame(async () => {
       await this.loadVisibleTiles();
       this.updateScheduled = false;
-
       if (this.updatePending) {
         this.updatePending = false;
-        this.updateTiles(); // rerun once more for latest state
+        this.updateTiles();
       }
     });
   }
 
-  hideOverlappingFallbacks(fallbackManager: TileManager): void {
-    for (const key of fallbackManager.visibleTiles) {
-      const [zStr, xStr, yStr] = key.split("/");
-      const zx = parseInt(xStr, 10);
-      const zy = parseInt(yStr, 10);
-      const zz = parseInt(zStr, 10);
-
-      const tileMesh = fallbackManager.cache.get(key);
-      if (!tileMesh || !tileMesh.visible) continue;
-
-      const scale = 2 ** (this.zoom - zz);
-      const baseX = zx * scale;
-      const baseY = zy * scale;
-
-      let covered = true;
-      for (let dx = 0; dx < scale; dx++) {
-        for (let dy = 0; dy < scale; dy++) {
-          const subKey = `${this.zoom}/${baseX + dx}/${baseY + dy}`;
-          const highRes = this.cache.get(subKey);
-          const mat = highRes?.material as Material & { opacity: number };
-          if (!highRes || mat.opacity < 1) {
-            covered = false;
-            break;
-          }
-        }
-        if (!covered) break;
-      }
-
-      if (covered) {
-        tileMesh.visible = false;
-      }
-    }
+  public clear(): void {
+    this.group.clear();
+    this.visibleTiles.clear();
+    this.cache.clear();
+    this.lastCenterDir.setScalar(Infinity);
+    this.updateScheduled = false;
+    this.updatePending = false;
   }
 
   async loadAllTiles(): Promise<void> {
@@ -345,20 +428,6 @@ export class TileManager {
 
     await runConcurrent(tileTasks, concurrencyLimit);
   }
-
-  /**
-   * Clears all loaded tiles from the scene and cache.
-   */
-  public clear(): void {
-    this.group.clear();
-    this.visibleTiles.clear();
-    this.cache.clear();
-
-    // Important: reset to force update trigger next time
-    this.lastCenterDir.setScalar(Infinity); // Or any invalid direction
-    this.updateScheduled = false;
-    this.updatePending = false;
-  }
 }
 
 async function runConcurrent<T>(
@@ -369,7 +438,6 @@ async function runConcurrent<T>(
   const results: T[] = [];
   const executing: Promise<T>[] = [];
   let lastYield = performance.now();
-
   for (const task of tasks) {
     const p = task()
       .then((result) => results.push(result))
@@ -377,70 +445,57 @@ async function runConcurrent<T>(
         const i = executing.indexOf(p as Promise<T>);
         if (i > -1) executing.splice(i, 1);
       });
-
     executing.push(p as Promise<T>);
-
-    if (executing.length >= limit) {
-      await Promise.race(executing);
-    }
-
+    if (executing.length >= limit) await Promise.race(executing);
     const now = performance.now();
     if (now - lastYield > yieldEveryMs) {
-      await new Promise(requestAnimationFrame);
+      await new Promise((resolve) => {
+        requestAnimationFrame(() => {
+          setTimeout(resolve, 0);
+        });
+      });
       lastYield = performance.now();
     }
   }
-
   await Promise.all(executing);
   return results;
 }
 
-function getTileBoundingSphere(
+export function getTileBoundingSphere(
   x: number,
   y: number,
   z: number,
-  radius: number,
-  cameraDistance?: number
+  globeRadius: number,
+  cameraDistance: number
 ): Sphere {
   const bounds = tileToLatLonBounds(x, y, z);
   const centerLat = (bounds.latMin + bounds.latMax) / 2;
   const centerLon = (bounds.lonMin + bounds.lonMax) / 2;
   const centerDir = latLonToUnitVector(centerLat, centerLon);
-  const center = centerDir.clone().multiplyScalar(radius * 1.05);
+  const center = centerDir.multiplyScalar(globeRadius * 1.02);
 
-  const deltaLat = Math.abs(bounds.latMax - bounds.latMin);
-  const approxAngle = (deltaLat * Math.PI) / 180;
-
-  // Steeper curve above Z10 to prevent runaway tile counts
-  const baseMultiplier =
-    z <= 8
-      ? 1.0
-      : z === 9
-      ? 1.7
-      : z === 10
-      ? 2.6
-      : z === 11
-      ? 3.8
-      : z === 12
-      ? 5.0
-      : 6.3; // Z13
-
-  const inflation =
-    cameraDistance && cameraDistance < 1.004 && z >= 10
-      ? 1.05 + (1.004 - cameraDistance) * 40
-      : 1.0;
-
-  const minRadius =
-    z <= 8 ? 0.005 : z <= 10 ? 0.03 : z === 11 ? 0.06 : z === 12 ? 0.08 : 0.1;
-
-  const sphereRadius = Math.max(
-    Math.sin(approxAngle / 2) * radius * baseMultiplier * inflation,
-    minRadius * inflation
+  const angleDeg = Math.max(
+    bounds.latMax - bounds.latMin,
+    bounds.lonMax - bounds.lonMin
   );
+  const angleRad = (angleDeg * Math.PI) / 180;
 
-  return new Sphere(center, sphereRadius);
+  const rawRadius = Math.sin(angleRad / 2) * globeRadius;
+
+  const baseMultiplier = getBoundingSphereMultiplier(z); // e.g. 1.0 → 4.0
+  const inflation = getTileInflation(z, cameraDistance); // optional
+  const minRadius = getMinTileRadius(z); // fallback radius (per zoom)
+
+  const inflated = rawRadius * baseMultiplier * inflation;
+  const radius = Math.max(inflated, minRadius * inflation); // ensure it's never too small
+
+  return new Sphere(center, radius);
 }
 
-function easeInOutQuad(t: number): number {
-  return t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
+function getMaxDebugArrows(z: number): number {
+  if (z <= 5) return 100;
+  if (z <= 7) return 150;
+  if (z <= 9) return 200;
+  if (z <= 11) return 300;
+  return 400; // Z12+
 }

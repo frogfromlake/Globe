@@ -1,18 +1,15 @@
-/**
- * Tile mesh generator for standard image-based raster tiles (e.g. JPEG, PNG).
- * Suitable for traditional XYZ tile services such as MapTiler or OpenStreetMap.
- */
-
 import {
   BufferGeometry,
   BufferAttribute,
   Mesh,
   MeshBasicMaterial,
-  TextureLoader,
   DoubleSide,
   LinearMipMapLinearFilter,
   LinearFilter,
   FrontSide,
+  CanvasTexture,
+  ImageBitmapLoader,
+  Texture,
 } from "three";
 import { tileToLatLonBounds } from "./utils/tileToBounds";
 import { latLonToUnitVector } from "./utils/latLonToVector";
@@ -26,21 +23,13 @@ import { TileMeshOptions } from "./types";
 export async function createTileMeshRaster(
   options: TileMeshOptions
 ): Promise<Mesh> {
-  const {
-    x,
-    y,
-    z,
-    urlTemplate,
-    radius = 1,
-    latOverride,
-    onTextureLoaded,
-  } = options;
-  // console.log(`📦 Creating tile ${z}/${x}/${y}`);
+  const { x, y, z, urlTemplate, radius = 1, onTextureLoaded } = options;
 
-  const bounds = latOverride ?? tileToLatLonBounds(x, y, z);
+  const bounds = tileToLatLonBounds(x, y, z);
   const { latMin, latMax, lonMin, lonMax } = bounds;
 
-  const subdivisions = 12;
+  // 🔧 Adjust subdivisions by zoom level
+  const subdivisions = z <= 8 ? 12 : z === 9 ? 8 : 6;
   const latStep = (latMax - latMin) / subdivisions;
   const lonStep = (lonMax - lonMin) / subdivisions;
 
@@ -81,19 +70,18 @@ export async function createTileMeshRaster(
     .replace("{x}", x.toString())
     .replace("{y}", y.toString());
 
-  const texture = await new TextureLoader().loadAsync(url).catch((err) => {
-    console.warn(`❌ Failed to load texture from ${url}`, err);
-    return null;
-  });
+  const start = performance.now();
+  const response = await fetch(url);
+  const blob = await response.blob();
+  const bitmap = await createImageBitmap(blob, { imageOrientation: "flipY" });
 
-  if (!texture) {
-    throw new Error(`Texture loading failed for tile ${z}/${x}/${y}`);
-  }
+  const texture = new CanvasTexture(bitmap);
 
   texture.generateMipmaps = true;
   texture.minFilter = LinearMipMapLinearFilter;
   texture.magFilter = LinearFilter;
   texture.anisotropy = 4;
+  texture.needsUpdate = true;
 
   if (onTextureLoaded) onTextureLoaded(texture);
 
@@ -102,27 +90,19 @@ export async function createTileMeshRaster(
   const material = new MeshBasicMaterial({
     map: texture,
     side: FrontSide,
-    transparent: isHighRes, // Only high-res tiles need transparency
-    opacity: isHighRes ? 1 : 0, // Start high-res at 0 for fade-in, fallback fully visible
-    depthWrite: !isHighRes, // Fix for overdraw issues when mixing transparent/opaque
+    transparent: isHighRes,
+    opacity: isHighRes ? 1 : 1,
+    depthWrite: isHighRes ? false : true,
   });
-  
-  material.map = texture;
-  material.needsUpdate = true;
-  texture.needsUpdate = true;
-  
-  
-    // console.log(
-    //   `🎨 Material for tile ${z}/${x}/${y}: opacity=${material.opacity}, transparent=${material.transparent}, depthWrite=${material.depthWrite}`
-    // );
 
-    const mesh = new Mesh(geometry, material);
+  const mesh = new Mesh(geometry, material);
+  mesh.renderOrder = isHighRes ? 1 : 1;
 
-    // console.log(
-    //   `🧱 Mesh created for tile ${z}/${x}/${y}: visible=${mesh.visible}, vertices=${geometry.getAttribute('position').count}`
-    // );
-    
-  mesh.visible = true;
+  // 🕐 Delay visibility to avoid layout jank
+  mesh.visible = false;
+  setTimeout(() => {
+    mesh.visible = true;
+  }, 50); // ~1 frame delay
 
   return mesh;
 }

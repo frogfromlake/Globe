@@ -1,5 +1,12 @@
 import { Mesh, Texture, WebGLRenderer } from "three";
 
+export interface TileLoaderConfig {
+  enableFrustumCulling?: boolean;
+  enableDotProductFiltering?: boolean;
+  enableScreenSpacePrioritization?: boolean;
+  enableCaching?: boolean;
+}
+
 /**
  * Options for creating a single tile mesh, common to all tile formats.
  */
@@ -14,13 +21,7 @@ export interface TileMeshOptions {
   urlTemplate: string;
   /** Radius of the sphere surface where this tile will be placed (default: 1) */
   radius?: number;
-  /** Optional override for lat/lon bounds (used for polar patches) */
-  latOverride?: {
-    latMin: number;
-    latMax: number;
-    lonMin: number;
-    lonMax: number;
-  };
+
   /** Callback to receive the loaded texture (for reuse or debugging) */
   onTextureLoaded?: (texture: Texture) => void;
   /** Renderer instance, required for KTX2 tile decoding */

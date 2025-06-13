@@ -64,4 +64,8 @@ export class TileCache {
   keys(): IterableIterator<string> {
     return this.cache.keys();
   }
+
+  public size(): number {
+    return this.cache.size;
+  }
 }

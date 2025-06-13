@@ -49,7 +49,6 @@ export async function createTileMeshKTX2(
     z,
     urlTemplate,
     radius = 1,
-    latOverride,
     onTextureLoaded,
     renderer,
   } = options;
@@ -58,7 +57,7 @@ export async function createTileMeshKTX2(
     throw new Error("WebGLRenderer is required for KTX2 tiles");
   }
 
-  const bounds = latOverride ?? tileToLatLonBounds(x, y, z);
+  const bounds = tileToLatLonBounds(x, y, z);
   const { latMin, latMax, lonMin, lonMax } = bounds;
 
   const subdivisions = 12;

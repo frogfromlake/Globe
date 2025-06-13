@@ -27,9 +27,63 @@
   </head>
   <body>
     <script type="module" src="/src/core/earth/tileLoader/testTileScene.ts"></script>
+
     <div id="attribution">
       Sentinel-2 cloudless - <a href="https://s2maps.eu" target="_blank">https://s2maps.eu</a> by EOX IT Services GmbH<br />
       (Contains modified Copernicus Sentinel data 2024)
     </div>
+
+    <!-- ✅ Debug UI Overlay -->
+    <div id="tile-debug-ui" style="position:fixed;top:10px;left:1200px;background:rgba(0,0,0,0.8);color:white;padding:10px;font-family:sans-serif;font-size:12px;border-radius:8px;z-index:10000">
+      <strong>Tile Debug UI</strong><br>
+      <label><input type="checkbox" data-feature="enableFrustumCulling" checked> Frustum Culling</label><br>
+      <label><input type="checkbox" data-feature="enableDotProductFiltering" checked> Dot Filter</label><br>
+      <label><input type="checkbox" data-feature="enableScreenSpacePrioritization" checked> Screen Priority</label><br>
+      <label><input type="checkbox" data-feature="enableCaching" checked> Caching</label><br>
+      <div id="camera-info">
+        <div>Camera Distance: <span id="camera-distance">-</span></div>
+        <div>Current LOD (Z): <span id="current-zoom">-</span></div>
+      </div>
+    </div>
+
+    <script>
+      (function () {
+        const ui = document.getElementById("tile-debug-ui");
+        const checkboxes = ui.querySelectorAll("input[type='checkbox']");
+        const distanceEl = document.getElementById("camera-distance");
+        const zoomEl = document.getElementById("current-zoom");
+      
+        function setFeatureGlobally(feature, enabled) {
+          if (window.dynamicTileManager?.tileManagers) {
+            for (const [_, tm] of window.dynamicTileManager.tileManagers) {
+              tm.setFeatureEnabled(feature, enabled);
+            }
+          }
+        }
+      
+        checkboxes.forEach((cb) => {
+          const feature = cb.dataset.feature;
+          cb.addEventListener("change", () => {
+            const enabled = cb.checked;
+            setFeatureGlobally(feature, enabled);
+            console.log(`[TileDebugUI] ${feature} set to`, enabled);
+          });
+        });
+      
+        // Update debug info in realtime
+        function updateCameraInfo() {
+          const camera = window?.dynamicTileManager?.camera;
+          const currentZoom = window?.dynamicTileManager?.currentZoom;
+          if (camera) {
+            distanceEl.textContent = camera.position.length().toFixed(5);
+          }
+          if (typeof currentZoom === "number") {
+            zoomEl.textContent = currentZoom;
+          }
+          requestAnimationFrame(updateCameraInfo);
+        }
+        updateCameraInfo();
+      })();
+      </script>
   </body>
 </html>

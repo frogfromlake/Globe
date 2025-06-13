@@ -25,8 +25,9 @@ function clampLatitude(lat: number): number {
  * @returns Latitude in degrees
  */
 function tileYToLat(y: number, z: number): number {
-  const n = Math.PI - (2 * Math.PI * y) / Math.pow(2, z);
-  return (180 / Math.PI) * Math.atan(0.5 * (Math.exp(n) - Math.exp(-n)));
+  const n = Math.pow(2, z);
+  const latRad = Math.atan(Math.sinh(Math.PI * (1 - (2 * y) / n)));
+  return (latRad * 180) / Math.PI;
 }
 
 /**
@@ -58,12 +59,9 @@ export function tileToLatLonBounds(
   lonMin: number;
   lonMax: number;
 } {
-  const fixedX = y;
-  const fixedY = x;
-
-  const latMin = clampLatitude(tileYToLat(fixedY + 1, z));
-  const latMax = clampLatitude(tileYToLat(fixedY, z));
-  const lonMin = tileXToLon(fixedX, z);
-  const lonMax = tileXToLon(fixedX + 1, z);
+  const latMin = clampLatitude(tileYToLat(y + 1, z)); // y first
+  const latMax = clampLatitude(tileYToLat(y, z));
+  const lonMin = tileXToLon(x, z); // x first
+  const lonMax = tileXToLon(x + 1, z);
   return { latMin, latMax, lonMin, lonMax };
 }

@@ -135,17 +135,24 @@ async fn actual_proxy_logic(
     }
 
     let z: u32 = parts[0].parse().unwrap();
+    let x: u32 = parts[1].parse().unwrap();
+    let y: u32 = parts[2].parse().unwrap();
+    
+    let upstream_path = format!("{}/{}/{}", z, y, x); // flip x <-> y
+    
     let upstream_url = format!(
         "https://tiles.maps.eox.at/wmts/1.0.0/s2cloudless-2024_3857/default/GoogleMapsCompatible/{}.jpg",
-        stripped_path
+        upstream_path
     );
+    
     let cache_key = stripped_path.to_string();
 
     // Serve Z0–Z8 tiles from persistent volume storage if available
     // Only attempt volume access in production and for zoom levels Z0–Z8
     if let Some(base_path) = get_tile_base_path() {
         if (0..=8).contains(&z) && Path::new(&base_path).exists() {
-            let tile_path = format!("{}/{}.jpg", base_path, stripped_path);
+            // let tile_path = format!("{}/{}.jpg", base_path, stripped_path);
+            let tile_path = format!("{}/{}/{}/{}.jpg", base_path, z, y, x);
             match fs::read(&tile_path).await {
                 Ok(file_bytes) => {
                     let elapsed = start.elapsed().as_millis();
