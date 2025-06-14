@@ -30,13 +30,17 @@ export function getBoundingSphereMultiplier(z: number): number {
  * Max number of tiles to load concurrently depending on zoom level.
  */
 export function getMaxTilesToLoad(z: number): number {
-  if (z <= 5) return 64;
-  if (z <= 8) return 120;
-  if (z === 9) return 60;
-  if (z === 10) return 40;
-  if (z === 11) return 24; // very tight
-  if (z === 12) return 16; // ultra tight
-  return 8; // Z13 max pressure
+  if (z >= 13) return 112;
+  if (z === 12) return 112;
+  if (z === 11) return 96;
+  if (z === 10) return 80;
+  if (z === 9) return 72;
+  if (z === 8) return 64;
+  if (z === 7) return 64;
+  if (z === 6) return 64;
+  if (z === 5) return 48;
+  if (z === 4) return 32;
+  return 16; // Z3 and below
 }
 
 /**
@@ -70,12 +74,12 @@ export function estimateZoomLevel(camera: PerspectiveCamera): number {
     { min: 1.25, max: 1.5, zoom: 5 },
     { min: 1.12, max: 1.25, zoom: 6 },
     { min: 1.06, max: 1.12, zoom: 7 },
-    { min: 1.03, max: 1.06, zoom: 8 },
-    { min: 1.02, max: 1.03, zoom: 9 },
-    { min: 1.01, max: 1.02, zoom: 10 },
-    { min: 1.005, max: 1.01, zoom: 11 },
-    { min: 1.002, max: 1.005, zoom: 12 },
-    { min: 1.001, max: 1.002, zoom: 13 },
+    { min: 1.045, max: 1.06, zoom: 8 },
+    { min: 1.02, max: 1.045, zoom: 9 },
+    { min: 1.005, max: 1.02, zoom: 10 },
+    { min: 1.0025, max: 1.005, zoom: 11 },
+    { min: 1.0015, max: 1.0025, zoom: 12 },
+    { min: 1.0001, max: 1.0015, zoom: 13 },
   ];
 
   for (const range of zoomRanges) {
