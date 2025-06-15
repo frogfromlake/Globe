@@ -138,33 +138,24 @@ export class TileManager {
     this.forceNextUpdate();
   }
 
-  private passesUnifiedVisibility(
-    tileDir: Vector3,
-    boundingSphere: Sphere,
-    frustum: Frustum
-  ): boolean {
-    const z = this.zoom;
+  private async prewarmTile(x: number, y: number, z: number): Promise<void> {
+    const key = `${z}/${x}/${y}`;
+    if (this.cache.has(key)) return;
 
-    if (
-      !this.config.enableDotProductFiltering &&
-      !this.config.enableFrustumCulling
-    ) {
-      return true;
+    try {
+      const mesh = await this.createTileMesh({
+        x,
+        y,
+        z,
+        urlTemplate: this.urlTemplate,
+        radius: this.radius,
+        renderer: this.renderer,
+      });
+      mesh.visible = false;
+      this.cache.set(key, mesh); // 👈 stays cached, not added to group
+    } catch (err) {
+      console.warn(`❌ Failed to prewarm tile ${key}`, err);
     }
-
-    const viewDir = getCameraCenterDirection(this.camera);
-    const dot = viewDir.dot(tileDir);
-    const minDotThreshold = getMinDotThreshold(z, this.camera.fov);
-
-    const passedDot =
-      !this.config.enableDotProductFiltering || dot >= minDotThreshold;
-
-    const passedFrustum =
-      !this.config.enableFrustumCulling ||
-      frustum.intersectsSphere(boundingSphere);
-
-    const passed = passedDot && passedFrustum;
-    return passed;
   }
 
   private computeScreenDistance(center: Vector3): number {
@@ -181,12 +172,6 @@ export class TileManager {
     const MAX_TILES_TO_LOAD = getMaxTilesToLoad(this.zoom);
     const tileCount = 2 ** this.zoom;
     const z = this.zoom;
-
-    const startTime = performance.now();
-    let numEvaluated = 0;
-    let numVisible = 0;
-    let numFrustumPassed = 0;
-    let numDotPassed = 0;
 
     if (z >= 10 && this.group.children.length > 120) {
       console.warn(
@@ -207,7 +192,6 @@ export class TileManager {
       tempCamera.position.copy(this.camera.position);
       tempCamera.quaternion.copy(this.camera.quaternion);
       tempCamera.updateMatrixWorld(true);
-
       const projMatrix = new Matrix4().multiplyMatrices(
         tempCamera.projectionMatrix,
         tempCamera.matrixWorldInverse
@@ -246,7 +230,6 @@ export class TileManager {
       let x = 0,
         y = 0,
         direction = 0;
-
       while (Math.abs(x) <= radius && Math.abs(y) <= radius) {
         for (let i = 0; i < segmentLength; i++) {
           if (Math.abs(x) <= radius && Math.abs(y) <= radius) {
@@ -294,7 +277,6 @@ export class TileManager {
       const dot = viewDir.dot(tileDir);
       const minDot = getMinDotThreshold(z, this.camera.fov);
       if (this.config.enableDotProductFiltering && dot < minDot) continue;
-      numDotPassed++;
 
       const cameraDistance = this.camera.position.length();
       const boundingSphere = getTileBoundingSphere(
@@ -309,15 +291,11 @@ export class TileManager {
         !frustum.intersectsSphere(boundingSphere)
       )
         continue;
-      numFrustumPassed++;
 
       const screenDist = this.computeScreenDistance(boundingSphere.center);
       if (screenDist > getScreenDistanceCap(z)) continue;
 
       tileCandidates.push({ x, y, key, screenDist });
-      numEvaluated++;
-      numVisible++;
-
       if (tileCandidates.length > MAX_TILES_TO_LOAD * 3) break spiral;
     }
 
@@ -338,15 +316,13 @@ export class TileManager {
         console.warn(`⚠️ Tile queue overloaded at Z${this.zoom}`);
         break;
       }
-
       if (this.tileQueue.find((entry) => entry.key === key)) continue;
 
       this.tileQueue.push({
         key,
-        zoom: z, // 🆕 attach zoom to this tile
-        revision: this.cameraRevision, // 🆕 store revision
+        zoom: z,
+        revision: this.cameraRevision,
         task: async () => {
-          // ⛔ Check if tile is still relevant
           if (z !== this.zoom) {
             console.log(
               `⏩ Skipping stale tile ${key} (was Z${z}, now Z${this.zoom})`
@@ -373,13 +349,14 @@ export class TileManager {
       });
     }
 
-    // const duration = performance.now() - startTime;
-    // console.log(
-    //   `%c[Z${z}] loadVisibleTiles(): ${duration.toFixed(1)}ms\n` +
-    //     `Evaluated: ${numEvaluated}, Passed: ${tileCandidates.length}, ` +
-    //     `Dot: ${numDotPassed}, Frustum: ${numFrustumPassed}, Queued: ${loadList.length}`,
-    //   "color: cyan; font-weight: bold;"
-    // );
+    // ✅ Prewarm next few tiles just outside visible range
+    const MAX_QUEUE_LENGTH = this.zoom >= 12 ? 20 : this.zoom >= 10 ? 50 : 100;
+    if (this.tileQueue.length < MAX_QUEUE_LENGTH * 0.7) {
+      const preloadList = tileCandidates.slice(loadCap, loadCap + 16);
+      for (const { x, y } of preloadList) {
+        this.prewarmTile(x, y, z); // fire and forget — stays in cache
+      }
+    }
 
     if (!this.tileQueueBusy) this.processTileQueue();
   }
@@ -443,6 +420,8 @@ export class TileManager {
 
     requestAnimationFrame(async () => {
       await this.loadVisibleTiles();
+      this.cleanupStaleHighZTiles(); // 🧼 tidy up unused high-Z tiles
+
       this.updateScheduled = false;
       if (this.updatePending) {
         this.updatePending = false;
@@ -523,6 +502,40 @@ export class TileManager {
     });
 
     await runConcurrent(taskFns, concurrencyLimit);
+  }
+
+  public cleanupStaleHighZTiles(): void {
+    const Z_UNLOAD_THRESHOLD = 10; // only clean up Z10+
+    const SCREEN_DIST_THRESHOLD = 2.5; // aggressive cleanup beyond this
+
+    const toRemove: string[] = [];
+
+    for (const key of this.visibleTiles) {
+      const mesh = this.cache.get(key);
+      if (!mesh || !this.group.children.includes(mesh)) continue;
+
+      const [zStr] = key.split("/");
+      const z = parseInt(zStr, 10);
+      if (z < Z_UNLOAD_THRESHOLD) continue;
+
+      // Estimate screen distance
+      const screenDist = this.computeScreenDistance(mesh.position);
+      if (screenDist > SCREEN_DIST_THRESHOLD) {
+        this.group.remove(mesh);
+        mesh.visible = false;
+        toRemove.push(key);
+      }
+    }
+
+    for (const key of toRemove) {
+      this.visibleTiles.delete(key);
+    }
+
+    if (toRemove.length > 0) {
+      console.log(
+        `🧹 Unloaded ${toRemove.length} stale tiles at Z≥${Z_UNLOAD_THRESHOLD}`
+      );
+    }
   }
 }
 

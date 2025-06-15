@@ -73,7 +73,7 @@ const controls = new OrbitControls(
   renderer.domElement
 ) as OrbitControlsWithEvents;
 controls.enableDamping = true;
-controls.minDistance = 1.0002; // Always allows zooming to globe surface
+controls.minDistance = 1.00028; // Always allows zooming to globe surface
 controls.maxDistance = 10;
 
 // Optional wireframe Earth for debugging
