@@ -111,6 +111,8 @@ const dynamicTileManager = new DynamicTileManager({
 // Debug access from browser console
 (window as any).fallbackTileManager = fallbackTileManager;
 (window as any).dynamicTileManager = dynamicTileManager;
+export let DEBUG_SPIRAL_BOUNDS = true;
+(window as any).DEBUG_SPIRAL_BOUNDS = DEBUG_SPIRAL_BOUNDS;
 
 dynamicTileManager.attachToScene(scene);
 

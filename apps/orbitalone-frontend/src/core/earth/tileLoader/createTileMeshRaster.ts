@@ -24,6 +24,8 @@ export async function createTileMeshRaster(
   options: TileMeshOptions
 ): Promise<Mesh> {
   const { x, y, z, urlTemplate, radius = 1, onTextureLoaded } = options;
+  const key = `${z}/${x}/${y}`;
+  const start = performance.now();
 
   const bounds = tileToLatLonBounds(x, y, z);
   const { latMin, latMax, lonMin, lonMax } = bounds;
@@ -70,7 +72,6 @@ export async function createTileMeshRaster(
     .replace("{x}", x.toString())
     .replace("{y}", y.toString());
 
-  const start = performance.now();
   const response = await fetch(url);
   const blob = await response.blob();
   const bitmap = await createImageBitmap(blob, { imageOrientation: "flipY" });
@@ -104,5 +105,7 @@ export async function createTileMeshRaster(
     mesh.visible = true;
   }, 50); // ~1 frame delay
 
+  // const duration = performance.now() - start;
+  // console.log(`⏱️ Mesh ${key} → ${duration.toFixed(1)}ms`);
   return mesh;
 }

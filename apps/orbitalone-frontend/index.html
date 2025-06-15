@@ -40,50 +40,57 @@
       <label><input type="checkbox" data-feature="enableDotProductFiltering" checked> Dot Filter</label><br>
       <label><input type="checkbox" data-feature="enableScreenSpacePrioritization" checked> Screen Priority</label><br>
       <label><input type="checkbox" data-feature="enableCaching" checked> Caching</label><br>
+      <label><input type="checkbox" id="toggle-spiral-boxes" checked> Spiral Boxes (Z9+)</label><br>
+
       <div id="camera-info">
         <div>Camera Distance: <span id="camera-distance">-</span></div>
         <div>Current LOD (Z): <span id="current-zoom">-</span></div>
       </div>
     </div>
 
-    <script>
-      (function () {
-        const ui = document.getElementById("tile-debug-ui");
-        const checkboxes = ui.querySelectorAll("input[type='checkbox']");
-        const distanceEl = document.getElementById("camera-distance");
-        const zoomEl = document.getElementById("current-zoom");
-      
-        function setFeatureGlobally(feature, enabled) {
-          if (window.dynamicTileManager?.tileManagers) {
-            for (const [_, tm] of window.dynamicTileManager.tileManagers) {
-              tm.setFeatureEnabled(feature, enabled);
-            }
-          }
-        }
-      
-        checkboxes.forEach((cb) => {
-          const feature = cb.dataset.feature;
-          cb.addEventListener("change", () => {
-            const enabled = cb.checked;
-            setFeatureGlobally(feature, enabled);
-            console.log(`[TileDebugUI] ${feature} set to`, enabled);
-          });
-        });
-      
-        // Update debug info in realtime
-        function updateCameraInfo() {
-          const camera = window?.dynamicTileManager?.camera;
-          const currentZoom = window?.dynamicTileManager?.currentZoom;
-          if (camera) {
-            distanceEl.textContent = camera.position.length().toFixed(5);
-          }
-          if (typeof currentZoom === "number") {
-            zoomEl.textContent = currentZoom;
-          }
-          requestAnimationFrame(updateCameraInfo);
-        }
-        updateCameraInfo();
-      })();
-      </script>
+    <script type="module">
+      import { estimateZoomLevel } from "/src/core/earth/tileLoader/utils/lodFunctions";
+      document.getElementById("toggle-spiral-boxes")?.addEventListener("change", (e) => {
+      const cb = e.target instanceof HTMLInputElement ? e.target : null;
+      window.DEBUG_SPIRAL_BOUNDS = cb.checked;
+      console.log("[TileDebugUI] Spiral Boxes set to", cb.checked);
+    });
+
+      const statsDiv = document.createElement("div");
+      statsDiv.style.position = "fixed";
+      statsDiv.style.bottom = "10px";
+      statsDiv.style.left = "10px";
+      statsDiv.style.padding = "4px 8px";
+      statsDiv.style.background = "rgba(0,0,0,0.6)";
+      statsDiv.style.color = "white";
+      statsDiv.style.fontFamily = "monospace";
+      statsDiv.style.fontSize = "11px";
+      statsDiv.style.borderRadius = "4px";
+      statsDiv.style.zIndex = "10001";
+      statsDiv.style.pointerEvents = "none";
+      document.body.appendChild(statsDiv);
+    
+      let lastFrame = performance.now();
+      function updateStatsOverlay() {
+        const now = performance.now();
+        const delta = now - lastFrame;
+        lastFrame = now;
+        const fps = 1000 / delta;
+    
+        const camera = window?.dynamicTileManager?.camera;
+        const scene = window?.dynamicTileManager?.scene;
+        const currentZoom = window?.dynamicTileManager?.currentZoom;
+        const tileGroups = scene?.children?.filter?.((c) =>
+          c.name?.startsWith("TileGroup_Z")
+        ).length;
+    
+        statsDiv.textContent = `FPS: ${fps.toFixed(1)} | Zoom: ${
+          currentZoom ?? "-"
+        } | TileGroups: ${tileGroups ?? "-"}`;
+        requestAnimationFrame(updateStatsOverlay);
+      }
+      updateStatsOverlay();
+    </script>
+    
   </body>
 </html>
