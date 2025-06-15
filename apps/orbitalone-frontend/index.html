@@ -50,12 +50,28 @@
 
     <script type="module">
       import { estimateZoomLevel } from "/src/core/earth/tileLoader/utils/lodFunctions";
-      document.getElementById("toggle-spiral-boxes")?.addEventListener("change", (e) => {
-      const cb = e.target instanceof HTMLInputElement ? e.target : null;
-      window.DEBUG_SPIRAL_BOUNDS = cb.checked;
-      console.log("[TileDebugUI] Spiral Boxes set to", cb.checked);
-    });
-
+    
+      const checkboxMappings = {
+        enableFrustumCulling: true,
+        enableDotProductFiltering: true,
+        enableScreenSpacePrioritization: true,
+        enableCaching: true,
+        DEBUG_SPIRAL_BOUNDS: false,
+      };
+    
+      for (const [flag, defaultValue] of Object.entries(checkboxMappings)) {
+        window[flag] = defaultValue;
+        const input = document.querySelector(`input[data-feature="${flag}"], #toggle-spiral-boxes`);
+        if (input instanceof HTMLInputElement) {
+          input.checked = defaultValue;
+          input.addEventListener("change", () => {
+            window[flag] = input.checked;
+            console.log(`[TileDebugUI] ${flag} set to`, input.checked);
+          });
+        }
+      }
+    
+      // Live stats overlay (FPS, zoom, tile count)
       const statsDiv = document.createElement("div");
       statsDiv.style.position = "fixed";
       statsDiv.style.bottom = "10px";

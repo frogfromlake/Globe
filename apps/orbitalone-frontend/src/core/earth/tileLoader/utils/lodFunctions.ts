@@ -12,7 +12,7 @@ export function getMinDotThreshold(z: number, cameraFovDeg: number): number {
 
   const zFactor = clamp((z - 3) / 10, 0, 1); // Z3=0, Z13=1
   const minDot = 0.25; // ✅ match observed tile values
-  const maxDot = 0.90;
+  const maxDot = 0.9;
 
   return clamp(minDot + (maxDot - minDot) * Math.pow(zFactor, 1.6), 0, 0.94);
 }
@@ -64,22 +64,23 @@ export function getTileInflation(z: number, dist: number): number {
 
 /**
  * Zoom level estimation based on camera distance and hysteresis thresholds.
+ * Adjusted to slightly delay high zoom level triggering.
  */
 export function estimateZoomLevel(camera: PerspectiveCamera): number {
   const dist = camera.position.length();
 
   const zoomRanges = [
-    { min: 2.5, max: Infinity, zoom: 3 },
-    { min: 1.5, max: 2.5, zoom: 4 },
-    { min: 1.25, max: 1.5, zoom: 5 },
-    { min: 1.12, max: 1.25, zoom: 6 },
-    { min: 1.06, max: 1.12, zoom: 7 },
-    { min: 1.04, max: 1.06, zoom: 8 },
+    { min: 1.8, max: Infinity, zoom: 3 }, // wide range
+    { min: 1.5, max: 1.8, zoom: 4 },
+    { min: 1.35, max: 1.5, zoom: 5 },
+    { min: 1.2, max: 1.35, zoom: 6 },
+    { min: 1.1, max: 1.2, zoom: 7 },
+    { min: 1.04, max: 1.1, zoom: 8 }, // mid-range
     { min: 1.02, max: 1.04, zoom: 9 },
-    { min: 1.005, max: 1.02, zoom: 10 },
-    { min: 1.0025, max: 1.005, zoom: 11 },
-    { min: 1.0015, max: 1.0025, zoom: 12 },
-    { min: 1.0001, max: 1.0015, zoom: 13 },
+    { min: 1.01, max: 1.02, zoom: 10 },
+    { min: 1.004, max: 1.01, zoom: 11 },
+    { min: 1.0015, max: 1.004, zoom: 12 },
+    { min: 1.0003, max: 1.0015, zoom: 13 }, // very tight
   ];
 
   for (const range of zoomRanges) {
@@ -88,7 +89,7 @@ export function estimateZoomLevel(camera: PerspectiveCamera): number {
     }
   }
 
-  return 4; // fallback default
+  return 4;
 }
 
 /**
@@ -120,10 +121,10 @@ export function getTileSearchRadius(z: number): number {
   if (z <= 6) return 4;
   if (z <= 8) return 6;
   if (z === 9) return 8;
-  if (z === 10) return 16;
-  if (z === 11) return 18;
-  if (z === 12) return 24;
-  return 32; // Z13
+  if (z === 10) return 6; // 🔧 was 20, now controlled
+  if (z === 11) return 28;
+  if (z === 12) return 36;
+  return 48; // Z13
 }
 
 export function getScreenDistanceCap(z: number): number {

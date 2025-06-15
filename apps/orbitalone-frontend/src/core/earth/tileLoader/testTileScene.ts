@@ -16,6 +16,24 @@ import { createTileMeshKTX2 } from "./createTileMeshKTX2";
 import type { CreateTileMeshFn, TileLoaderConfig } from "./types";
 import { DynamicTileManager } from "./DynamicTileManager";
 
+// === Global Debug Flags Setup ===
+declare global {
+  interface Window {
+    DEBUG_SPIRAL_BOUNDS: boolean;
+    enableFrustumCulling: boolean;
+    enableDotProductFiltering: boolean;
+    enableScreenSpacePrioritization: boolean;
+    enableCaching: boolean;
+  }
+}
+
+// Default debug values
+window.DEBUG_SPIRAL_BOUNDS = false;
+window.enableFrustumCulling = true;
+window.enableDotProductFiltering = true;
+window.enableScreenSpacePrioritization = true;
+window.enableCaching = true;
+
 // Select tile source format
 const useKTX2 = false; // true for .ktx2 tiles, false for Sentinel-2 Cloudless JPEG tiles
 
@@ -55,7 +73,7 @@ const controls = new OrbitControls(
   renderer.domElement
 ) as OrbitControlsWithEvents;
 controls.enableDamping = true;
-controls.minDistance = 1.0001; // Always allows zooming to globe surface
+controls.minDistance = 1.0002; // Always allows zooming to globe surface
 controls.maxDistance = 10;
 
 // Optional wireframe Earth for debugging
@@ -78,10 +96,18 @@ directionalLight.position.set(3, 2, 1);
 scene.add(directionalLight);
 
 const debugTileLoaderConfig: TileLoaderConfig = {
-  enableFrustumCulling: true,
-  enableDotProductFiltering: true,
-  enableScreenSpacePrioritization: true,
-  enableCaching: true,
+  get enableFrustumCulling() {
+    return window.enableFrustumCulling;
+  },
+  get enableDotProductFiltering() {
+    return window.enableDotProductFiltering;
+  },
+  get enableScreenSpacePrioritization() {
+    return window.enableScreenSpacePrioritization;
+  },
+  get enableCaching() {
+    return window.enableCaching;
+  },
 };
 
 // Low-res fallback tile manager (Z3)
@@ -111,8 +137,6 @@ const dynamicTileManager = new DynamicTileManager({
 // Debug access from browser console
 (window as any).fallbackTileManager = fallbackTileManager;
 (window as any).dynamicTileManager = dynamicTileManager;
-export let DEBUG_SPIRAL_BOUNDS = true;
-(window as any).DEBUG_SPIRAL_BOUNDS = DEBUG_SPIRAL_BOUNDS;
 
 dynamicTileManager.attachToScene(scene);
 
