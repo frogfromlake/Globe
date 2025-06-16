@@ -15,9 +15,9 @@ import {
   FrontSide,
 } from "three";
 import { KTX2Loader } from "three/examples/jsm/loaders/KTX2Loader";
-import { latLonToUnitVectorFlipped } from "./utils/latLonToVector";
-import { tileToLatLonBounds } from "./utils/tileToBounds";
-import { TileMeshOptions } from "./types";
+import { latLonToUnitVectorFlipped } from "../utils/geo/latLonToVector";
+import { tileToLatLonBounds } from "../utils/bounds/tileToBounds";
+import { TileRenderOptions } from "../@types";
 
 let ktx2Loader: KTX2Loader | null = null;
 
@@ -37,11 +37,11 @@ function getKTX2Loader(renderer: WebGLRenderer): KTX2Loader {
 /**
  * Creates a mesh for a single KTX2 tile.
  * Requires `renderer` to decode compressed textures correctly.
- * @param options TileMeshOptions with renderer and KTX2 tile coordinates
+ * @param options TileRenderOptions with renderer and KTX2 tile coordinates
  * @returns Promise resolving to a Three.js Mesh
  */
 export async function createTileMeshKTX2(
-  options: TileMeshOptions
+  options: TileRenderOptions
 ): Promise<Mesh> {
   const {
     x,
