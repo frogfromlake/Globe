@@ -5,8 +5,9 @@
  */
 
 import type { CreateTileMeshFn } from "../../@types";
-import type { WebGLRenderer, Group } from "three";
+import type { WebGLRenderer, Group, Mesh } from "three";
 import type { TileMeshCache } from "./TileMeshCache";
+import { getParentTileKey } from "../utils/tiles/tileOverlaps";
 
 export interface TileLoaderContext {
   urlTemplate: string;
@@ -53,10 +54,49 @@ export async function loadTile(
       renderer: context.renderer,
     });
 
-    mesh.visible = true;
-    context.group.add(mesh); // Add to scene
-    context.cache.set(key, mesh); // Store in tile cache
-    context.visibleTiles.add(key); // Track as visible
+    // 1. Attach the key for removal management
+    (mesh as any).userData.key = key;
+
+    const fadeEnabled = (window as any).enableTileFade;
+    let parentMesh: Mesh | undefined = undefined;
+
+    if (fadeEnabled) {
+      // Find parent key (lower Z)
+      const parentKey = getParentTileKey(z, x, y);
+      if (parentKey && context.cache.has(parentKey)) {
+        parentMesh = context.cache.get(parentKey);
+      }
+
+      // Add and fade in
+      mesh.visible = true;
+      (mesh.material as any).opacity = 0;
+      context.group.add(mesh);
+
+      // Fade in, then remove parent
+      import("./TileFading").then(({ fadeInTileMesh }) => {
+        fadeInTileMesh(mesh, 500, () => {
+          if (parentMesh) {
+            if (parentMesh.parent) parentMesh.parent.remove(parentMesh);
+            context.visibleTiles.delete((parentMesh as any).userData.key);
+          }
+        });
+      });
+    } else {
+      mesh.visible = true;
+      context.group.add(mesh);
+
+      // Instantly remove parent if present
+      const parentKey = getParentTileKey(z, x, y);
+      if (parentKey && context.cache.has(parentKey)) {
+        parentMesh = context.cache.get(parentKey);
+        if (parentMesh && parentMesh.parent)
+          parentMesh.parent.remove(parentMesh);
+        context.visibleTiles.delete(parentKey);
+      }
+    }
+
+    context.cache.set(key, mesh);
+    context.visibleTiles.add(key);
   } catch (err) {
     console.warn(`❌ Failed to load tile ${key}`, err);
   }
