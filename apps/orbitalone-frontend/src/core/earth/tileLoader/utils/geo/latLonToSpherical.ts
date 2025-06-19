@@ -1,5 +1,6 @@
 /**
- * Converts latitude and longitude into spherical coordinates for THREE.Spherical.
+ * @file utils/geo/latLonToSpherical.ts
+ * @description Converts latitude and longitude into spherical coordinates for THREE.Spherical.
  *
  * @param lat Latitude in degrees
  * @param lon Longitude in degrees

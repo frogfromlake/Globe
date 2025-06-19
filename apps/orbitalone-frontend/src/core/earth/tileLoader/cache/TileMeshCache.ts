@@ -1,5 +1,5 @@
 /**
- * @file TileMeshCache.ts
+ * @file cache/TileMeshCache.ts
  * @description LRU cache for managing and recycling Three.js Meshes used for raster or KTX2 tile rendering.
  */
 

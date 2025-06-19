@@ -1,5 +1,5 @@
 /**
- * @file RasterTileMeshBuilder.ts
+ * @file builders/RasterTileMeshBuilder.ts
  * @description Builds a Three.js Mesh for a raster tile using image URLs (e.g. Sentinel-2).
  */
 

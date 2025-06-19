@@ -1,5 +1,6 @@
 /**
- * Tile mesh generator for .ktx2 GPU-compressed texture tiles.
+ * @file builders/KTX2TileMeshBuilder.ts
+ * @description Tile mesh generator for .ktx2 GPU-compressed texture tiles.
  * Requires a WebGLRenderer instance for format decoding support.
  * Assumes flipped Y layout typical of some encoding pipelines.
  */

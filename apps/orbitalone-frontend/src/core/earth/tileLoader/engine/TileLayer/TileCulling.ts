@@ -1,6 +1,9 @@
-// Responsible for frustum culling and tile visibility filtering.
-// Includes directional filtering (dot product), screen distance checks,
-// and bounding sphere intersection with a computed frustum.
+/**
+ * @file engine/TileLayer/TileCulling.ts
+ * @description Responsible for frustum culling and tile visibility filtering. 
+ * Includes directional filtering (dot product), screen distance checks, 
+ * and bounding sphere intersection with a computed frustum.
+ */
 
 import {
   Frustum,

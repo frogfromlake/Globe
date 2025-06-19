@@ -1,6 +1,9 @@
-// utils/lod/tileBoundingSphere.ts
+/**
+ * @file utils/lod/tileBoundingSphere.ts
+ * @description
+ */
 
-import { Sphere, Vector3 } from "three";
+import { Sphere } from "three";
 import { tileToLatLonBounds } from "../bounds/tileToBounds";
 import { latLonToUnitVector } from "../geo/latLonToVector";
 import {

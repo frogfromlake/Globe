@@ -1,3 +1,8 @@
+/**
+ * @file utils/lod/lodFunctions.ts
+ * @description
+ */
+
 import { PerspectiveCamera } from "three";
 
 /**

@@ -1,6 +1,9 @@
+/**
+ * @file engine/TileLayer/TileLayer.ts
+ * @description
+ */
+
 import {
-  Box3,
-  Box3Helper,
   Group,
   Mesh,
   Object3D,

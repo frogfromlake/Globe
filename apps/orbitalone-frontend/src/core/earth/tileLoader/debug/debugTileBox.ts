@@ -1,6 +1,9 @@
-// Renders a colored Box3Helper for a tile, useful for debugging visibility, culling, and positioning.
-// Color is based on zoom level (Z10–Z13).
-// Call this function with a tile’s lat/lon bounds and a scene reference to visualize it.
+/**
+ * @file debug/debugTileBox.ts
+ * @description Renders a colored Box3Helper for a tile, useful for debugging visibility, culling, and positioning. 
+ * Color is based on zoom level (Z10–Z13). 
+ * Call this function with a tile’s lat/lon bounds and a scene reference to visualize it.
+ */
 
 import { Box3, Box3Helper, Scene, Vector3 } from "three";
 import { latLonToUnitVector } from "../utils/geo/latLonToVector";

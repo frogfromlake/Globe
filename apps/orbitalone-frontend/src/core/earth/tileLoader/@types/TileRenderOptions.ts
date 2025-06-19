@@ -1,3 +1,8 @@
+/**
+ * @file @types/TileRenderOptions.ts
+ * @description
+*/
+
 import { Mesh, Texture, WebGLRenderer } from "three";
 
 export interface TileRenderOptions {

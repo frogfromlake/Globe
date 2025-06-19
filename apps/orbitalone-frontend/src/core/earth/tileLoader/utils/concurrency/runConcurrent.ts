@@ -1,5 +1,6 @@
 /**
- * Executes asynchronous tasks with a concurrency limit and periodic yielding to the event loop.
+ * @file utils/concurrency/runConcurrent.ts
+ * @description Executes asynchronous tasks with a concurrency limit and periodic yielding to the event loop.
  *
  * @template T - The type of each resolved task result.
  * @param tasks - An array of async task functions returning Promise<T>.

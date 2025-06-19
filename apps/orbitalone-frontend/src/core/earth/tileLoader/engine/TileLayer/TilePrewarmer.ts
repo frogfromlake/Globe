@@ -1,7 +1,8 @@
-// engine/TilePrewarmer.ts
-//
-// Handles speculative tile loading for near-future visibility.
-// Prewarmed tiles are cached but not added to the scene.
+/**
+ * @file engine/TileLayer/TilePrewarmer.ts
+ * @description Handles speculative tile loading for near-future visibility.
+ * Prewarmed tiles are cached but not added to the scene.
+ */
 
 import { Mesh } from "three";
 import { TilePrewarmOptions } from "../../@types";

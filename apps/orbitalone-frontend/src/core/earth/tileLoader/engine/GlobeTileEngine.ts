@@ -1,5 +1,5 @@
 /**
- * @file GlobeTileEngine.ts
+ * @file engine/GlobeTileEngine.ts
  * @description High-level orchestrator for managing zoom-level-aware tile loading on a 3D globe.
  */
 

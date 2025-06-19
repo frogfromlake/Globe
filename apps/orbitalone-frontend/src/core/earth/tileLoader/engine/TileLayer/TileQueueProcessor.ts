@@ -1,5 +1,8 @@
-// Manages a prioritized queue of tile loading tasks,
-// allowing controlled, time-bounded execution to maintain frame rate.
+/**
+ * @file engine/TileLayer/TileQueueProcessor.ts
+ * @description Manages a prioritized queue of tile loading tasks, 
+ * allowing controlled, time-bounded execution to maintain frame rate.
+ */
 
 import type { PerspectiveCamera } from "three";
 

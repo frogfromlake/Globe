@@ -1,7 +1,8 @@
-// utils/camera/cameraUtils.ts
-//
-// Utility functions for extracting camera direction and longitude,
-// primarily used for tile visibility, prioritization, and frustum alignment.
+/**
+ * @file utils/camera/cameraUtils.ts
+ * @description Utility functions for extracting camera direction and longitude, 
+ * primarily used for tile visibility, prioritization, and frustum alignment.
+ */
 
 import { PerspectiveCamera, Vector3 } from "three";
 

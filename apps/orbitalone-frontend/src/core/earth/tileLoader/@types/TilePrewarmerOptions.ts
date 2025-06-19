@@ -1,3 +1,8 @@
+/**
+ * @file @types//TilePrewarmerOptions.ts
+ * @description
+ */
+
 import { WebGLRenderer } from "three";
 import { TileMeshCache } from "../cache/TileMeshCache";
 import { CreateTileMeshFn } from "./TileRenderOptions";

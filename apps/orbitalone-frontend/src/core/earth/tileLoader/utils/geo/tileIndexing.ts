@@ -1,4 +1,7 @@
-// utils/geo/tileIndexing.ts
+/**
+ * @file utils/geo/tileIndexing.ts
+ * @description
+ */
 
 /**
  * Converts longitude to tile X coordinate at zoom level `z`.

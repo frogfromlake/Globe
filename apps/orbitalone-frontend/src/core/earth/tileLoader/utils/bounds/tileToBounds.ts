@@ -1,8 +1,7 @@
 /**
- * @file tileToBounds.ts
+ * @file utils/bounds/tileToBounds.ts
  * @description Converts XYZ tile coordinates into geographic latitude/longitude bounds.
  *              This is compliant with the Web Mercator projection and clamps to valid ranges.
- * @author
  */
 
 const WEB_MERCATOR_LAT_LIMIT = 85.0511;

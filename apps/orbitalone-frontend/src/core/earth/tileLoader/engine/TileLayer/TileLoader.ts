@@ -1,7 +1,8 @@
-// engine/TileLoader.ts
-//
-// Handles asynchronous loading and insertion of a single tile mesh into the scene.
-// Applies runtime safety checks (zoom/revision) before committing tile load.
+/**
+ * @file engine/TileLayer/TileLoader.ts
+ * @description Handles asynchronous loading and insertion of a single tile mesh into the scene. 
+ * Applies runtime safety checks (zoom/revision) before committing tile load.
+ */
 
 import type { CreateTileMeshFn } from "../../@types";
 import type { WebGLRenderer, Group } from "three";

@@ -1,5 +1,5 @@
 /**
- * @file testTileEngineScene.ts
+ * @file test/testTileEngineScene.ts
  * @description Entry point for testing the GlobeTileEngine in a standalone Three.js scene.
  */
 
