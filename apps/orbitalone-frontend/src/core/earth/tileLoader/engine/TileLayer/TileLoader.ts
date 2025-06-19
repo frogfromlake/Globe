@@ -8,6 +8,14 @@ import type { CreateTileMeshFn } from "../../@types";
 import type { WebGLRenderer, Group, Mesh } from "three";
 import type { TileMeshCache } from "./TileMeshCache";
 import { getParentTileKey } from "../utils/tiles/tileOverlaps";
+import { fadeInTileMesh, fadeOutTileMesh } from "./TileFading";
+import { TileStickyManager } from "./TileStickyManager";
+
+// Singleton sticky manager per layer (initialize in TileLayer, pass here via context if possible)
+let stickyManager: TileStickyManager | undefined;
+
+// Allow injection (for modularity, add to TileLoaderContext):
+// stickyManager?: TileStickyManager;
 
 export interface TileLoaderContext {
   urlTemplate: string;
@@ -19,6 +27,7 @@ export interface TileLoaderContext {
   createTileMesh: CreateTileMeshFn;
   zoom: number;
   revision: number;
+  stickyManager: TileStickyManager;
 }
 
 /**
@@ -58,40 +67,45 @@ export async function loadTile(
     (mesh as any).userData.key = key;
 
     const fadeEnabled = (window as any).enableTileFade;
-    let parentMesh: Mesh | undefined = undefined;
+    const stickyEnabled = (window as any).enableStickyTiles;
+
+    mesh.visible = true;
+    if (fadeEnabled) (mesh.material as any).opacity = 0;
+    context.group.add(mesh);
 
     if (fadeEnabled) {
-      // Find parent key (lower Z)
-      const parentKey = getParentTileKey(z, x, y);
-      if (parentKey && context.cache.has(parentKey)) {
-        parentMesh = context.cache.get(parentKey);
-      }
-
-      // Add and fade in
-      mesh.visible = true;
-      (mesh.material as any).opacity = 0;
-      context.group.add(mesh);
-
-      // Fade in, then remove parent
       import("./TileFading").then(({ fadeInTileMesh }) => {
         fadeInTileMesh(mesh, 500, () => {
-          if (parentMesh) {
-            if (parentMesh.parent) parentMesh.parent.remove(parentMesh);
-            context.visibleTiles.delete((parentMesh as any).userData.key);
+          // If sticky enabled: register with stickyManager, otherwise do legacy
+          if (stickyEnabled && context.stickyManager) {
+            context.stickyManager.onTileLoaded(key, z, x, y);
+          } else {
+            // Legacy: remove parent tile immediately
+            const parentKey = getParentTileKey(z, x, y);
+            if (parentKey && context.cache.has(parentKey)) {
+              const parentMesh = context.cache.get(parentKey);
+              if (parentMesh) {
+                fadeOutTileMesh(parentMesh, 400, () => {
+                  if (parentMesh.parent) parentMesh.parent.remove(parentMesh);
+                  context.visibleTiles.delete(parentKey);
+                });
+              }
+            }
           }
         });
       });
     } else {
-      mesh.visible = true;
-      context.group.add(mesh);
-
-      // Instantly remove parent if present
-      const parentKey = getParentTileKey(z, x, y);
-      if (parentKey && context.cache.has(parentKey)) {
-        parentMesh = context.cache.get(parentKey);
-        if (parentMesh && parentMesh.parent)
-          parentMesh.parent.remove(parentMesh);
-        context.visibleTiles.delete(parentKey);
+      // No fade: call sticky immediately or remove parent directly
+      if (stickyEnabled && context.stickyManager) {
+        context.stickyManager.onTileLoaded(key, z, x, y);
+      } else {
+        const parentKey = getParentTileKey(z, x, y);
+        if (parentKey && context.cache.has(parentKey)) {
+          const parentMesh = context.cache.get(parentKey);
+          if (parentMesh && parentMesh.parent)
+            parentMesh.parent.remove(parentMesh);
+          context.visibleTiles.delete(parentKey);
+        }
       }
     }
 

@@ -23,27 +23,6 @@ import { createTileMeshKTX2 } from "../engine/TileLayer/TileMeshBuilders/KTX2Til
 import type { CreateTileMeshFn, TileEngineConfig } from "../@types";
 
 // -------------------------------------------------------------
-// Global Debug Settings
-// -------------------------------------------------------------
-declare global {
-  interface Window {
-    debugSpiralBounds: boolean;
-    enableFrustumCulling: boolean;
-    enableDotProductFiltering: boolean;
-    enableScreenSpacePrioritization: boolean;
-    enableCaching: boolean;
-  }
-}
-
-Object.assign(window, {
-  debugSpiralBounds: false,
-  enableFrustumCulling: true,
-  enableDotProductFiltering: true,
-  enableScreenSpacePrioritization: true,
-  enableCaching: true,
-});
-
-// -------------------------------------------------------------
 // Configuration
 // -------------------------------------------------------------
 const useKTX2 = false;

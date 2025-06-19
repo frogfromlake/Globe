@@ -40,51 +40,19 @@
       // Register your debug features (easy to extend)
       createDebugUI({
         features: [
+          // Core engine toggles (default section)
           { key: "enableFrustumCulling", label: "Frustum Culling", type: "checkbox", default: true },
           { key: "enableDotProductFiltering", label: "Dot Filter", type: "checkbox", default: true },
           { key: "enableScreenSpacePrioritization", label: "Screen Priority", type: "checkbox", default: true },
           { key: "enableCaching", label: "Caching", type: "checkbox", default: true },
-          { key: "debugSpiralBounds", label: "Spiral Boxes (Z9+)", type: "checkbox", default: false },
           { key: "enableTileFade", label: "Tile Fade", type: "checkbox", default: false },
+          { key: "enableStickyTiles", label: "Sticky LOD", type: "checkbox", default: false },
+
+          // Visualization/debug overlays, in special section
+          { key: "debugSpiralBounds", label: "Spiral Boxes (Z9+)", type: "checkbox", default: false, section: "Debug Views" },
         ],
         title: "Tile Debug UI"
       });
-
-      // FPS / stats overlay remains separate (optional, as before)
-      const statsDiv = document.createElement("div");
-      statsDiv.style.position = "fixed";
-      statsDiv.style.bottom = "10px";
-      statsDiv.style.left = "10px";
-      statsDiv.style.padding = "4px 8px";
-      statsDiv.style.background = "rgba(0,0,0,0.6)";
-      statsDiv.style.color = "white";
-      statsDiv.style.fontFamily = "monospace";
-      statsDiv.style.fontSize = "11px";
-      statsDiv.style.borderRadius = "4px";
-      statsDiv.style.zIndex = "10001";
-      statsDiv.style.pointerEvents = "none";
-      document.body.appendChild(statsDiv);
-
-      let lastFrame = performance.now();
-      function updateStatsOverlay() {
-        const now = performance.now();
-        const delta = now - lastFrame;
-        lastFrame = now;
-        const fps = 1000 / delta;
-
-        const camera = window?.dynamicTileManager?.camera;
-        const scene = window?.dynamicTileManager?.scene;
-        const currentZoom = window?.dynamicTileManager?.currentZoom;
-        const tileGroups = scene?.children?.filter?.((c) =>
-          c.name?.startsWith("TileGroup_Z")
-        ).length;
-
-        statsDiv.textContent = `FPS: ${fps.toFixed(1)} | Zoom: ${
-          currentZoom ?? "-"
-        } | TileGroups: ${tileGroups ?? "-"}`;
-        requestAnimationFrame(updateStatsOverlay);
-      }
-      updateStatsOverlay();
     </script>
   </body>
 </html>

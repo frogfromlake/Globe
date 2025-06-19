@@ -1,4 +1,8 @@
-// tileLoader/@types/DebugFlags.d.ts
+/**
+ * @file @types/DebugFlags.d.ts
+ * @description
+ */
+
 declare global {
   interface Window {
     enableFrustumCulling: boolean;
@@ -7,7 +11,9 @@ declare global {
     enableCaching: boolean;
     debugSpiralBounds: boolean;
     enableTileFade: boolean;
+    enableStickyTiles: boolean;
     // Add more debug flags here as needed
   }
 }
+
 export {};

@@ -36,6 +36,7 @@ import {
 import { prewarmTile } from "./TilePrewarmer";
 import { runConcurrent } from "../utils/concurrency/runConcurrent";
 import { lon2tileX, lat2tileY } from "../utils/geo/tileIndexing";
+import { TileStickyManager } from "./TileStickyManager";
 
 export interface TileLayerOptions {
   zoomLevel?: number;
@@ -77,7 +78,7 @@ export class TileLayer {
   public group: Group;
   private cameraRevision = 0;
   private tileQueueProcessor: TileQueueProcessor;
-
+  private stickyManager: TileStickyManager;
   private lastCameraPos = new Vector3();
   private lastCameraQuat = new Quaternion();
 
@@ -111,6 +112,7 @@ export class TileLayer {
     this.group = new Group();
     this.group.name = `TileGroup_Z${this.zoom}`;
     this.tileQueueProcessor = new TileQueueProcessor(camera);
+    this.stickyManager = new TileStickyManager(this.cache, this.visibleTiles);
   }
 
   public setFallbackManager(fallback: TileLayer) {
@@ -280,10 +282,10 @@ export class TileLayer {
     for (const { x, y, key } of loadList) {
       this.tileQueueProcessor.enqueue({
         key,
-        zoom: z,
+        zoom: this.zoom,
         revision: this.cameraRevision,
         task: () =>
-          loadTile(x, y, z, key, {
+          loadTile(x, y, this.zoom, key, {
             urlTemplate: this.urlTemplate,
             radius: this.radius,
             renderer: this.renderer,
@@ -293,6 +295,7 @@ export class TileLayer {
             createTileMesh: this.createTileMesh,
             zoom: this.zoom,
             revision: this.cameraRevision,
+            stickyManager: this.stickyManager,
           }),
       });
     }
