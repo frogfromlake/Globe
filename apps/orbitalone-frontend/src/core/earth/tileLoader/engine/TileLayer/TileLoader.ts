@@ -1,12 +1,12 @@
 /**
  * @file engine/TileLayer/TileLoader.ts
- * @description Handles asynchronous loading and insertion of a single tile mesh into the scene. 
+ * @description Handles asynchronous loading and insertion of a single tile mesh into the scene.
  * Applies runtime safety checks (zoom/revision) before committing tile load.
  */
 
 import type { CreateTileMeshFn } from "../../@types";
 import type { WebGLRenderer, Group } from "three";
-import type { TileMeshCache } from "../../cache/TileMeshCache";
+import type { TileMeshCache } from "./TileMeshCache";
 
 export interface TileLoaderContext {
   urlTemplate: string;

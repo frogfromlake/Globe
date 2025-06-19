@@ -14,9 +14,9 @@ import {
   FrontSide,
 } from "three";
 
-import { tileToLatLonBounds } from "../utils/bounds/tileToBounds";
-import { latLonToUnitVector } from "../utils/geo/latLonToVector";
-import { TileRenderOptions } from "../@types";
+import { tileToLatLonBounds } from "../../utils/bounds/tileToBounds";
+import { latLonToUnitVector } from "../../utils/geo/latLonToVector";
+import { TileRenderOptions } from "../../../@types";
 
 /**
  * Entry point: builds a full mesh for a raster tile.

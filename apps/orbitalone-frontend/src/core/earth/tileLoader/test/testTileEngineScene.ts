@@ -18,8 +18,8 @@ import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
 
 import { TileLayer } from "../engine/TileLayer/TileLayer";
 import { GlobeTileEngine } from "../engine/GlobeTileEngine";
-import { createRasterTileMesh } from "../builders/RasterTileMeshBuilder";
-import { createTileMeshKTX2 } from "../builders/KTX2TileMeshBuilder";
+import { createRasterTileMesh } from "../engine/TileLayer/TileMeshBuilders/RasterTileMeshBuilder";
+import { createTileMeshKTX2 } from "../engine/TileLayer/TileMeshBuilders/KTX2TileMeshBuilder";
 import type { CreateTileMeshFn, TileEngineConfig } from "../@types";
 
 // -------------------------------------------------------------

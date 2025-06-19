@@ -14,18 +14,18 @@ import {
   WebGLRenderer,
 } from "three";
 import type { CreateTileMeshFn, TileEngineConfig } from "../../@types";
-import { TileMeshCache } from "../../cache/TileMeshCache";
+import { TileMeshCache } from "./TileMeshCache";
 import {
   getCameraCenterDirection,
   getCameraLongitude,
-} from "../../utils/camera/cameraUtils";
-import { tileToLatLonBounds } from "../../utils/bounds/tileToBounds";
-import { latLonToUnitVector } from "../../utils/geo/latLonToVector";
+} from "../utils/camera/cameraUtils";
+import { tileToLatLonBounds } from "../utils/bounds/tileToBounds";
+import { latLonToUnitVector } from "../utils/geo/latLonToVector";
 import {
   estimateZoomLevel,
   getMaxTilesToLoad,
   getTileSearchRadius,
-} from "../../utils/lod/lodFunctions";
+} from "../utils/lod/lodFunctions";
 import { TileQueueProcessor } from "./TileQueueProcessor";
 import { loadTile } from "./TileLoader";
 import {
@@ -34,8 +34,8 @@ import {
   TileCullingContext,
 } from "./TileCulling";
 import { prewarmTile } from "./TilePrewarmer";
-import { runConcurrent } from "../../utils/concurrency/runConcurrent";
-import { lon2tileX, lat2tileY } from "../../utils/geo/tileIndexing";
+import { runConcurrent } from "../utils/concurrency/runConcurrent";
+import { lon2tileX, lat2tileY } from "../utils/geo/tileIndexing";
 
 export interface TileLayerOptions {
   zoomLevel?: number;

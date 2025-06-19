@@ -5,7 +5,7 @@
 
 import type { Scene, PerspectiveCamera, WebGLRenderer } from "three";
 import type { CreateTileMeshFn, TileEngineConfig } from "../@types";
-import { estimateZoomLevel } from "../utils/lod/lodFunctions";
+import { estimateZoomLevel } from "./utils/lod/lodFunctions";
 import { TileLayer } from "./TileLayer/TileLayer";
 
 export interface GlobeTileEngineOptions {

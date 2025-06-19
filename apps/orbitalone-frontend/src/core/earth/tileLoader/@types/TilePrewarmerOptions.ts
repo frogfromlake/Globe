@@ -4,7 +4,7 @@
  */
 
 import { WebGLRenderer } from "three";
-import { TileMeshCache } from "../cache/TileMeshCache";
+import { TileMeshCache } from "../engine/TileLayer/TileMeshCache";
 import { CreateTileMeshFn } from "./TileRenderOptions";
 
 export interface TilePrewarmOptions {

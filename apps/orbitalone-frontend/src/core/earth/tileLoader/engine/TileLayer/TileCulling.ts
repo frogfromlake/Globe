@@ -16,14 +16,14 @@ import {
 import {
   getCameraCenterDirection,
   getCameraLongitude,
-} from "../../utils/camera/cameraUtils";
+} from "../utils/camera/cameraUtils";
 import {
   getMinDotThreshold,
   getScreenDistanceCap,
-} from "../../utils/lod/lodFunctions";
-import { latLonToUnitVector } from "../../utils/geo/latLonToVector";
-import { tileToLatLonBounds } from "../../utils/bounds/tileToBounds";
-import { getTileBoundingSphere } from "../../utils/lod/tileBoundingSphere";
+} from "../utils/lod/lodFunctions";
+import { latLonToUnitVector } from "../utils/geo/latLonToVector";
+import { tileToLatLonBounds } from "../utils/bounds/tileToBounds";
+import { getTileBoundingSphere } from "../utils/lod/tileBoundingSphere";
 
 export interface TileCullingContext {
   camera: PerspectiveCamera;

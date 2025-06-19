@@ -16,9 +16,9 @@ import {
   FrontSide,
 } from "three";
 import { KTX2Loader } from "three/examples/jsm/loaders/KTX2Loader";
-import { latLonToUnitVectorFlipped } from "../utils/geo/latLonToVector";
-import { tileToLatLonBounds } from "../utils/bounds/tileToBounds";
-import { TileRenderOptions } from "../@types";
+import { latLonToUnitVectorFlipped } from "../../utils/geo/latLonToVector";
+import { tileToLatLonBounds } from "../../utils/bounds/tileToBounds";
+import { TileRenderOptions } from "../../../@types";
 
 let ktx2Loader: KTX2Loader | null = null;
 
