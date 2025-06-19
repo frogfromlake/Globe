@@ -27,7 +27,7 @@ import type { CreateTileMeshFn, TileEngineConfig } from "../@types";
 // -------------------------------------------------------------
 declare global {
   interface Window {
-    DEBUG_SPIRAL_BOUNDS: boolean;
+    debugSpiralBounds: boolean;
     enableFrustumCulling: boolean;
     enableDotProductFiltering: boolean;
     enableScreenSpacePrioritization: boolean;
@@ -36,7 +36,7 @@ declare global {
 }
 
 Object.assign(window, {
-  DEBUG_SPIRAL_BOUNDS: false,
+  debugSpiralBounds: false,
   enableFrustumCulling: true,
   enableDotProductFiltering: true,
   enableScreenSpacePrioritization: true,

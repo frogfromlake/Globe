@@ -33,45 +33,24 @@
       (Contains modified Copernicus Sentinel data 2024)
     </div>
 
-    <!-- ✅ Debug UI Overlay -->
-    <div id="tile-debug-ui" style="position:fixed;top:10px;left:10px;background:rgba(0,0,0,0.8);color:white;padding:10px;font-family:sans-serif;font-size:12px;border-radius:8px;z-index:10000">
-      <strong>Tile Debug UI</strong><br>
-      <label><input type="checkbox" data-feature="enableFrustumCulling" checked> Frustum Culling</label><br>
-      <label><input type="checkbox" data-feature="enableDotProductFiltering" checked> Dot Filter</label><br>
-      <label><input type="checkbox" data-feature="enableScreenSpacePrioritization" checked> Screen Priority</label><br>
-      <label><input type="checkbox" data-feature="enableCaching" checked> Caching</label><br>
-      <label><input type="checkbox" id="toggle-spiral-boxes" checked> Spiral Boxes (Z9+)</label><br>
-
-      <div id="camera-info">
-        <div>Camera Distance: <span id="camera-distance">-</span></div>
-        <div>Current LOD (Z): <span id="current-zoom">-</span></div>
-      </div>
-    </div>
-
+    <!-- The debug UI will be injected here -->
     <script type="module">
-      import { estimateZoomLevel } from "/src/core/earth/tileLoader/utils/lod/lodFunctions";
-    
-      const checkboxMappings = {
-        enableFrustumCulling: true,
-        enableDotProductFiltering: true,
-        enableScreenSpacePrioritization: true,
-        enableCaching: true,
-        DEBUG_SPIRAL_BOUNDS: false,
-      };
-    
-      for (const [flag, defaultValue] of Object.entries(checkboxMappings)) {
-        window[flag] = defaultValue;
-        const input = document.querySelector(`input[data-feature="${flag}"], #toggle-spiral-boxes`);
-        if (input instanceof HTMLInputElement) {
-          input.checked = defaultValue;
-          input.addEventListener("change", () => {
-            window[flag] = input.checked;
-            console.log(`[TileDebugUI] ${flag} set to`, input.checked);
-          });
-        }
-      }
-    
-      // Live stats overlay (FPS, zoom, tile count)
+      import { createDebugUI } from "/src/core/earth/tileLoader/debug/DebugUI";
+
+      // Register your debug features (easy to extend)
+      createDebugUI({
+        features: [
+          { key: "enableFrustumCulling", label: "Frustum Culling", type: "checkbox", default: true },
+          { key: "enableDotProductFiltering", label: "Dot Filter", type: "checkbox", default: true },
+          { key: "enableScreenSpacePrioritization", label: "Screen Priority", type: "checkbox", default: true },
+          { key: "enableCaching", label: "Caching", type: "checkbox", default: true },
+          { key: "debugSpiralBounds", label: "Spiral Boxes (Z9+)", type: "checkbox", default: false },
+          { key: "enableTileFade", label: "Tile Fade", type: "checkbox", default: false },
+        ],
+        title: "Tile Debug UI"
+      });
+
+      // FPS / stats overlay remains separate (optional, as before)
       const statsDiv = document.createElement("div");
       statsDiv.style.position = "fixed";
       statsDiv.style.bottom = "10px";
@@ -85,21 +64,21 @@
       statsDiv.style.zIndex = "10001";
       statsDiv.style.pointerEvents = "none";
       document.body.appendChild(statsDiv);
-    
+
       let lastFrame = performance.now();
       function updateStatsOverlay() {
         const now = performance.now();
         const delta = now - lastFrame;
         lastFrame = now;
         const fps = 1000 / delta;
-    
+
         const camera = window?.dynamicTileManager?.camera;
         const scene = window?.dynamicTileManager?.scene;
         const currentZoom = window?.dynamicTileManager?.currentZoom;
         const tileGroups = scene?.children?.filter?.((c) =>
           c.name?.startsWith("TileGroup_Z")
         ).length;
-    
+
         statsDiv.textContent = `FPS: ${fps.toFixed(1)} | Zoom: ${
           currentZoom ?? "-"
         } | TileGroups: ${tileGroups ?? "-"}`;
@@ -107,6 +86,5 @@
       }
       updateStatsOverlay();
     </script>
-    
   </body>
 </html>
