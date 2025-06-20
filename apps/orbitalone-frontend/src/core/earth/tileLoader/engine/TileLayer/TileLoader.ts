@@ -7,9 +7,9 @@
 import type { CreateTileMeshFn } from "../../@types";
 import type { WebGLRenderer, Group, Mesh } from "three";
 import type { TileMeshCache } from "./TileMeshCache";
-import { getParentTileKey } from "../utils/tiles/tileOverlaps";
 import { fadeInTileMesh, fadeOutTileMesh } from "./TileFading";
 import { TileStickyManager } from "./TileStickyManager";
+import { getParentTileKey } from "../utils/geo/tileIndexing";
 
 // Singleton sticky manager per layer (initialize in TileLayer, pass here via context if possible)
 let stickyManager: TileStickyManager | undefined;

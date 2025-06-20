@@ -16,11 +16,11 @@ import {
 } from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
 
-import { TileLayer } from "../engine/TileLayer/TileLayer";
 import { GlobeTileEngine } from "../engine/GlobeTileEngine";
 import { createRasterTileMesh } from "../engine/TileLayer/TileMeshBuilders/RasterTileMeshBuilder";
 import { createTileMeshKTX2 } from "../engine/TileLayer/TileMeshBuilders/KTX2TileMeshBuilder";
-import type { CreateTileMeshFn, TileEngineConfig } from "../@types";
+import type { CreateTileMeshFn } from "../@types";
+import { TileEngineConfig } from "../engine/TileLayer/TilePipelineTypes";
 
 // -------------------------------------------------------------
 // Configuration
@@ -49,6 +49,15 @@ const debugTileEngineConfig: TileEngineConfig = {
   },
   get enableCaching() {
     return window.enableCaching;
+  },
+  get debugSpiralBounds() {
+    return window.debugSpiralBounds;
+  },
+  get enableTileFade() {
+    return window.enableTileFade;
+  },
+  get enableStickyTiles() {
+    return window.enableStickyTiles;
   },
 };
 
@@ -127,16 +136,17 @@ const renderer = setupRenderer();
 const controls = setupControls(camera, renderer);
 
 // Fallback TileLayer (Z3)
-const fallbackLayer = new TileLayer({
-  urlTemplate: tileUrlTemplate,
-  zoomLevel: 3,
-  radius: 1,
-  renderer,
-  createTileMesh: createTileMeshFn,
-  camera,
-  config: debugTileEngineConfig,
-});
+// const fallbackLayer = new TileLayer({
+//   urlTemplate: tileUrlTemplate,
+//   zoomLevel: 3,
+//   radius: 1,
+//   renderer,
+//   createTileMesh: createTileMeshFn,
+//   camera,
+//   config: debugTileEngineConfig,
+// });
 
+const fallbackLayer = undefined as any;
 // Dynamic GlobeTileEngine (Z4–Z13)
 const tileEngine = new GlobeTileEngine({
   camera,
@@ -144,9 +154,9 @@ const tileEngine = new GlobeTileEngine({
   scene,
   urlTemplate: tileUrlTemplate,
   createTileMesh: createTileMeshFn,
-  minZoom: 3,
+  minZoom: 3, // Z3 is now handled by the new pipeline!
   maxZoom: 13,
-  fallbackTileManager: fallbackLayer,
+  // fallbackTileManager: undefined as any, // Remove as soon as refactor complete
   config: debugTileEngineConfig,
 });
 
@@ -157,6 +167,17 @@ Object.assign(window, {
 });
 
 tileEngine.attachToScene();
+// After attaching to scene, load all Z3 tiles
+const z3Layer = tileEngine.getTileLayers().get(3);
+if (z3Layer && typeof z3Layer.loadAllTiles === "function") {
+  z3Layer.loadAllTiles();
+  z3Layer.group.renderOrder = 0; // Always below dynamic layers
+}
+
+// All higher LODs should be renderOrder 1
+for (const [z, layer] of tileEngine.getTileLayers()) {
+  if (z > 3) layer.group.renderOrder = 1;
+}
 
 // -------------------------------------------------------------
 // OrbitControls & Initial Tile Load
@@ -166,26 +187,40 @@ controls.addEventListener("change", () => {
   if (!firstUpdateDone) {
     firstUpdateDone = true;
 
-    fallbackLayer.loadAllTiles().then(() => {
-      console.log(
-        "✅ Z3 fallback tiles loaded:",
-        fallbackLayer["visibleTiles"].size
-      );
-      scene.add(fallbackLayer.group);
-      fallbackLayer.group.renderOrder = 0;
+    // No fallbackLayer to load. Immediately set renderOrder and start tiles.
+    for (const layer of tileEngine.getTileLayers().values()) {
+      layer.group.renderOrder = 1;
+    }
 
-      tileEngine.attachToScene();
-
-      for (const layer of tileEngine.getTileLayers().values()) {
-        layer.group.renderOrder = 1;
-      }
-
-      tileEngine.loadInitialTiles();
-    });
+    tileEngine.loadInitialTiles();
   } else {
     tileEngine.update();
   }
 });
+// controls.addEventListener("change", () => {
+//   if (!firstUpdateDone) {
+//     firstUpdateDone = true;
+
+//     fallbackLayer.loadAllTiles().then(() => {
+//       console.log(
+//         "✅ Z3 fallback tiles loaded:",
+//         fallbackLayer["visibleTiles"].size
+//       );
+//       scene.add(fallbackLayer.group);
+//       fallbackLayer.group.renderOrder = 0;
+
+//       tileEngine.attachToScene();
+
+//       for (const layer of tileEngine.getTileLayers().values()) {
+//         layer.group.renderOrder = 1;
+//       }
+
+//       tileEngine.loadInitialTiles();
+//     });
+//   } else {
+//     tileEngine.update();
+//   }
+// });
 
 // -------------------------------------------------------------
 // Resize & Animation Loop

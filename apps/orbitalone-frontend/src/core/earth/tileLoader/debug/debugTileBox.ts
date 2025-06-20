@@ -6,7 +6,7 @@
  */
 
 import { Box3, Box3Helper, Scene, Vector3 } from "three";
-import { latLonToUnitVector } from "../utils/geo/latLonToVector";
+import { latLonToUnitVector } from "../engine/utils/geo/latLonToVector";
 
 export function debugShowTileBox(
   bounds: { latMin: number; latMax: number; lonMin: number; lonMax: number },

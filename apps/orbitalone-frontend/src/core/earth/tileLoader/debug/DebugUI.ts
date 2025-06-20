@@ -125,6 +125,7 @@ export function createDebugUI({
 
   // Live stats updater (FPS, Zoom Distance, Current Z, Tile Count)
   let lastFrame = performance.now();
+
   function updateStatsOverlay() {
     const now = performance.now();
     const delta = now - lastFrame;
@@ -135,35 +136,53 @@ export function createDebugUI({
     const camera = dtm?.camera;
     const scene = dtm?.scene;
     const currentZoom = dtm?.currentZoom;
+
+    // Camera distance from origin (for globe)
     const zoomDistance =
-      camera && camera.position
-        ? Math.sqrt(
-            camera.position.x * camera.position.x +
-              camera.position.y * camera.position.y +
-              camera.position.z * camera.position.z
-          ).toFixed(1)
-        : "-";
-    // Try several tile counts: group count, total mesh count, etc
-    let tileCount = "-";
+      camera && camera.position ? camera.position.length().toFixed(4) : "-";
+
+    // Count tiles: for all TileGroup_Z* in scene, sum up all children
+    let tileCount = 0;
+    let foundGroups = 0;
     if (scene?.children) {
-      // Grouped meshes (e.g., each TileGroup_Z*)
+      // Only groups whose name starts with "TileGroup_Z"
       const groupChildren = scene.children.filter((c: any) =>
         c.name?.startsWith("TileGroup_Z")
       );
-      // Sum meshes inside groups, or fallback to group count
-      let totalTiles = 0;
+      foundGroups = groupChildren.length;
       groupChildren.forEach((g: any) => {
-        totalTiles += g.children?.length ?? 0;
+        const zMatch = g.name.match(/TileGroup_Z(\d+)/);
+        const z = zMatch ? parseInt(zMatch[1], 10) : undefined;
+        const count = g.children?.length ?? 0;
+        tileCount += count;
+        if (typeof z !== "undefined") {
+          // Mark the active Z with a star (⭐)
+          perZ += `Z${z}${z === currentZoom ? "⭐" : ""}: ${count}  `;
+        }
       });
-      tileCount = totalTiles > 0 ? totalTiles : groupChildren.length;
     }
 
-    statsContent.textContent = `FPS: ${fps.toFixed(
-      1
-    )}\nZoom Distance: ${zoomDistance}\nCurrent Z: ${
-      currentZoom ?? "-"
-    }\nTiles: ${tileCount}`;
+    // (Optional) Per-Z breakdown for dev debugging
+    const tileLayers = dtm?.getTileLayers?.();
+    let perZ = "";
+    if (tileLayers) {
+      perZ = ""; // reset
+      for (const [z, layer] of tileLayers) {
+        if (layer.group?.children) {
+          // Highlight the current zoom with a star ⭐
+          const star = z === currentZoom ? "⭐" : "";
+          perZ += `Z${z}${star}: ${layer.group.children.length}\n`;
+        }
+      }
+    }
+
+    statsContent.textContent =
+      `FPS: ${fps.toFixed(1)}\n` +
+      `Zoom Distance: ${zoomDistance}\n` +
+      (perZ ? `\n\nPer Z:\n${perZ}` : "");
+
     requestAnimationFrame(updateStatsOverlay);
   }
+
   updateStatsOverlay();
 }

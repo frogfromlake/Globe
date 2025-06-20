@@ -3,22 +3,19 @@
  * @description High-level orchestrator for managing zoom-level-aware tile loading on a 3D globe.
  */
 
-import type { Scene, PerspectiveCamera, WebGLRenderer } from "three";
-import type { CreateTileMeshFn, TileEngineConfig } from "../@types";
+import { Scene, PerspectiveCamera, WebGLRenderer, Group } from "three";
+import type { CreateTileMeshFn } from "../@types";
 import { estimateZoomLevel } from "./utils/lod/lodFunctions";
-import { TileLayer } from "./TileLayer/TileLayer";
-
-export interface GlobeTileEngineOptions {
-  camera: PerspectiveCamera;
-  renderer: WebGLRenderer;
-  scene: Scene;
-  urlTemplate: string;
-  createTileMesh: CreateTileMeshFn;
-  minZoom: number;
-  maxZoom: number;
-  fallbackTileManager: TileLayer;
-  config?: TileEngineConfig;
-}
+import { TileMeshCache } from "./TileLayer/TileMeshCache";
+import { TileVisualPipeline } from "./TileLayer/TilePipeline/TileVisualPipeline";
+import { TileStickyManager } from "./TileLayer/TileStickyManager";
+import {
+  GlobeTileEngineOptions,
+  TileEngineConfig,
+  TileVisualPipelineLayer,
+} from "./TileLayer/TilePipelineTypes";
+import { TaskQueue } from "./TileLayer/TilePipeline/TaskQueue";
+import { getCameraState, cameraStateChanged } from "./utils/camera/cameraUtils";
 
 const DEFAULT_UPDATE_DEBOUNCE_MS = 100;
 
@@ -34,11 +31,13 @@ export class GlobeTileEngine {
   private readonly createTileMesh: CreateTileMeshFn;
   private readonly minZoom: number;
   private readonly maxZoom: number;
-  private readonly fallbackManager: TileLayer;
-  private readonly tileLayers: Map<number, TileLayer>;
-
+  // private readonly fallbackManager: TileLayer;
+  private readonly tileLayers: Map<number, TileVisualPipeline>;
+  private readonly visibleTiles: Set<string>;
   private currentZoom: number;
+  private readonly getRadiusForZoom: (z: number) => number;
   private updateDebounceHandle: number | null = null;
+  private lastCameraState: any = null;
 
   constructor(options: GlobeTileEngineOptions) {
     this.camera = options.camera;
@@ -48,39 +47,50 @@ export class GlobeTileEngine {
     this.createTileMesh = options.createTileMesh;
     this.minZoom = options.minZoom;
     this.maxZoom = options.maxZoom;
-    this.fallbackManager = options.fallbackTileManager;
+    // this.fallbackManager = options.fallbackTileManager;
     this.config = {
       enableFrustumCulling: true,
       enableDotProductFiltering: true,
       enableScreenSpacePrioritization: true,
       enableCaching: true,
-      ...options.config,
+      debugSpiralBounds: options.config?.debugSpiralBounds ?? false,
+      enableTileFade: options.config?.enableTileFade ?? false,
+      enableStickyTiles: options.config?.enableStickyTiles ?? false,
     };
-
     this.currentZoom = this.minZoom;
+    this.getRadiusForZoom = options.getRadiusForZoom ?? (() => 1);
     this.tileLayers = new Map();
+    this.visibleTiles = new Set();
 
     this.initializeTileLayers();
   }
 
-  /**
-   * Initializes one TileLayer per zoom level between minZoom and maxZoom.
-   */
   private initializeTileLayers(): void {
     for (let z = this.minZoom; z <= this.maxZoom; z++) {
-      const layer = new TileLayer({
-        zoomLevel: z,
-        urlTemplate: this.urlTemplate,
-        radius: 1,
-        renderer: this.renderer,
-        createTileMesh: this.createTileMesh,
-        camera: this.camera,
-        config: this.config,
-        scene: this.scene,
-      });
+      const group = new Group();
+      const cache = new TileMeshCache(512);
+      const stickyManager = new TileStickyManager(cache, this.visibleTiles);
+      const radius = this.getRadiusForZoom(z);
+      const taskQueue = new TaskQueue();
 
-      layer.setFallbackManager(this.fallbackManager);
-      this.tileLayers.set(z, layer);
+      // Create the pipeline
+      const pipeline = new TileVisualPipeline(
+        this.renderer,
+        this.camera,
+        group,
+        cache,
+        stickyManager,
+        this.createTileMesh,
+        this.urlTemplate,
+        radius,
+        this.config,
+        this.visibleTiles,
+        taskQueue,
+        z
+      );
+
+      // Register after construction!
+      this.tileLayers.set(z, pipeline);
     }
   }
 
@@ -91,7 +101,8 @@ export class GlobeTileEngine {
     for (const layer of this.tileLayers.values()) {
       this.scene.add(layer.group);
     }
-    this.scene.add(this.fallbackManager.group);
+    // You may keep fallback for Z3, etc., if needed
+    // this.scene.add(this.fallbackManager.group);
   }
 
   /**
@@ -105,20 +116,43 @@ export class GlobeTileEngine {
 
     this.updateDebounceHandle = window.setTimeout(() => {
       const estimatedZoom = estimateZoomLevel(this.camera);
+
+      // 1. Get current and previous camera state
+      const currState = getCameraState(this.camera);
+      let shouldIncrementRevision = false;
+
+      if (!this.lastCameraState) {
+        // On first run, always trigger
+        shouldIncrementRevision = true;
+      } else if (cameraStateChanged(currState, this.lastCameraState)) {
+        shouldIncrementRevision = true;
+      }
+      this.lastCameraState = currState;
+
+      // 2. Find the active tile layer (by zoom)
       const zoomChanged = estimatedZoom !== this.currentZoom;
       const activeLayer = this.tileLayers.get(estimatedZoom);
       if (!activeLayer) return;
 
-      if (zoomChanged) {
-        if (estimatedZoom < this.currentZoom) {
+      // 3. Increment revision if camera or zoom changed
+      if (shouldIncrementRevision || zoomChanged) {
+        (activeLayer as any).state.revision++;
+        if (zoomChanged && estimatedZoom < this.currentZoom) {
           this.unloadHigherZoomLevels();
         }
         this.currentZoom = estimatedZoom;
       }
 
+      // 4. Clean stale queued tasks
+      (activeLayer as any).state.taskQueue.filterCurrentZoomAndRevision(
+        this.currentZoom,
+        (activeLayer as any).state.revision
+      );
+
+      // 5. Update main and preload next LOD
       activeLayer.updateTiles();
 
-      // Opportunistically preload next higher LOD
+      // Preload next higher LOD
       const preloadLayer = this.tileLayers.get(this.currentZoom + 1);
       if (preloadLayer) {
         preloadLayer.updateTiles();
@@ -142,7 +176,8 @@ export class GlobeTileEngine {
    */
   public unloadHigherZoomLevels(): void {
     for (const [z, layer] of this.tileLayers.entries()) {
-      if (z > this.currentZoom) {
+      if (z > this.currentZoom && z > 3) {
+        // <-- Don't clear Z3!
         layer.clear();
       }
     }
@@ -151,7 +186,7 @@ export class GlobeTileEngine {
   /**
    * Returns a map of all managed tile layers by zoom level.
    */
-  public getTileLayers(): Map<number, TileLayer> {
+  public getTileLayers(): Map<number, TileVisualPipelineLayer> {
     return this.tileLayers;
   }
 }

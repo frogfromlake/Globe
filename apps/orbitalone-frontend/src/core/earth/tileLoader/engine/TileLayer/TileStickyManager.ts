@@ -4,7 +4,7 @@
  */
 
 import { Mesh } from "three";
-import { getParentTileKey } from "../utils/tiles/tileOverlaps";
+import { getParentTileKey } from "../utils/geo/tileIndexing";
 import { fadeOutTileMesh } from "./TileFading";
 
 type StickyCallbacks = {

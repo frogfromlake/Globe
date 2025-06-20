@@ -39,6 +39,7 @@ export interface TileCullingContext {
 export interface TileCandidate {
   x: number;
   y: number;
+  z: number;
   key: string;
   screenDist: number;
 }

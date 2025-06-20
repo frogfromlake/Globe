@@ -135,3 +135,116 @@
 
 *Once pipeline stages are mapped and core pipeline structure is in place, this README will be updated with the new architecture overview and docs!*
 
+
+## **How the Old Pipeline Works: Extraction and Flow**
+
+### **Core Data Flow and Responsibilities**
+
+1. **Tile Candidate Generation & Filtering**
+
+   * **Spiral candidate generation** centered on camera (in `TileLayer`).
+   * For each tile:
+
+     * **Already visible?** (skip)
+     * **Longitude test**: skip tiles more than 100° from camera
+     * **Dot-product FOV test** (angle from camera, minDot threshold per zoom/FOV)
+     * **Frustum intersection** (uses a *widened* frustum by default)
+     * **Screen distance check** (for overload control)
+   * Output: a list of candidate tiles with screen distance
+
+2. **Tile Prioritization**
+
+   * Candidates are **sorted by screenDist** (distance from screen center)
+   * Load cap per frame/zoom is enforced
+   * **Extra prewarm candidates** (lookahead, speculative, not rendered yet)
+
+3. **Tile Loading and Insertion**
+
+   * Uses a **queue processor** (`TileQueueProcessor`) for concurrency & frame budgeting
+   * Each queued tile triggers:
+
+     * **Async mesh creation** (KTX2/raster)
+     * Fade-in (if enabled)
+     * Add mesh to group, cache, and visible set
+
+4. **Sticky/Parent-Fade Logic**
+
+   * When a tile is loaded, its parent is determined.
+   * If sticky mode is enabled:
+
+     * **Fade out parent only when all 4 children loaded**
+   * If not sticky, fade/remove parent immediately on child load
+
+5. **Prewarming/Prefetching**
+
+   * Extra “nearby” tiles are prewarmed (download & cache, not rendered)
+   * Managed via a dedicated helper
+
+6. **Cache Management**
+
+   * **LRU tile mesh cache** per layer, eviction on overflow
+   * On eviction, mesh is removed from scene
+
+7. **Cleanup/Tile Eviction**
+
+   * High-Z tiles are aggressively cleaned if far from screen center
+   * Old meshes are removed if too far off-screen
+
+8. **Debug and Control**
+
+   * Frustum, dot, and screen-space prioritization can be enabled/disabled at runtime
+   * Debug overlays (bounding spheres, wireframes) possible
+   * Window-accessible tile managers for inspection
+
+9. **Event Flow**
+
+   * **On camera movement:** triggers tile candidate recalculation and loading
+   * **On animation loop:** controls rendering and control speeds
+
+---
+
+## **Key Interactions / Sequence (Old Approach)**
+
+* **On scene init**: Fallback Z3 loads, then dynamic engine for Z4–Z13 attaches.
+* **On controls/camera move**:
+
+  1. Candidates generated (culling, dot, frustum, etc)
+  2. Sorted and capped, prioritized by screenDist
+  3. Tiles queued for load (mesh built, fade-in, etc)
+  4. Parent/child “sticky” logic managed
+  5. Cache and visible sets updated
+  6. Debug info/logging overlays as needed
+
+---
+
+## **Feature List for Parity/Testing**
+
+1. **Candidate selection (spiral, screen-centered, LOD-aware)**
+2. **Dot product filtering (angle-to-camera)**
+3. **Frustum culling (bounding sphere intersection, with FOV inflation)**
+4. **Screen distance prioritization/cap (to prevent overload)**
+5. **Prewarming/lookahead tiles**
+6. **Tile queueing and frame-time budgeting**
+7. **Fade-in/fade-out transitions**
+8. **Sticky parent/child tile removal**
+9. **LRU mesh caching and eviction (with scene cleanup)**
+10. **High-Z aggressive cleanup based on screen dist**
+11. **Debug toggles and overlays**
+12. **Runtime feature enable/disable (via window vars/UI)**
+13. **API for full Z3 fallback and dynamic Z4+**
+14. **Async safety for zoom/revision changes**
+15. **Parent removal logic (immediate vs sticky)**
+16. **Scene graph and mesh group management**
+17. **Camera-based update triggering and debounce**
+18. **Window debug access to tile state/manager**
+19. **Error handling/logging on tile load failures**
+20. **Prefill all-tiles for fallback layers**
+
+---
+
+## **How Everything Fits Together**
+
+* All helpers (`TileCulling`, `TileFading`, `TileLoader`, `TileMeshCache`, `TilePrewarmer`, `TileQueueProcessor`, `TileStickyManager`) are **orchestrated by each `TileLayer` instance** (one per zoom).
+* The **`GlobeTileEngine`** sits above, managing all zoom-level layers and the fallback base layer, coordinating updates and attach/detach to the scene.
+
+---

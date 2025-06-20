@@ -1,6 +1,6 @@
 /**
  * @file utils/camera/cameraUtils.ts
- * @description Utility functions for extracting camera direction and longitude, 
+ * @description Utility functions for extracting camera direction and longitude,
  * primarily used for tile visibility, prioritization, and frustum alignment.
  */
 
@@ -23,4 +23,32 @@ export function getCameraCenterDirection(camera: PerspectiveCamera): Vector3 {
 export function getCameraLongitude(camera: PerspectiveCamera): number {
   const pos = camera.position.clone().normalize();
   return Math.atan2(pos.x, pos.z) * (180 / Math.PI);
+}
+
+/**
+ * Computes the camera's latitude angle in degrees.
+ */
+export function getCameraLatitude(camera: PerspectiveCamera): number {
+  const pos = camera.position.clone().normalize();
+  return Math.asin(pos.y) * (180 / Math.PI);
+}
+
+export function computeScreenDistance(
+  position: Vector3,
+  camera: PerspectiveCamera
+): number {
+  const projected = position.clone().project(camera);
+  return projected.distanceTo(new Vector3(0, 0, -1));
+}
+
+export function getCameraState(camera: PerspectiveCamera) {
+  return {
+    pos: camera.position.clone(),
+    quat: camera.quaternion.clone(),
+    zoom: Math.round(camera.zoom ?? camera.userData.zoomLevel ?? 3),
+  };
+}
+export function cameraStateChanged(a: any, b: any): boolean {
+  // Compare position, orientation, zoom
+  return !a.pos.equals(b.pos) || !a.quat.equals(b.quat) || a.zoom !== b.zoom;
 }
