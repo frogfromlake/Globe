@@ -1,15 +1,20 @@
-// tileLoader/engine/TileLayer/TileFading.ts
 import { Mesh } from "three";
+
+// Read fade duration from a global (default 400ms)
+function getFadeDuration(defaultMs: number) {
+  if (typeof window !== "undefined" && (window as any).tileFadeDuration)
+    return (window as any).tileFadeDuration;
+  return defaultMs;
+}
 
 export function fadeInTileMesh(
   mesh: Mesh,
-  duration: number = 500,
+  duration: number = getFadeDuration(400),
   callback?: () => void
 ) {
-  // Only fade if mesh/material is transparent-capable
   if (!mesh.material || !("opacity" in mesh.material)) {
     mesh.visible = true;
-    if (callback) callback();
+    callback?.();
     return;
   }
   mesh.visible = true;
@@ -24,7 +29,7 @@ export function fadeInTileMesh(
       requestAnimationFrame(animate);
     } else {
       (mesh.material as any).opacity = 1;
-      if (callback) callback();
+      callback?.();
     }
   }
   requestAnimationFrame(animate);
@@ -32,12 +37,12 @@ export function fadeInTileMesh(
 
 export function fadeOutTileMesh(
   mesh: Mesh,
-  duration: number = 400,
+  duration: number = getFadeDuration(400),
   callback?: () => void
 ) {
   if (!mesh.material || !("opacity" in mesh.material)) {
     if (mesh.parent) mesh.parent.remove(mesh);
-    if (callback) callback();
+    callback?.();
     return;
   }
   (mesh.material as any).transparent = true;
@@ -51,9 +56,8 @@ export function fadeOutTileMesh(
       requestAnimationFrame(animate);
     } else {
       (mesh.material as any).opacity = 0;
-      // Remove from scene after fade
       if (mesh.parent) mesh.parent.remove(mesh);
-      if (callback) callback();
+      callback?.();
     }
   }
   requestAnimationFrame(animate);

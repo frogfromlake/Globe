@@ -1,18 +1,6 @@
-/**
- * @file engine/TileLayer/TileCulling.ts
- * @description Responsible for frustum culling and tile visibility filtering. 
- * Includes directional filtering (dot product), screen distance checks, 
- * and bounding sphere intersection with a computed frustum.
- */
+// engine/TilePipeline/VisibilityFilter.ts
 
-import {
-  Frustum,
-  Matrix4,
-  PerspectiveCamera,
-  Scene,
-  Sphere,
-  Vector3,
-} from "three";
+import { Frustum, Matrix4, PerspectiveCamera, Scene, Vector3 } from "three";
 import {
   getCameraCenterDirection,
   getCameraLongitude,
@@ -24,31 +12,23 @@ import {
 import { latLonToUnitVector } from "../utils/geo/latLonToVector";
 import { tileToLatLonBounds } from "../utils/bounds/tileToBounds";
 import { getTileBoundingSphere } from "../utils/lod/tileBoundingSphere";
+import { TilePipelineState, TileEngineConfig } from "./TilePipelineTypes";
 
-export interface TileCullingContext {
+// --- Culling context & helpers ---
+
+interface TileCullingContext {
   camera: PerspectiveCamera;
   zoom: number;
   radius: number;
   enableFrustumCulling: boolean;
   enableDotProductFiltering: boolean;
   enableScreenSpacePrioritization: boolean;
-  frustum?: Frustum; // optional precomputed frustum
-  scene?: Scene; // optional for debugging helpers
+  frustum?: Frustum;
+  scene?: Scene;
 }
 
-export interface TileCandidate {
-  x: number;
-  y: number;
-  z: number;
-  key: string;
-  screenDist: number;
-}
-
-/**
- * Computes a frustum based on a temporary expanded FOV camera.
- * Used to widen culling criteria slightly beyond standard camera frustum.
- */
-export function computeFrustum(
+/** Compute a widened frustum for culling */
+function computeFrustum(
   camera: PerspectiveCamera,
   fovMultiplier = 1.3
 ): Frustum {
@@ -71,14 +51,8 @@ export function computeFrustum(
   return new Frustum().setFromProjectionMatrix(projMatrix);
 }
 
-/**
- * Returns tile visibility status based on frustum, direction, and screen proximity.
- * - Culls tiles already visible.
- * - Applies dot-product filtering based on camera FOV and tile angle.
- * - Applies frustum intersection test using bounding sphere.
- * - Applies screen-space distance culling for overload control.
- */
-export function isTileVisible(
+/** Test if a tile is visible in the current view (frustum, dot, etc) */
+function isTileVisible(
   x: number,
   y: number,
   z: number,
@@ -101,7 +75,7 @@ export function isTileVisible(
     return { visible: false, key, screenDist: Infinity };
   }
 
-  // Dot-product filter (field-of-view angle filtering)
+  // Dot-product filter (FOV angle filtering)
   const tileDir = latLonToUnitVector(centerLat, centerLon);
   const viewDir = getCameraCenterDirection(context.camera);
   const dot = viewDir.dot(tileDir);
@@ -139,4 +113,47 @@ export function isTileVisible(
   }
 
   return { visible: true, key, screenDist };
+}
+
+// --- VisibilityFilter class (now self-contained) ---
+
+export class VisibilityFilter {
+  run(state: TilePipelineState, config: TileEngineConfig, z: number) {
+    const frustum = config.enableFrustumCulling
+      ? computeFrustum(state.camera)
+      : undefined;
+    state.visibleCandidates.length = 0;
+
+    for (const candidate of state.candidates) {
+      const result = isTileVisible(
+        candidate.x,
+        candidate.y,
+        z, // pass z explicitly
+        {
+          camera: state.camera,
+          zoom: z,
+          radius: state.radius,
+          enableFrustumCulling: config.enableFrustumCulling,
+          enableDotProductFiltering: config.enableDotProductFiltering,
+          enableScreenSpacePrioritization:
+            config.enableScreenSpacePrioritization,
+          frustum,
+        },
+        state.visibleTiles,
+        frustum
+      );
+      if (result.visible) {
+        state.visibleCandidates.push({
+          x: candidate.x,
+          y: candidate.y,
+          z,
+          key: result.key,
+          screenDist: result.screenDist,
+        });
+      }
+    }
+    console.log(
+      `[VisibilityFilter] Z${z}: ${state.visibleCandidates.length}/${state.candidates.length} passed`
+    );
+  }
 }

@@ -1,14 +1,15 @@
 // engine/TileLayer/TilePipeline/CandidateGenerator.ts
-import { computeTileSpiral } from "../../utils/geo/tileIndexing";
-import {
-  getMaxTilesToLoad,
-  getTileSearchRadius,
-} from "../../utils/lod/lodFunctions";
+
+import { TilePipelineState, TileEngineConfig } from "./TilePipelineTypes";
 import {
   getCameraLongitude,
   getCameraLatitude,
-} from "../../utils/camera/cameraUtils";
-import { TileEngineConfig, TilePipelineState } from "../TilePipelineTypes";
+} from "../utils/camera/cameraUtils";
+import { computeTileSpiral } from "../utils/geo/tileIndexing";
+import {
+  getTileSearchRadius,
+  getMaxTilesToLoad,
+} from "../utils/lod/lodFunctions";
 
 export class CandidateGenerator {
   public run(

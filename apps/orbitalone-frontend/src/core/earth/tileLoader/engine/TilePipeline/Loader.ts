@@ -1,11 +1,18 @@
 // engine/TileLayer/TilePipeline/Loader.ts
 import type { Mesh } from "three";
-import { fadeInTileMesh, fadeOutTileMesh } from "../TileFading";
-import { getParentTileKey } from "../../utils/geo/tileIndexing";
-import type { TileEngineConfig, TilePipelineState } from "../TilePipelineTypes";
+import { fadeOutTileMesh, fadeInTileMesh } from "./TileFading";
+import { TilePipelineState, TileEngineConfig } from "./TilePipelineTypes";
+import { getParentTileKey } from "../utils/geo/tileIndexing";
 
 export class Loader {
   run(state: TilePipelineState, config: TileEngineConfig, z: number) {
+    // --- Cap the task queue ---
+    const MAX_QUEUE_LENGTH = z >= 13 ? 8 : z >= 11 ? 16 : 32;
+    if (state.taskQueue.length() > MAX_QUEUE_LENGTH) {
+      console.warn(`[Loader] Tile queue overloaded at Z${z}, skipping load`);
+      return;
+    }
+
     console.log(`[Loader] Z${z}: queueing ${state.queue.length} tiles`);
     const fadeEnabled = (window as any).enableTileFade;
     const stickyEnabled = (window as any).enableStickyTiles;
@@ -14,12 +21,18 @@ export class Loader {
     for (const candidate of state.queue) {
       if (state.loadedTiles.has(candidate.key)) continue;
 
+      // --- Do not over-enqueue: cap the amount to add this frame
+      if (enqueued >= MAX_QUEUE_LENGTH) {
+        break;
+      }
+
       state.taskQueue.enqueue({
         key: candidate.key,
         zoom: candidate.z,
         revision: state.revision,
         task: async () => {
           try {
+            console.time?.(`createTileMesh:${candidate.key}`);
             const mesh: Mesh = await state.createTileMesh({
               x: candidate.x,
               y: candidate.y,
@@ -28,6 +41,7 @@ export class Loader {
               radius: state.radius,
               renderer: state.renderer,
             });
+            console.timeEnd?.(`createTileMesh:${candidate.key}`);
 
             (mesh as any).userData.key = candidate.key;
             mesh.visible = true;

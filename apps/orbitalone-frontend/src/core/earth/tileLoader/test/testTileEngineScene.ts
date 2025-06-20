@@ -17,10 +17,12 @@ import {
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
 
 import { GlobeTileEngine } from "../engine/GlobeTileEngine";
-import { createRasterTileMesh } from "../engine/TileLayer/TileMeshBuilders/RasterTileMeshBuilder";
-import { createTileMeshKTX2 } from "../engine/TileLayer/TileMeshBuilders/KTX2TileMeshBuilder";
-import type { CreateTileMeshFn } from "../@types";
-import { TileEngineConfig } from "../engine/TileLayer/TilePipelineTypes";
+import {
+  CreateTileMeshFn,
+  TileEngineConfig,
+} from "../engine/TilePipeline/TilePipelineTypes";
+import { createTileMeshKTX2 } from "../engine/TilePipeline/TileMeshBuilders/KTX2TileMeshBuilder";
+import { createRasterTileMesh } from "../engine/TilePipeline/TileMeshBuilders/RasterTileMeshBuilder";
 
 // -------------------------------------------------------------
 // Configuration

@@ -1,9 +1,7 @@
 // engine/TileLayer/TilePipeline/Prioritizer.ts
-import { getCameraCenterDirection } from "../../utils/camera/cameraUtils";
-import { latLonToUnitVector } from "../../utils/geo/latLonToVector";
-import { tileToLatLonBounds } from "../../utils/bounds/tileToBounds";
-import { getMaxTilesToLoad } from "../../utils/lod/lodFunctions";
-import type { TileEngineConfig, TilePipelineState } from "../TilePipelineTypes";
+
+import { TilePipelineState, TileEngineConfig } from "./TilePipelineTypes";
+import { getMaxTilesToLoad } from "../utils/lod/lodFunctions";
 
 export class Prioritizer {
   run(state: TilePipelineState, config: TileEngineConfig, z: number) {

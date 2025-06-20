@@ -12,8 +12,8 @@ import type {
   Scene,
 } from "three";
 import type { TileMeshCache } from "./TileMeshCache";
-import type { TileStickyManager } from "./TileStickyManager";
-import { TaskQueue } from "./TilePipeline/TaskQueue";
+import { TaskQueue } from "./TaskQueue";
+import { TileStickyManager } from "./TileStickyManager";
 
 // Global Debug Flags (defined once globally, accessed directly from window)
 declare global {
@@ -37,6 +37,8 @@ export interface TileEngineConfig {
   debugSpiralBounds: boolean;
   enableTileFade: boolean;
   enableStickyTiles: boolean;
+  enableTilePrewarm?: boolean;
+  prewarmCount?: number;
   // ...any other static config
 }
 

@@ -1,4 +1,5 @@
 // engine/TileLayer/TilePipeline/TaskQueue.ts
+
 export type TaskFn = () => Promise<void>;
 
 export interface TaskQueueItem {
@@ -11,6 +12,8 @@ export interface TaskQueueItem {
 export class TaskQueue {
   private queue: TaskQueueItem[] = [];
   private busy = false;
+
+  private static readonly MAX_PARALLEL_TASKS = 6;
 
   enqueue(item: TaskQueueItem): void {
     // Only enqueue if not already queued!
@@ -43,21 +46,15 @@ export class TaskQueue {
   async process(limitMs = 10): Promise<void> {
     if (this.busy) return;
     this.busy = true;
+
+    // --- Parallel task processing: up to MAX_PARALLEL_TASKS at a time ---
     while (this.queue.length > 0) {
-      const start = performance.now();
-      let didYield = false;
-      while (this.queue.length > 0) {
-        const { task } = this.queue.shift()!;
-        await task();
-        if (performance.now() - start > limitMs) {
-          didYield = true;
-          break;
-        }
-      }
-      if (didYield) {
-        await new Promise((res) => requestAnimationFrame(res));
-      }
+      const tasks = this.queue.splice(0, TaskQueue.MAX_PARALLEL_TASKS);
+      await Promise.all(tasks.map((item) => item.task()));
+      // Optionally yield to event loop for UI
+      await new Promise((res) => setTimeout(res, 0));
     }
+
     this.busy = false;
   }
 }

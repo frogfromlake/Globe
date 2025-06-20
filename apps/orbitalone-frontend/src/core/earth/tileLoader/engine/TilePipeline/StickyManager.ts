@@ -1,6 +1,6 @@
-// engine/TileLayer/TilePipeline/StickyManager.ts
-import { TileEngineConfig, TilePipelineState } from "../TilePipelineTypes";
+import { TilePipelineState, TileEngineConfig } from "./TilePipelineTypes";
 
+// engine/TileLayer/TilePipeline/StickyManager.ts
 export class StickyManager {
   run(state: TilePipelineState, config: TileEngineConfig, z: number) {
     // If you want to debug sticky logic:

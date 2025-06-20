@@ -1,6 +1,7 @@
 // engine/TileLayer/TilePipeline/Cleanup.ts
-import { TileEngineConfig, TilePipelineState } from "../TilePipelineTypes";
-import { computeScreenDistance } from "../../utils/camera/cameraUtils";
+
+import { TilePipelineState, TileEngineConfig } from "./TilePipelineTypes";
+import { computeScreenDistance } from "../utils/camera/cameraUtils";
 
 export class Cleanup {
   run(state: TilePipelineState, config: TileEngineConfig, z: number) {

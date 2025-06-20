@@ -12,7 +12,7 @@ import type { Mesh } from "three";
  */
 export class TileMeshCache {
   private readonly maxSize: number;
-  private readonly cache: Map<string, Mesh>;
+  private cache: Map<string, Mesh> = new Map();
 
   constructor(maxSize = 256) {
     this.maxSize = maxSize;
@@ -102,5 +102,9 @@ export class TileMeshCache {
       oldestMesh.parent.remove(oldestMesh);
     }
     this.cache.delete(oldestKey);
+  }
+
+  public getInternalMap(): Map<string, Mesh> {
+    return this.cache;
   }
 }

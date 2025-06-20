@@ -4,20 +4,19 @@
  */
 
 import { Scene, PerspectiveCamera, WebGLRenderer, Group } from "three";
-import type { CreateTileMeshFn } from "../@types";
 import { estimateZoomLevel } from "./utils/lod/lodFunctions";
-import { TileMeshCache } from "./TileLayer/TileMeshCache";
-import { TileVisualPipeline } from "./TileLayer/TilePipeline/TileVisualPipeline";
-import { TileStickyManager } from "./TileLayer/TileStickyManager";
+import { TileMeshCache } from "./TilePipeline/TileMeshCache";
 import {
+  CreateTileMeshFn,
   GlobeTileEngineOptions,
   TileEngineConfig,
   TileVisualPipelineLayer,
-} from "./TileLayer/TilePipelineTypes";
-import { TaskQueue } from "./TileLayer/TilePipeline/TaskQueue";
+} from "./TilePipeline/TilePipelineTypes";
 import { getCameraState, cameraStateChanged } from "./utils/camera/cameraUtils";
-
-const DEFAULT_UPDATE_DEBOUNCE_MS = 100;
+import { TaskQueue } from "./TilePipeline/TaskQueue";
+import { TileVisualPipeline } from "./TilePipeline/TileVisualPipeline";
+import { TileStickyManager } from "./TilePipeline/TileStickyManager";
+import type { TileCandidate } from "./TilePipeline/TilePipelineTypes";
 
 /**
  * GlobeTileEngine manages tile loading across zoom levels and responds to camera movement.
@@ -69,7 +68,16 @@ export class GlobeTileEngine {
     for (let z = this.minZoom; z <= this.maxZoom; z++) {
       const group = new Group();
       const cache = new TileMeshCache(512);
-      const stickyManager = new TileStickyManager(cache, this.visibleTiles);
+      // Pass the underlying Map<string, Mesh> instead of the cache instance
+      const stickyManager = new TileStickyManager(
+        cache.getInternalMap(), // <-- Fix: Pass the raw Map
+        this.visibleTiles,
+        {
+          // Optionally: callbacks
+          // onParentRemoval: (parentKey, mesh) => { ... }
+        }
+      );
+
       const radius = this.getRadiusForZoom(z);
       const taskQueue = new TaskQueue();
 
@@ -108,56 +116,81 @@ export class GlobeTileEngine {
   /**
    * Triggers a debounced tile update based on current camera position.
    * Automatically preloads the next zoom level.
+   * Ensures all candidate lists are sorted by screenDist (center-priority).
    */
   public update(): void {
-    if (this.updateDebounceHandle !== null) {
-      clearTimeout(this.updateDebounceHandle);
+    const estimatedZoom = estimateZoomLevel(this.camera);
+    const currState = getCameraState(this.camera);
+
+    let shouldIncrementRevision = false;
+    if (!this.lastCameraState) {
+      shouldIncrementRevision = true;
+    } else if (cameraStateChanged(currState, this.lastCameraState)) {
+      shouldIncrementRevision = true;
+    }
+    this.lastCameraState = currState;
+
+    const zoomChanged = estimatedZoom !== this.currentZoom;
+    const activeLayer = this.tileLayers.get(estimatedZoom);
+    if (!activeLayer) return;
+
+    // --- KEY: Clear all queues and (optionally) caches on zoom change ---
+    if (zoomChanged) {
+      if (this.updateDebounceHandle !== null) {
+        clearTimeout(this.updateDebounceHandle);
+        this.updateDebounceHandle = null;
+      }
+      // Clear all queues, caches and prewarm, but NEVER clear Z3 fallback!
+      for (const [z, layer] of this.tileLayers.entries()) {
+        (layer as any).state.taskQueue.clear();
+        // Do NOT clear Z3 fallback cache or sets unless we are *at* Z3!
+        if (z !== estimatedZoom && z !== 3) {
+          (layer as any).state.tileCache.clear?.();
+          (layer as any).state.loadedTiles.clear?.();
+          (layer as any).state.stickyTiles.clear?.();
+        }
+      }
     }
 
-    this.updateDebounceHandle = window.setTimeout(() => {
-      const estimatedZoom = estimateZoomLevel(this.camera);
-
-      // 1. Get current and previous camera state
-      const currState = getCameraState(this.camera);
-      let shouldIncrementRevision = false;
-
-      if (!this.lastCameraState) {
-        // On first run, always trigger
-        shouldIncrementRevision = true;
-      } else if (cameraStateChanged(currState, this.lastCameraState)) {
-        shouldIncrementRevision = true;
+    if (shouldIncrementRevision || zoomChanged) {
+      (activeLayer as any).state.revision++;
+      if (zoomChanged && estimatedZoom < this.currentZoom) {
+        this.unloadHigherZoomLevels();
       }
-      this.lastCameraState = currState;
+      this.currentZoom = estimatedZoom;
+    }
 
-      // 2. Find the active tile layer (by zoom)
-      const zoomChanged = estimatedZoom !== this.currentZoom;
-      const activeLayer = this.tileLayers.get(estimatedZoom);
-      if (!activeLayer) return;
+    // 1. Clean stale queued tasks (active layer)
+    (activeLayer as any).state.taskQueue.filterCurrentZoomAndRevision(
+      this.currentZoom,
+      (activeLayer as any).state.revision
+    );
 
-      // 3. Increment revision if camera or zoom changed
-      if (shouldIncrementRevision || zoomChanged) {
-        (activeLayer as any).state.revision++;
-        if (zoomChanged && estimatedZoom < this.currentZoom) {
-          this.unloadHigherZoomLevels();
-        }
-        this.currentZoom = estimatedZoom;
-      }
-
-      // 4. Clean stale queued tasks
-      (activeLayer as any).state.taskQueue.filterCurrentZoomAndRevision(
-        this.currentZoom,
-        (activeLayer as any).state.revision
+    // 2. Always sort candidate and prioritized lists by screenDist if present (center first)
+    const st = (activeLayer as any).state;
+    if (Array.isArray(st.candidates)) {
+      st.candidates.sort(
+        (a: TileCandidate, b: TileCandidate) => a.screenDist - b.screenDist
       );
+    }
+    if (Array.isArray(st.visibleCandidates)) {
+      st.visibleCandidates.sort(
+        (a: TileCandidate, b: TileCandidate) => a.screenDist - b.screenDist
+      );
+    }
+    if (Array.isArray(st.prioritizedTiles)) {
+      st.prioritizedTiles.sort(
+        (a: TileCandidate, b: TileCandidate) => a.screenDist - b.screenDist
+      );
+    }
 
-      // 5. Update main and preload next LOD
-      activeLayer.updateTiles();
+    // 3. Update main and preload next LOD
+    activeLayer.updateTiles();
 
-      // Preload next higher LOD
-      const preloadLayer = this.tileLayers.get(this.currentZoom + 1);
-      if (preloadLayer) {
-        preloadLayer.updateTiles();
-      }
-    }, DEFAULT_UPDATE_DEBOUNCE_MS);
+    const preloadLayer = this.tileLayers.get(this.currentZoom + 1);
+    if (preloadLayer) {
+      preloadLayer.updateTiles();
+    }
   }
 
   /**
@@ -177,8 +210,10 @@ export class GlobeTileEngine {
   public unloadHigherZoomLevels(): void {
     for (const [z, layer] of this.tileLayers.entries()) {
       if (z > this.currentZoom && z > 3) {
-        // <-- Don't clear Z3!
         layer.clear();
+        (layer as any).state.tileCache.clear?.();
+        (layer as any).state.loadedTiles.clear?.();
+        (layer as any).state.stickyTiles.clear?.();
       }
     }
   }
