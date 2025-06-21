@@ -1,7 +1,7 @@
 // engine/TileLayer/TilePipeline/Loader.ts
 import type { Mesh } from "three";
 import { fadeOutTileMesh, fadeInTileMesh } from "./TileFading";
-import { TilePipelineState, TileEngineConfig } from "./TilePipelineTypes";
+import { TilePipelineState, TileEngineConfig } from "./TilePipelineStore";
 import { getParentTileKey } from "../utils/geo/tileIndexing";
 
 export class Loader {
@@ -13,7 +13,7 @@ export class Loader {
       return;
     }
 
-    console.log(`[Loader] Z${z}: queueing ${state.queue.length} tiles`);
+    // console.log(`[Loader] Z${z}: queueing ${state.queue.length} tiles`);
     const fadeEnabled = (window as any).enableTileFade;
     const stickyEnabled = (window as any).enableStickyTiles;
     let enqueued = 0;
@@ -32,7 +32,7 @@ export class Loader {
         revision: state.revision,
         task: async () => {
           try {
-            console.time?.(`createTileMesh:${candidate.key}`);
+            // console.time?.(`createTileMesh:${candidate.key}`);
             const mesh: Mesh = await state.createTileMesh({
               x: candidate.x,
               y: candidate.y,
@@ -41,7 +41,7 @@ export class Loader {
               radius: state.radius,
               renderer: state.renderer,
             });
-            console.timeEnd?.(`createTileMesh:${candidate.key}`);
+            // console.timeEnd?.(`createTileMesh:${candidate.key}`);
 
             (mesh as any).userData.key = candidate.key;
             mesh.visible = true;
@@ -99,9 +99,9 @@ export class Loader {
       });
       enqueued++;
     }
-    if (enqueued > 0) {
-      console.log(`[Loader] Enqueued ${enqueued} tiles for loading`);
-    }
+    // if (enqueued > 0) {
+    //   console.log(`[Loader] Enqueued ${enqueued} tiles for loading`);
+    // }
 
     state.taskQueue.process();
   }

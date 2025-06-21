@@ -18,7 +18,7 @@ import {
 import { KTX2Loader } from "three/examples/jsm/loaders/KTX2Loader";
 import { latLonToUnitVectorFlipped } from "../../utils/geo/latLonToVector";
 import { tileToLatLonBounds } from "../../utils/bounds/tileToBounds";
-import { TileRenderOptions } from "../TilePipelineTypes";
+import { TileRenderOptions } from "../TilePipelineStore";
 
 let ktx2Loader: KTX2Loader | null = null;
 

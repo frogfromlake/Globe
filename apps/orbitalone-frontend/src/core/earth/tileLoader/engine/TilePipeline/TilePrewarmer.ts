@@ -4,7 +4,7 @@
  */
 
 import type { Mesh } from "three";
-import type { TilePipelineState, TileEngineConfig } from "./TilePipelineTypes";
+import type { TilePipelineState, TileEngineConfig } from "./TilePipelineStore";
 
 export class TilePrewarmer {
   /**

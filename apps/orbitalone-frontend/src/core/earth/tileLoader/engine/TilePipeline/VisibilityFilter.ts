@@ -12,7 +12,7 @@ import {
 import { latLonToUnitVector } from "../utils/geo/latLonToVector";
 import { tileToLatLonBounds } from "../utils/bounds/tileToBounds";
 import { getTileBoundingSphere } from "../utils/lod/tileBoundingSphere";
-import { TilePipelineState, TileEngineConfig } from "./TilePipelineTypes";
+import { TilePipelineState, TileEngineConfig } from "./TilePipelineStore";
 
 // --- Culling context & helpers ---
 
@@ -152,8 +152,8 @@ export class VisibilityFilter {
         });
       }
     }
-    console.log(
-      `[VisibilityFilter] Z${z}: ${state.visibleCandidates.length}/${state.candidates.length} passed`
-    );
+    // console.log(
+    //   `[VisibilityFilter] Z${z}: ${state.visibleCandidates.length}/${state.candidates.length} passed`
+    // );
   }
 }

@@ -18,7 +18,7 @@ import {
   TileEngineConfig,
   CreateTileMeshFn,
   initializeTilePipelineState,
-} from "./TilePipelineTypes";
+} from "./TilePipelineStore";
 import { tileToLatLonBounds } from "../utils/bounds/tileToBounds";
 import { getCameraCenterDirection } from "../utils/camera/cameraUtils";
 import { runConcurrent } from "../utils/concurrency/runConcurrent";
@@ -100,6 +100,11 @@ export class TileVisualPipeline implements TileVisualPipelineLayer {
     this.visibilityFilter.run(this.state, this.config, this.z);
     this.prioritizer.run(this.state, this.config, this.z);
     this.prewarmer.run(this.state, this.config, this.z);
+
+    console.log(
+      `[TileVisualPipeline Z${this.z}] cands:${this.state.candidates.length}, vis:${this.state.visibleCandidates.length}, prio:${this.state.prioritizedTiles.length}, queue:${this.state.queue.length}`
+    );
+
     this.loader.run(this.state, this.config, this.z);
     this.stickyManager.run(this.state, this.config, this.z);
     this.cleanup.run(this.state, this.config, this.z);

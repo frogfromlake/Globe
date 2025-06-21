@@ -20,7 +20,7 @@ import { GlobeTileEngine } from "../engine/GlobeTileEngine";
 import {
   CreateTileMeshFn,
   TileEngineConfig,
-} from "../engine/TilePipeline/TilePipelineTypes";
+} from "../engine/TilePipeline/TilePipelineStore";
 import { createTileMeshKTX2 } from "../engine/TilePipeline/TileMeshBuilders/KTX2TileMeshBuilder";
 import { createRasterTileMesh } from "../engine/TilePipeline/TileMeshBuilders/RasterTileMeshBuilder";
 

@@ -11,12 +11,12 @@ import {
   GlobeTileEngineOptions,
   TileEngineConfig,
   TileVisualPipelineLayer,
-} from "./TilePipeline/TilePipelineTypes";
+} from "./TilePipeline/TilePipelineStore";
 import { getCameraState, cameraStateChanged } from "./utils/camera/cameraUtils";
 import { TaskQueue } from "./TilePipeline/TaskQueue";
 import { TileVisualPipeline } from "./TilePipeline/TileVisualPipeline";
 import { TileStickyManager } from "./TilePipeline/TileStickyManager";
-import type { TileCandidate } from "./TilePipeline/TilePipelineTypes";
+import type { TileCandidate } from "./TilePipeline/TilePipelineStore";
 
 /**
  * GlobeTileEngine manages tile loading across zoom levels and responds to camera movement.
@@ -140,10 +140,8 @@ export class GlobeTileEngine {
         clearTimeout(this.updateDebounceHandle);
         this.updateDebounceHandle = null;
       }
-      // Clear all queues, caches and prewarm, but NEVER clear Z3 fallback!
       for (const [z, layer] of this.tileLayers.entries()) {
         (layer as any).state.taskQueue.clear();
-        // Do NOT clear Z3 fallback cache or sets unless we are *at* Z3!
         if (z !== estimatedZoom && z !== 3) {
           (layer as any).state.tileCache.clear?.();
           (layer as any).state.loadedTiles.clear?.();
@@ -168,6 +166,20 @@ export class GlobeTileEngine {
 
     // 2. Always sort candidate and prioritized lists by screenDist if present (center first)
     const st = (activeLayer as any).state;
+
+    // console.log(
+    //   `Zoom: ${estimatedZoom}, Current: ${
+    //     this.currentZoom
+    //   }, ZoomChanged: ${zoomChanged}, Revision: ${
+    //     (activeLayer as any).state.revision
+    //   }`
+    // );
+    // console.log(
+    //   `TaskQueue: ${(
+    //     activeLayer as any
+    //   ).state.taskQueue.length()}, Candidates: ${st.candidates.length}`
+    // );
+
     if (Array.isArray(st.candidates)) {
       st.candidates.sort(
         (a: TileCandidate, b: TileCandidate) => a.screenDist - b.screenDist

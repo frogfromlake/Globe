@@ -93,7 +93,7 @@ export function estimateZoomLevel(camera: PerspectiveCamera): number {
     { min: 1.01, max: 1.02, zoom: 10 },
     { min: 1.004, max: 1.01, zoom: 11 },
     { min: 1.0015, max: 1.004, zoom: 12 },
-    { min: 1.0003, max: 1.0015, zoom: 13 },
+    { min: 1.00028, max: 1.0015, zoom: 13 },
   ];
 
   for (const range of zoomRanges) {

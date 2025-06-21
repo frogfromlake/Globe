@@ -16,7 +16,7 @@ import {
 
 import { tileToLatLonBounds } from "../../utils/bounds/tileToBounds";
 import { latLonToUnitVector } from "../../utils/geo/latLonToVector";
-import { TileRenderOptions } from "../TilePipelineTypes";
+import { TileRenderOptions } from "../TilePipelineStore";
 
 /**
  * Entry point: builds a full mesh for a raster tile.

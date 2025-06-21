@@ -1,6 +1,6 @@
 // engine/TileLayer/TilePipeline/Cleanup.ts
 
-import { TilePipelineState, TileEngineConfig } from "./TilePipelineTypes";
+import { TilePipelineState, TileEngineConfig } from "./TilePipelineStore";
 import { computeScreenDistance } from "../utils/camera/cameraUtils";
 
 export class Cleanup {
@@ -26,10 +26,10 @@ export class Cleanup {
     for (const key of toRemove) {
       state.visibleTiles.delete(key);
     }
-    if (toRemove.length > 0) {
-      console.log(
-        `🧹 [Cleanup] Unloaded ${toRemove.length} stale tiles at Z≥${Z_UNLOAD_THRESHOLD}`
-      );
-    }
+    // if (toRemove.length > 0) {
+    //   console.log(
+    //     `🧹 [Cleanup] Unloaded ${toRemove.length} stale tiles at Z≥${Z_UNLOAD_THRESHOLD}`
+    //   );
+    // }
   }
 }

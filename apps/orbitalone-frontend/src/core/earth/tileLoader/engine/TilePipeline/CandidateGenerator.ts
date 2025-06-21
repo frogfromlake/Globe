@@ -1,6 +1,6 @@
 // engine/TileLayer/TilePipeline/CandidateGenerator.ts
 
-import { TilePipelineState, TileEngineConfig } from "./TilePipelineTypes";
+import { TilePipelineState, TileEngineConfig } from "./TilePipelineStore";
 import {
   getCameraLongitude,
   getCameraLatitude,
@@ -17,7 +17,7 @@ export class CandidateGenerator {
     config: TileEngineConfig,
     z: number
   ): void {
-    console.log(`[CandidateGenerator] Z${z}: running...`);
+    // console.log(`[CandidateGenerator] Z${z}: running...`);
     const cameraLon = getCameraLongitude(state.camera);
     const cameraLat = getCameraLatitude(state.camera);
     const maxRadius = getTileSearchRadius(z);
@@ -33,12 +33,6 @@ export class CandidateGenerator {
     )) {
       state.candidates.push({ x, y, z, key: `${z}/${x}/${y}`, screenDist: 0 });
       if (++count >= MAX_CANDIDATES) break;
-    }
-    // Bundled debug log
-    if (config.debugSpiralBounds) {
-      console.log(
-        `[CandidateGenerator] Z${z}: generated ${state.candidates.length} candidates (maxRadius=${maxRadius}, max=${MAX_CANDIDATES})`
-      );
     }
   }
 }

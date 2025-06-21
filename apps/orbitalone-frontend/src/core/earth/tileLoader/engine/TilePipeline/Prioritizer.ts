@@ -1,6 +1,6 @@
 // engine/TileLayer/TilePipeline/Prioritizer.ts
 
-import { TilePipelineState, TileEngineConfig } from "./TilePipelineTypes";
+import { TilePipelineState, TileEngineConfig } from "./TilePipelineStore";
 import { getMaxTilesToLoad } from "../utils/lod/lodFunctions";
 
 export class Prioritizer {
@@ -16,6 +16,6 @@ export class Prioritizer {
     }
     state.queue = state.visibleCandidates.slice();
 
-    console.log(`[Prioritizer] Z${z}: prioritized ${state.queue.length} tiles`);
+    // console.log(`[Prioritizer] Z${z}: prioritized ${state.queue.length} tiles`);
   }
 }

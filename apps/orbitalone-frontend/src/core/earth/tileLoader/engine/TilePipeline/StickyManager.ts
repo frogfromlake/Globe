@@ -1,4 +1,4 @@
-import { TilePipelineState, TileEngineConfig } from "./TilePipelineTypes";
+import { TilePipelineState, TileEngineConfig } from "./TilePipelineStore";
 
 // engine/TileLayer/TilePipeline/StickyManager.ts
 export class StickyManager {
