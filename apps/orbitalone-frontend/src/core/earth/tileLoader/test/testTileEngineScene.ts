@@ -137,17 +137,6 @@ const camera = setupCamera();
 const renderer = setupRenderer();
 const controls = setupControls(camera, renderer);
 
-// Fallback TileLayer (Z3)
-// const fallbackLayer = new TileLayer({
-//   urlTemplate: tileUrlTemplate,
-//   zoomLevel: 3,
-//   radius: 1,
-//   renderer,
-//   createTileMesh: createTileMeshFn,
-//   camera,
-//   config: debugTileEngineConfig,
-// });
-
 const fallbackLayer = undefined as any;
 // Dynamic GlobeTileEngine (Z4–Z13)
 const tileEngine = new GlobeTileEngine({
@@ -168,57 +157,33 @@ Object.assign(window, {
   dynamicTileManager: tileEngine,
 });
 
-tileEngine.attachToScene();
-// After attaching to scene, load all Z3 tiles
-const z3Layer = tileEngine.getTileLayers().get(3);
-if (z3Layer && typeof z3Layer.loadAllTiles === "function") {
-  z3Layer.loadAllTiles();
-  z3Layer.group.renderOrder = 0; // Always below dynamic layers
-}
+// tileEngine.attachToScene();
+// // After attaching to scene, load all Z3 tiles
+// const z3Layer = tileEngine.getTileLayers().get(3);
+// if (z3Layer && typeof z3Layer.loadAllTiles === "function") {
+//   z3Layer.loadAllTiles();
+//   z3Layer.group.renderOrder = 0; // Always below dynamic layers
+// }
 
-// All higher LODs should be renderOrder 1
-for (const [z, layer] of tileEngine.getTileLayers()) {
-  if (z > 3) layer.group.renderOrder = 1;
-}
+// // All higher LODs should be renderOrder 1
+// for (const [z, layer] of tileEngine.getTileLayers()) {
+//   if (z > 3) layer.group.renderOrder = 1;
+// }
 
 // -------------------------------------------------------------
 // OrbitControls & Initial Tile Load
 // -------------------------------------------------------------
-let firstUpdateDone = false;
-controls.addEventListener("change", () => {
-  if (!firstUpdateDone) {
-    firstUpdateDone = true;
-
-    // No fallbackLayer to load. Immediately set renderOrder and start tiles.
-    for (const layer of tileEngine.getTileLayers().values()) {
-      layer.group.renderOrder = 1;
-    }
-
-    tileEngine.loadInitialTiles();
-  } else {
-    tileEngine.update();
-  }
-});
+// let firstUpdateDone = false;
 // controls.addEventListener("change", () => {
 //   if (!firstUpdateDone) {
 //     firstUpdateDone = true;
 
-//     fallbackLayer.loadAllTiles().then(() => {
-//       console.log(
-//         "✅ Z3 fallback tiles loaded:",
-//         fallbackLayer["visibleTiles"].size
-//       );
-//       scene.add(fallbackLayer.group);
-//       fallbackLayer.group.renderOrder = 0;
+//     // No fallbackLayer to load. Immediately set renderOrder and start tiles.
+//     for (const layer of tileEngine.getTileLayers().values()) {
+//       layer.group.renderOrder = 1;
+//     }
 
-//       tileEngine.attachToScene();
-
-//       for (const layer of tileEngine.getTileLayers().values()) {
-//         layer.group.renderOrder = 1;
-//       }
-
-//       tileEngine.loadInitialTiles();
-//     });
+//     tileEngine.loadInitialTiles();
 //   } else {
 //     tileEngine.update();
 //   }
@@ -254,6 +219,42 @@ function animate(): void {
   renderer.render(scene, camera);
 }
 
-controls.update();
-controls.dispatchEvent({ type: "change" });
-animate();
+// -------------------------------------------------------------
+// Main Async Initialization: Make sure fallback tiles are ready before rendering
+// -------------------------------------------------------------
+(async () => {
+  tileEngine.attachToScene();
+
+  // 1. Load Z3 fallback tiles BEFORE rendering/animation!
+  const z3Layer = tileEngine.getTileLayers().get(3);
+  if (z3Layer && typeof z3Layer.loadAllTiles === "function") {
+    // High concurrency for quick load: 24 or more (if supported)
+    await z3Layer.loadAllTiles(24); 
+    z3Layer.group.renderOrder = 0; // Always below dynamic layers
+  }
+
+  // 2. Set renderOrder for all higher LODs
+  for (const [z, layer] of tileEngine.getTileLayers()) {
+    if (z > 3) layer.group.renderOrder = 1;
+  }
+
+  // 3. Now enable controls and animation
+  let firstUpdateDone = false;
+  controls.addEventListener("change", () => {
+    if (!firstUpdateDone) {
+      firstUpdateDone = true;
+      tileEngine.loadInitialTiles(); // kicks off dynamic LOD loading
+    } else {
+      tileEngine.update();
+    }
+  });
+
+  // Initial camera sync & first animation frame
+  controls.update();
+  controls.dispatchEvent({ type: "change" });
+  animate();
+})();
+
+// controls.update();
+// controls.dispatchEvent({ type: "change" });
+// animate();

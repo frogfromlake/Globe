@@ -13,7 +13,7 @@ export class TaskQueue {
   private queue: TaskQueueItem[] = [];
   private busy = false;
 
-  private static readonly MAX_PARALLEL_TASKS = 6;
+  private static readonly MAX_PARALLEL_TASKS = 8;
 
   enqueue(item: TaskQueueItem): void {
     // Only enqueue if not already queued!

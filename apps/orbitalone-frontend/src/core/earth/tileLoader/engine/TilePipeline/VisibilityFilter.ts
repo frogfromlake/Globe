@@ -116,7 +116,6 @@ function isTileVisible(
 }
 
 // --- VisibilityFilter class (now self-contained) ---
-
 export class VisibilityFilter {
   run(state: TilePipelineState, config: TileEngineConfig, z: number) {
     const frustum = config.enableFrustumCulling
@@ -152,6 +151,7 @@ export class VisibilityFilter {
         });
       }
     }
+
     // console.log(
     //   `[VisibilityFilter] Z${z}: ${state.visibleCandidates.length}/${state.candidates.length} passed`
     // );

@@ -222,10 +222,9 @@ export class GlobeTileEngine {
   public unloadHigherZoomLevels(): void {
     for (const [z, layer] of this.tileLayers.entries()) {
       if (z > this.currentZoom && z > 3) {
-        layer.clear();
-        (layer as any).state.tileCache.clear?.();
-        (layer as any).state.loadedTiles.clear?.();
-        (layer as any).state.stickyTiles.clear?.();
+        // Don't hard clear! Instead mark for gentle fade-out
+        layer.getTileRemover().setParams(48, 2);
+        layer.getTileRemover().markAllForRemoval();
       }
     }
   }

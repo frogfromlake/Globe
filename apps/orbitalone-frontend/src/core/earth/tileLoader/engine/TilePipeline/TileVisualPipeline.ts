@@ -24,6 +24,7 @@ import { getCameraCenterDirection } from "../utils/camera/cameraUtils";
 import { runConcurrent } from "../utils/concurrency/runConcurrent";
 import { TileStickyManager } from "./TileStickyManager";
 import { TilePrewarmer } from "./TilePrewarmer";
+import { TileRemover } from "./TileRemover";
 
 export class TileVisualPipeline implements TileVisualPipelineLayer {
   private state: TilePipelineState;
@@ -36,6 +37,7 @@ export class TileVisualPipeline implements TileVisualPipelineLayer {
   private stickyManager = new StickyManager();
   private cleanup = new Cleanup();
   private prewarmer = new TilePrewarmer();
+  private tileRemover: TileRemover;
 
   private readonly z: number = 0;
 
@@ -68,6 +70,7 @@ export class TileVisualPipeline implements TileVisualPipelineLayer {
     );
     this.state.visibleTiles = visibleTiles; // Share global visible set
     this.state.revision = 0;
+    this.tileRemover = new TileRemover(this.state);
   }
 
   /**
@@ -101,11 +104,29 @@ export class TileVisualPipeline implements TileVisualPipelineLayer {
     this.prioritizer.run(this.state, this.config, this.z);
     this.prewarmer.run(this.state, this.config, this.z);
 
-    console.log(
-      `[TileVisualPipeline Z${this.z}] cands:${this.state.candidates.length}, vis:${this.state.visibleCandidates.length}, prio:${this.state.prioritizedTiles.length}, queue:${this.state.queue.length}`
-    );
+    if (this.tileRemover) {
+      const visibleThisFrame = new Set(
+        this.state.visibleCandidates.map((c) => c.key)
+      );
 
-    this.loader.run(this.state, this.config, this.z);
+      for (const key of this.state.visibleTiles) {
+        const isVisible = visibleThisFrame.has(key);
+        const isPending = this.tileRemover.isPending(key);
+        const isQueued = this.state.prioritizedTiles?.some(
+          (c) => c.key === key
+        );
+
+        if (!isVisible && !isPending && !isQueued) {
+          this.tileRemover.markPending(key);
+        }
+      }
+      for (const key of visibleThisFrame) {
+        this.tileRemover.cancelPending(key);
+      }
+      this.tileRemover.process();
+    }
+
+    this.loader.run(this.state, this.z);
     this.stickyManager.run(this.state, this.config, this.z);
     this.cleanup.run(this.state, this.config, this.z);
   }
@@ -119,7 +140,10 @@ export class TileVisualPipeline implements TileVisualPipelineLayer {
     this.state.tileGroup.clear();
     this.state.loadedTiles.clear();
     this.state.stickyTiles.clear();
-    // Don't clear visibleTiles (global)
+    // Clean up global visibleTiles only for this layer's tiles
+    for (const key of this.state.loadedTiles.keys()) {
+      this.state.visibleTiles.delete(key);
+    }
   }
 
   public get group(): Group {
@@ -130,10 +154,9 @@ export class TileVisualPipeline implements TileVisualPipelineLayer {
     this.update();
   }
 
-  public async loadAllTiles(): Promise<void> {
+  public async loadAllTiles(concurrencyLimit = 24): Promise<void> {
     const z = this.z;
     const tileCount = 2 ** z;
-    const concurrencyLimit = 6;
 
     const cameraDirection = getCameraCenterDirection(this.state.camera);
 
@@ -189,5 +212,9 @@ export class TileVisualPipeline implements TileVisualPipelineLayer {
     });
 
     await runConcurrent(taskFns, concurrencyLimit);
+  }
+
+  public getTileRemover(): TileRemover {
+    return this.tileRemover;
   }
 }

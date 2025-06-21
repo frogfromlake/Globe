@@ -5,7 +5,7 @@ import { TilePipelineState, TileEngineConfig } from "./TilePipelineStore";
 import { getParentTileKey } from "../utils/geo/tileIndexing";
 
 export class Loader {
-  run(state: TilePipelineState, config: TileEngineConfig, z: number) {
+  run(state: TilePipelineState, z: number) {
     // --- Cap the task queue ---
     const MAX_QUEUE_LENGTH = z >= 13 ? 8 : z >= 11 ? 16 : 32;
     if (state.taskQueue.length() > MAX_QUEUE_LENGTH) {

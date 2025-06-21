@@ -60,7 +60,7 @@ export interface TileVisualPipelineLayer {
   updateTiles: () => void;
   clear: () => void;
   loadTiles: () => Promise<void>;
-  loadAllTiles: () => Promise<void>;
+  loadAllTiles: (concurrencyLimit?: number) => Promise<void>;
   // add other lifecycle methods as needed
 }
 

@@ -29,7 +29,7 @@ export function getMinDotThreshold(z: number, cameraFovDeg: number): number {
 export function getBoundingSphereMultiplier(z: number): number {
   if (z <= 8) return 1.0;
   const extra = z - 8;
-  return 1.0 + 3.0 * Math.pow(extra, 1.5); // progressively inflate beyond Z8
+  return 1.0 + 3.0 * Math.pow(extra, 1.0); // progressively inflate beyond Z8
 }
 
 /**

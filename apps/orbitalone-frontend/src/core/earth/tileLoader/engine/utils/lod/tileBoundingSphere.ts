@@ -57,7 +57,7 @@ export function getTileBoundingSphere(
   const inflated = rawRadius * baseMultiplier * inflation;
   const radius = Math.max(
     inflated,
-    minRadius * inflation * (z === 11 ? 1.2 : 1.0) // slight boost for Z11
+    minRadius * inflation
   );
 
   return new Sphere(center, radius);
